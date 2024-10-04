@@ -21,7 +21,7 @@ OUTPUT_DIR <- NULL
     siteId = 'yourSiteID',
 
     isToApplyUStarFiltering = TRUE,
-    # custom, not from default package
+    # custom, not from default package; number or NULL
     ustar_fallback_value = 0.1,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
@@ -64,12 +64,14 @@ OUTPUT_DIR <- NULL
 
 
 .merge_options <- function(user_opts, extra_opts){
+    as_numeric_or_nan <- function (x) ifelse(is.null(x), NaN, as.numeric(x))
+
     merge <- list()
 
     merge$siteId <- user_opts$site_id
 
     merge$isToApplyUStarFiltering <- user_opts$is_to_apply_u_star_filtering
-    merge$ustar_fallback_value <- as.numeric(user_opts$ustar_fallback_value)
+    merge$ustar_fallback_value <- as_numeric_or_nan(user_opts$ustar_fallback_value)
     merge$uStarSeasoning <- factor(user_opts$u_star_seasoning)
     merge$uStarMethod <- factor(user_opts$u_star_method)
 

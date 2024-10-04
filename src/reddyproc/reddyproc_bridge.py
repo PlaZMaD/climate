@@ -6,7 +6,8 @@ from warnings import warn
 
 import rpy2.robjects as ro
 from rpy2 import rinterface_lib as rl
-
+from rpy2.rinterface_lib.sexp import NULLType
+from rpy2.robjects import conversion, default_converter
 
 @contextmanager
 def capture_r_output(file: TextIOWrapper):
@@ -26,10 +27,18 @@ def capture_r_output(file: TextIOWrapper):
         (rc.consolewrite_print, rc.consolewrite_warnerror, rc.showmessage) = cb_bkp
 
 
+def r_converter():
+    none_converter = conversion.Converter("None converter")
+    none_converter.py2rpy.register(type(None), lambda _: ro.r("NULL"))
+    none_converter.rpy2py.register(NULLType, lambda _: None)
+    return conversion.localconverter(default_converter + none_converter)
+
+
 def reddyproc_and_postprocess(options):
     py_options_fix = options
     py_options_fix.partitioning_methods = ro.StrVector(options.partitioning_methods)
-    r_options = ro.ListVector(vars(py_options_fix))
+    with r_converter():
+        r_options = ro.ListVector(vars(py_options_fix))
 
     err_prefix = 'error'
     draft_log_name = Path(options.output_dir) / (err_prefix + options.log_fname_end)

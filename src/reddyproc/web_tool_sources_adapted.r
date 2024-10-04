@@ -374,10 +374,9 @@ encodeEddyProcTasks <- function(eddyProcConfiguration) {
     if (!anyNA(EProc$sUSTAR_SCEN$uStar))
         return()
 
-    if (is.null(eddyProcConfiguration$ustar_fallback_value) ||
-        eddyProcConfiguration$ustar_fallback_value == 0) {
+    if (is.na(eddyProcConfiguration$ustar_fallback_value)) {
         warning('\n\nREddyProc uStar filter have not detected some thresholds.\n',
-                'Fallback value is not provided or zero. Gap fill failure is expected.\n')
+                'Fallback value is NaN. Gap fill failure is expected.\n')
         return()
     }
 
