@@ -44,6 +44,7 @@ calc_averages <- function(df_full){
 
     df <- .remove_too_short_years(df_full)
     df <- add_column(df, Month = month(df$DateTime), .after = 'Year')
+    df <- add_column(df, DoM = day(df$DateTime), .after = 'Year')
 
     # indeed, R have no default list(str) better than %>% select
     cols_f <- colnames(df %>% select(ends_with("_f")))
@@ -65,8 +66,8 @@ calc_averages <- function(df_full){
     df_to_nna <- df[paired_cols_in]
 
     # i.e. mean and NA percent will be calculated between rows
-    # for which unique_cols values are matching
-    unique_cols_d <- c('Year', 'Month', 'DoY')
+    # for which unique_cols values are matching, duplicates are ok
+    unique_cols_d <- c('Year', 'Month', 'DoM', 'DoY')
     unique_cols_t <- c('Year', 'Month', 'Hour')
     unique_cols_m <- c('Year', 'Month')
     unique_cols_y <- c('Year')
