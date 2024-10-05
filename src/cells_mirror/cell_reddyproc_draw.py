@@ -1,7 +1,8 @@
+from pathlib import Path
 from typing import List, Tuple, Union
 
 import src.ipynb_globals as ig
-from src.reddyproc.postprocess import create_archive
+from src.helpers.io_helpers import create_archive
 from src.reddyproc.postprocess_graphs import EProcOutputHandler, EProcImgTagHandler, EProcOutputGen
 from src.colab_routines import colab_add_download_button, colab_no_scroll
 
@@ -25,10 +26,13 @@ output_sequence: Tuple[Union[List[str], str], ...] = (
 
 eio = EProcOutputHandler(output_sequence=output_sequence, tag_handler=tag_handler, out_info=ig.eddyproc.out_info)
 eio.prepare_images_safe()
+ig.arc_exclude_files = eio.img_proc.raw_img_duplicates
 
-arc_path = create_archive(dir='output/reddyproc', arc_fname=ig.eddyproc.out_info.fnames_prefix + '.zip',
-                          include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=eio.img_proc.raw_img_duplicates)
-colab_add_download_button(arc_path, 'Download outputs')
+eproc_arc_path = Path('output') / Path(ig.eddyproc.out_info.fnames_prefix + '.zip')
+create_archive(arc_path=eproc_arc_path, folders='output/reddyproc', top_folder='output/reddyproc',
+               include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=eio.img_proc.raw_img_duplicates)
+
+colab_add_download_button(eproc_arc_path, 'Download eddyproc outputs')
 
 colab_no_scroll()
 eio.display_images_safe()
