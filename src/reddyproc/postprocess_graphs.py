@@ -18,7 +18,7 @@ from src.helpers.io_helpers import tag_to_fname
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
 
-PostProcSuffixes = SimpleNamespace(HMAPS='hmaps', COMPACT='compact')
+PostProcSuffixes = SimpleNamespace(HMAPS='hmaps', COMPACT='c')
 EddyPrefixes = SimpleNamespace(HEAT_MAP='FP', FLUX='Flux', DIURNAL='DC', DAILY_SUM='DSum', DAILY_SUMU='DSumU')
 
 
