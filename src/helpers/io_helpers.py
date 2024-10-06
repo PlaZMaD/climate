@@ -30,7 +30,6 @@ def ensure_empty_dir(folder: Union[str, Path]):
 
 
 def create_archive(arc_path, folders: Union[List[str], str], top_folder, include_fmasks, exclude_files: List[Path]):
-    # move out of draw_graphs later
     if type(folders) is str:
         folders = [folders]
 
