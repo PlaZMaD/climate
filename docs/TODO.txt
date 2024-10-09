@@ -1,0 +1,4 @@
+Releases:
+	- update a 0.9.0 version on git to contain images on open?
+	- create readme and changelog for releases
+	- create 0.9.1 release, check test was updated
