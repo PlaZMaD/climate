@@ -1,0 +1,13 @@
+Releases now:
+	- update a 0.9.0 version on git to contain images on open?
+	- create readme and changelog for releases
+	- create 0.9.1 release, check test was updated
+
+
+Releases:
+	- ensure ipynb changed to correct version v*.*.* in lines
+		!git remote add origin https://github.com/PlaZMaD/climate.git
+		!git pull --depth 1 origin v*.*.*
+	- ensure version under git link contains output examples even without run
+
+Regulary:
