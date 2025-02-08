@@ -28,7 +28,7 @@ eio = EProcOutputHandler(output_sequence=output_sequence, tag_handler=tag_handle
 eio.prepare_images_safe()
 ig.arc_exclude_files = eio.img_proc.raw_img_duplicates
 
-eproc_arc_path = Path('output') / Path(ig.eddyproc.out_info.fnames_prefix + '.zip')
+eproc_arc_path = Path('output/reddyproc') / Path(ig.eddyproc.out_info.fnames_prefix + '.zip')
 create_archive(arc_path=eproc_arc_path, folders='output/reddyproc', top_folder='output/reddyproc',
                include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=eio.img_proc.raw_img_duplicates)
 

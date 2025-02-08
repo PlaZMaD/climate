@@ -9,8 +9,8 @@ ig.eddyproc.options = SimpleNamespace(
     site_id=ias_output_prefix,
 
     is_to_apply_u_star_filtering=True,
-    ustar_fallback_value=0.1,
-    
+    ustar_fallback_value=0.01,
+
     # uStarSeasoning = "WithinYear", "Continuous" , "User"
     u_star_seasoning="Continuous",
     u_star_method="RTw",
@@ -25,9 +25,10 @@ ig.eddyproc.options = SimpleNamespace(
     longitude=32.6,
     timezone=+3.0,
 
+    # "Tsoil"
     temperature_data_variable="Tair",
 
-    input_file="output/REddyProc.txt",
+    input_file=f"output/{reddyproc_filename}",
     output_dir="output/reddyproc",
     log_fname_end='_log.txt'
 )

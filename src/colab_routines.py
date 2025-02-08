@@ -37,7 +37,10 @@ class StopExecution(Exception):
 
 
 def colab_only_cell():
-    # reminder: cannot be used before this file is downloaded
+    """
+    Works like return, but for cells.
+    Reminder: cannot be imported and used before this file is downloaded.
+    """
     try:
         import google.colab
     except ImportError:
@@ -46,7 +49,11 @@ def colab_only_cell():
 
 @colab_only
 def colab_no_scroll():
-    """ Tries to resize cell to avoid the very need of scrolling """
+    """
+    Tries to resize cell to avoid the very need of scrolling.
+    But disables horizontal scroll on large images too.
+    Horizontal scroll can be fixed with HBox(widgets.Output()).
+    """
     output.no_vertical_scroll()
 
 
