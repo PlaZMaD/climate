@@ -27,6 +27,7 @@ ig.eddyproc.options = SimpleNamespace(
 
     # "Tsoil"
     temperature_data_variable="Tair",
+    daily_sums_units = reddyproc_daily_sums_units,
 
     input_file=f"output/{reddyproc_filename}",
     output_dir="output/reddyproc",

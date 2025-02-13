@@ -6,6 +6,7 @@ debugSource('test/reddyproc/helpers/init_test_env.r')
 debugSource('src/reddyproc/postprocess_calc_averages.r')
 debugSource('src/reddyproc/web_tool_sources_adapted.r')
 debugSource('src/reddyproc/reddyproc_wrapper.r')
+debugSource('src/reddyproc/r_helpers.r')
 
 
 # duplicates cell code to run from pure R
@@ -30,29 +31,34 @@ eddyproc_user_options <- list(
     longitude = 32.6,
     timezone = +3,
 
+    # TSoil
     temperature_data_variable = "Tair",
+    daily_sums_units = list(NEE_uStar_f = 'gC/m2/day', LE_f = 'Wm-2', H_f = 'Wm-2', Rg_f = 'Wm-2', Tair_f = 'degC',
+                           Tsoil_f = 'degC', rH_f = '%', VPD_f = 'hPa', Ustar_f = 'ms-1', CH4flux_f = 'mg_m-2_d-1'),
 
     input_file = "output/REddyProc.txt",
     output_dir = "output/reddyproc"
 )
 
 
-test_reddyproc <- function(options) {
-    reddyproc_and_postprocess(eddyproc_user_options)
+test_reddyproc <- function(options, input_file = NULL) {
+    # input_file = NULL to use path from options, usually project dir
 
-    # stopifnot(...)
-}
-
-
-test_3y <- function(options) {
     # possibly copy all used files into temp dir and work only from it
     test_dir = tempdir()
 
-    options$input_file <- "test\\reddyproc\\test_reddyproc_process_fixtures\\test_3_years.txt"
+    if (is.not.null(input_file))
+        options$input_file <- input_file
     options$output_dir <- test_dir
     reddyproc_and_postprocess(options)
 
     # stopifnot(...)
+    message('Test dir is: ', test_dir)
+    utils::browseURL(test_dir)
 }
 
-test_reddyproc(eddyproc_user_options)
+
+# test_reddyproc_in_project_dir(eddyproc_user_options)
+# test_reddyproc(eddyproc_user_options, "test\\reddyproc\\test_process_fixtures\\test_3_years.txt")
+test_reddyproc(eddyproc_user_options, "test\\reddyproc\\test_process_fixtures\\test_3_months.txt")
+# test_reddyproc(eddyproc_user_options, "output/REddyProc.txt")

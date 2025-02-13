@@ -9,6 +9,7 @@ from rpy2 import rinterface_lib as rl
 from rpy2.rinterface_lib.sexp import NULLType
 from rpy2.robjects import conversion, default_converter
 
+
 @contextmanager
 def capture_r_output(file: TextIOWrapper):
     # proper file name is not known yet, but expected to be finalized under yield
@@ -37,6 +38,7 @@ def r_converter():
 def reddyproc_and_postprocess(options):
     py_options_fix = options
     py_options_fix.partitioning_methods = ro.StrVector(options.partitioning_methods)
+    py_options_fix.daily_sums_units = ro.ListVector(options.daily_sums_units)
     with r_converter():
         r_options = ro.ListVector(vars(py_options_fix))
 

@@ -39,6 +39,8 @@ OUTPUT_DIR <- NULL
     timezone = +3,
 
     temperatureDataVariable = "Tair",
+    daily_sums_units = list(NEE = 'TODO gC/m2/day', LE = 'Wm-2', H = 'Wm-2', Rg = 'Wm-2', Tair = 'degC',
+                           Tsoil = 'degC', rH = '%', VPD = 'hPa', Ustar = 'ms-1', CH4flux = 'TODO mg_m-2_d-1'),
 
     isCatchingErrorsEnabled = TRUE,
 
@@ -86,6 +88,7 @@ OUTPUT_DIR <- NULL
     merge$timezone <- as.numeric(user_opts$timezone)
 
     merge$temperatureDataVariable <- user_opts$temperature_data_variable
+    merge$dailySumsUnits <- user_opts$daily_sums_units
 
     return(c(merge, extra_opts))
 }

@@ -4,6 +4,9 @@
 # https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php
 
 
+source('src/reddyproc/r_helpers.r')
+
+
 readInputData <- function(dataFileName, input_format) {
     if (input_format == "onlinetool") {
         fLoadTXTIntoDataframe(dataFileName, "") %>%
@@ -187,6 +190,16 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
 }
 
 
+.dsumsUnit <- function(eddyProcConfiguration, baseNameVal, table_unit){
+    unit <- eddyProcConfiguration$dailySumsUnits[[baseNameVal]]
+    if (is.null(unit)){
+        warning("\n\n Missing variable units for daily sums: ", baseNameVal,
+             "\nunit in the table: ", table_unit, ' daily sum unit: ', baseNameVal)
+    }
+    return(unit)
+}
+
+
 .plotFilledDataVariables <- function(eddyProcConfiguration, EProc, dataVariablesToFill) {
     processedEddyData <- EProc$sExportResults()
     vars_amend <- if ("NEE" %in% dataVariablesToFill)
@@ -196,12 +209,24 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
     for (dataVariable in vars_amend) {
         baseNameVal <- paste(dataVariable, "f", sep = "_")
         baseNameSdVal <- ifelse(dataVariable %in% fillColnamesWithoutUncertainty, "none", paste(dataVariable, "fsd", sep = "_"))
-        if (baseNameVal %in% colnames(processedEddyData)) {
-            EProc$sPlotFingerprint(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
-            EProc$sPlotDiurnalCycle(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
-            EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
-            EProc$sPlotHHFluxes(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
-        }
+
+        if (baseNameVal %ni% colnames(processedEddyData))
+            next
+
+        # TODO report bug in REddyProc ?
+        table_unit <- attr(processedEddyData[, baseNameVal], "units")
+
+        EProc$sPlotFingerprint(baseNameVal, Dir = OUTPUT_DIR,
+                               Format = eddyProcConfiguration$figureFormat)
+        EProc$sPlotDiurnalCycle(baseNameVal, Dir = OUTPUT_DIR,
+                                Format = eddyProcConfiguration$figureFormat)
+
+        dsum_unit = .dsumsUnit(eddyProcConfiguration, baseNameVal, table_unit)
+        EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
+                             Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
+
+        EProc$sPlotHHFluxes(baseNameVal, Dir = OUTPUT_DIR,
+                            Format = eddyProcConfiguration$figureFormat)
     }
 }
 

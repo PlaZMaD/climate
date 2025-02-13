@@ -3,6 +3,10 @@
 library(dplyr)
 
 
+is.not.null <- function(x) !is.null(x)
+`%ni%` <- Negate(`%in%`)
+
+
 assert <- function(x, msg){
     if (x != TRUE)
         stop('Assertion failure: ', msg)
