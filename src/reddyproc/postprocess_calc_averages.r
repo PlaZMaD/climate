@@ -49,11 +49,14 @@ calc_averages <- function(df_full){
     # indeed, R have no default list(str) better than %>% select
     cols_f <- colnames(df %>% select(ends_with("_f")))
     paired_cols_out <- setdiff(cols_f, 'GPP_f')
-    paired_cols_in <- gsub("_f", "", paired_cols_out)
+    paired_cols_in <- gsub("_f$", "", paired_cols_out)
 
-    cols_to_mean <- cols_f
-    if ('Reco' %in% colnames(df))
-        cols_to_mean <- c(cols_to_mean, 'Reco')
+    # additional optional mean columns
+    extra_mean_cols <- intersect('Reco', colnames(df))
+    # additional optional daily columns
+    extra_daily_cols <- intersect('CH4flux', colnames(df))
+
+    cols_to_mean <- c(cols_f, extra_mean_cols)
     cat('Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
 
     cat('Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
@@ -74,14 +77,16 @@ calc_averages <- function(df_full){
 
     # hourly should also contain averages of columns before EProc
     df_to_mean_t <- cbind(df[cols_to_mean], df[paired_cols_in])
+    # daily should also contain ch4 if avaliable
+    df_to_mean_d <- cbind(df[cols_to_mean], df[extra_daily_cols])
 
     df_means_t <- .aggregate_df(df_to_mean_t, by_col = df[unique_cols_t], mean_nna)
-    df_means_d <- .aggregate_df(df_to_mean, by_col = df[unique_cols_d], mean_nna)
+    df_means_d <- .aggregate_df(df_to_mean_d, by_col = df[unique_cols_d], mean_nna)
     df_means_m <- .aggregate_df(df_to_mean, by_col = df[unique_cols_m], mean_nna)
     df_means_y <- .aggregate_df(df_to_mean, by_col = df[unique_cols_y], mean_nna)
 
     # renaming is easier before the actual calc
-    cols_nna_sqc <- gsub("_f", "_sqc", paired_cols_out)
+    cols_nna_sqc <- gsub("_f$", "_sqc", paired_cols_out)
     stopifnot(ncol(df_to_nna) == length(cols_nna_sqc) - length(missing))
     names(df_to_nna) <- cols_nna_sqc
 

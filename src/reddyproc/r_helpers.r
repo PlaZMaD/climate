@@ -3,6 +3,12 @@
 library(dplyr)
 
 
+assert <- function(x, msg){
+    if (x != TRUE)
+        stop('Assertion failure: ', msg)
+}
+
+
 .combine_cols_alternating <- function(df, df_add, expected_col_dupes){
     # not tested
 

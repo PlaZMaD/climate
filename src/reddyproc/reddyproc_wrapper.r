@@ -136,16 +136,28 @@ OUTPUT_DIR <- NULL
     if (is.null(res$err$call))
         return(res)
 
-    # full fallback to ustar disabled, possibly not nessesary anymore?
-    if (grepl('sMDSGapFillAfterUstar', res$err$call, fixed = TRUE) %>% any) {
-        if (eddyproc_config$isToApplyUStarFiltering != TRUE)
-            stop('Unexpected option: ustar failed while disabled.')
-        warning('\n\n\n OPTION FAILURE: uStar filtering failed. Fallback attempt ',
-                'to eddyproc_config$isToApplyUStarFiltering = FALSE \n\n')
+    do_fallback <- FALSE
+
+    # if REddypoc in ignore errors mode, stop will happend not on ustar failure, but later
+    # res$err$message == 'must provide finite uStarThresholds', ..., ?
+    if (grepl('sMDSGapFillAfterUstar', res$err$call, fixed = TRUE) %>% any)
+        do_fallback <- TRUE
+
+    # fallback if Rg (solar radiation) is missing, but required
+    if (grepl('EProc$sEstUstarThold', res$err$call, fixed = TRUE) %>% any &&
+        res$err$message == 'Missing columns in dataset: Rg')
+        do_fallback <- TRUE
+
+    if (do_fallback) {
+        assert(eddyproc_config$isToApplyUStarFiltering, 'ustar failed while disabled.')
+        warning('\n\nOPTION FAILURE: uStar filtering failed. \n',
+                'Fallback attempt to eddyproc_config$isToApplyUStarFiltering = FALSE \n')
+
         eddyproc_config$isToApplyUStarFiltering <- FALSE
         res <- .reddyproc_io_wrapper(eddyproc_config)
         res$changed_config <- eddyproc_config
     }
+
 
     return(res)
 }
