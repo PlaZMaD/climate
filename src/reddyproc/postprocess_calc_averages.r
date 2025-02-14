@@ -31,6 +31,13 @@ source('src/reddyproc/r_helpers.r')
 }
 
 
+.apply_attributes <- function(df, columns, attr_name, value) {
+    for (col in columns)
+        attr(df[,col], attr_name) <- value
+    df
+}
+
+
 .remove_too_short_years <- function(df) {
     stopifnot(nrow(df) > 3)
 
@@ -122,10 +129,21 @@ calc_averages <- function(df_full){
     df_y <- merge_cols_aligning(df_means_y, df_nna_y, unique_cols_y, align_f_sqc)
 
     # most of the ops will drop attrs, unit attrs must be restored back
+    # TODO or save them to list instead? but REddyProc stores in attrs
     df_t <- .copy_attributes(df_t, df_full, 'units')
     df_d <- .copy_attributes(df_d, df_full, 'units')
     df_m <- .copy_attributes(df_m, df_full, 'units')
     df_y <- .copy_attributes(df_y, df_full, 'units')
+
+    df_t <- .apply_attributes(df_t, colnames(df_t %>% select(ends_with("_sqc"))), 'units', '%')
+    df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '%')
+    df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '%')
+    df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '%')
+
+    df_t <- .apply_attributes(df_t, unique_cols_t, 'units', '-')
+    df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '-')
+    df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '-')
+    df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '-')
 
     return(list(hourly = df_t, daily = df_d, monthly = df_m, yearly = df_y))
 }
@@ -138,10 +156,13 @@ save_averages <- function(dfs, output_dir, output_unmask, ext){
     m_name <- paste0(prename, '_monthly', ext)
     y_name <- paste0(prename, '_yearly', ext)
 
+    bkp_attr <- attr(dfs$hourly$Hour, 'units')
     dfs$hourly$Hour <- fmt_hm(dfs$hourly$Hour)
+    attr(dfs$hourly$Hour, 'units') <- bkp_attr
+
 
     write_with_units <- function(df, fname) {
-        units_row <- as.character(lapply(df, attr, which = "units"))
+        units_row <- gsub('NULL$', '', as.character(lapply(df, attr, which = "units")))
         df <- insert_row(df, units_row, 1)
         write.csv(df, file = fname, row.names = FALSE, na = "-9999")
     }

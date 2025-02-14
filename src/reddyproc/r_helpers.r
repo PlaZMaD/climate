@@ -13,11 +13,11 @@ assert <- function(x, msg){
 }
 
 
-insert_row <- function(existingDF, newrow, r) {
-    existingDF <- rbind(existingDF,newrow)
-    existingDF <- existingDF[order(c(1:(nrow(existingDF)-1),r-0.5)),]
-    row.names(existingDF) <- 1:nrow(existingDF)
-    return(existingDF)
+insert_row <- function(df, row, r) {
+    df <- rbind(df, row)
+    df <- df[order(c(1:(nrow(df)-1), r-0.5)),]
+    row.names(df) <- 1:nrow(df)
+    return(df)
 }
 
 

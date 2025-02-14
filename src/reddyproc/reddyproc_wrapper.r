@@ -16,7 +16,7 @@ INPUT_FILE <- NULL
 OUTPUT_DIR <- NULL
 
 
-# corresponds 06.2024 run
+# corresponds 06.2024 run, only types are important !
 .eddyproc_all_required_options <- list(
     siteId = 'yourSiteID',
 
