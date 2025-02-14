@@ -21,6 +21,7 @@ def use_r_from_python_env():
 
 def test_process(use_r_from_python_env):
     ig.ias_output_prefix = 'tv_fy4'
+    ig.reddyproc_filename = 'REddyProc_tv_fy4_2023.txt'
 
     import src.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401

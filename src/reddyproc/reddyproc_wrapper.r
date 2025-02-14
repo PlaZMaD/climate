@@ -39,8 +39,10 @@ OUTPUT_DIR <- NULL
     timezone = +3,
 
     temperatureDataVariable = "Tair",
-    daily_sums_units = list(NEE = 'TODO gC/m2/day', LE = 'Wm-2', H = 'Wm-2', Rg = 'Wm-2', Tair = 'degC',
-                           Tsoil = 'degC', rH = '%', VPD = 'hPa', Ustar = 'ms-1', CH4flux = 'TODO mg_m-2_d-1'),
+    daily_sums_units = list(NEE_f = 'gC/m2/day', NEE_uStar_f = 'gC/m2/day',
+                            LE_f = 'Wm-2', H_f = 'Wm-2', Rg_f = 'Wm-2',
+                            Tair_f = 'degC', Tsoil_f = 'degC',
+                            rH_f = '%', VPD_f = 'hPa', Ustar_f = 'ms-1', CH4flux_f = 'mg_m-2_d-1'),
 
     isCatchingErrorsEnabled = TRUE,
 

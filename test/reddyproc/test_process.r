@@ -24,7 +24,7 @@ eddyproc_user_options <- list(
     is_bootstrap_u_star = FALSE,
 
     is_to_apply_gap_filling = TRUE,
-    is_to_apply_partitioning = TRUE,
+    is_to_apply_partitioning = FALSE,
 
     partitioning_methods = c("Reichstein05", "Lasslop10"),
     latitude = 56.5,
@@ -33,8 +33,10 @@ eddyproc_user_options <- list(
 
     # TSoil
     temperature_data_variable = "Tair",
-    daily_sums_units = list(NEE_uStar_f = 'gC/m2/day', LE_f = 'Wm-2', H_f = 'Wm-2', Rg_f = 'Wm-2', Tair_f = 'degC',
-                           Tsoil_f = 'degC', rH_f = '%', VPD_f = 'hPa', Ustar_f = 'ms-1', CH4flux_f = 'mg_m-2_d-1'),
+    daily_sums_units = list(NEE_f = 'gC/m2/day', NEE_uStar_f = 'gC/m2/day',
+                            LE_f = 'Wm-2', H_f = 'Wm-2', Rg_f = 'Wm-2',
+                            Tair_f = 'degC', Tsoil_f = 'degC',
+                            rH_f = '%', VPD_f = 'hPa', Ustar_f = 'ms-1', CH4flux_f = 'mg_m-2_d-1'),
 
     input_file = "output/REddyProc.txt",
     output_dir = "output/reddyproc"
@@ -58,7 +60,7 @@ test_reddyproc <- function(options, input_file = NULL) {
 }
 
 
-# test_reddyproc_in_project_dir(eddyproc_user_options)
+test_reddyproc(eddyproc_user_options)
 # test_reddyproc(eddyproc_user_options, "test\\reddyproc\\test_process_fixtures\\test_3_years.txt")
-test_reddyproc(eddyproc_user_options, "test\\reddyproc\\test_process_fixtures\\test_3_months.txt")
+# test_reddyproc(eddyproc_user_options, "test\\reddyproc\\test_process_fixtures\\test_3_months.txt")
 # test_reddyproc(eddyproc_user_options, "output/REddyProc.txt")

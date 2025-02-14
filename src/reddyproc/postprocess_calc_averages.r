@@ -20,6 +20,17 @@ source('src/reddyproc/r_helpers.r')
 }
 
 
+.copy_attributes <- function(df_target, df_source, attr_name) {
+    same_cols <- intersect(colnames(df_target), colnames(df_source))
+    for (col in same_cols)
+        attr(df_target[,col], attr_name) <- attr(df_source[,col], attr_name)
+    df_target
+    # attr.names <- names(attributes(df_source))
+    # attr.names <- attr.names[attr.names != 'names']
+    # attributes(df_target)[attr.names] <- attributes(df_source)[attr.names]
+}
+
+
 .remove_too_short_years <- function(df) {
     stopifnot(nrow(df) > 3)
 
@@ -75,6 +86,8 @@ calc_averages <- function(df_full){
     unique_cols_m <- c('Year', 'Month')
     unique_cols_y <- c('Year')
 
+
+
     # hourly should also contain averages of columns before EProc
     df_to_mean_t <- cbind(df[cols_to_mean], df[paired_cols_in])
     # daily should also contain ch4 if avaliable
@@ -84,6 +97,8 @@ calc_averages <- function(df_full){
     df_means_d <- .aggregate_df(df_to_mean_d, by_col = df[unique_cols_d], mean_nna)
     df_means_m <- .aggregate_df(df_to_mean, by_col = df[unique_cols_m], mean_nna)
     df_means_y <- .aggregate_df(df_to_mean, by_col = df[unique_cols_y], mean_nna)
+
+
 
     # renaming is easier before the actual calc
     cols_nna_sqc <- gsub("_f$", "_sqc", paired_cols_out)
@@ -95,6 +110,8 @@ calc_averages <- function(df_full){
     df_nna_m <- .aggregate_df(df_to_nna, by_col = df[unique_cols_m], nna_ratio)
     df_nna_y <- .aggregate_df(df_to_nna, by_col = df[unique_cols_y], nna_ratio)
 
+
+
     align_raw_sqc <- function(cn) gsub('*_sqc$', '', cn)
     df_t <- merge_cols_aligning(df_means_t, df_nna_t, unique_cols_t, align_raw_sqc)
     df_t <- add_column(df_t, ' ' = ' ', .after = tail(cols_to_mean, 1))
@@ -103,6 +120,12 @@ calc_averages <- function(df_full){
     df_d <- merge_cols_aligning(df_means_d, df_nna_d, unique_cols_d, align_f_sqc)
     df_m <- merge_cols_aligning(df_means_m, df_nna_m, unique_cols_m, align_f_sqc)
     df_y <- merge_cols_aligning(df_means_y, df_nna_y, unique_cols_y, align_f_sqc)
+
+    # most of the ops will drop attrs, unit attrs must be restored back
+    df_t <- .copy_attributes(df_t, df_full, 'units')
+    df_d <- .copy_attributes(df_d, df_full, 'units')
+    df_m <- .copy_attributes(df_m, df_full, 'units')
+    df_y <- .copy_attributes(df_y, df_full, 'units')
 
     return(list(hourly = df_t, daily = df_d, monthly = df_m, yearly = df_y))
 }
@@ -117,10 +140,16 @@ save_averages <- function(dfs, output_dir, output_unmask, ext){
 
     dfs$hourly$Hour <- fmt_hm(dfs$hourly$Hour)
 
-    write.csv(dfs$hourly, file = h_name, row.names = FALSE, na = "-9999")
-    write.csv(dfs$daily, file = d_name, row.names = FALSE, na = "-9999")
-    write.csv(dfs$monthly, file = m_name, row.names = FALSE, na = "-9999")
-    write.csv(dfs$yearly, file = y_name, row.names = FALSE, na = "-9999")
+    write_with_units <- function(df, fname) {
+        units_row <- as.character(lapply(df, attr, which = "units"))
+        df <- insert_row(df, units_row, 1)
+        write.csv(df, file = fname, row.names = FALSE, na = "-9999")
+    }
+
+    write_with_units(dfs$hourly, fname = h_name)
+    write_with_units(dfs$daily, fname = d_name)
+    write_with_units(dfs$monthly, fname = m_name)
+    write_with_units(dfs$yearly, fname = y_name)
 
     cat(sprintf('Saved summary stats to : \n %s \n %s \n %s \n %s \n',
                 d_name, m_name, y_name, h_name))
