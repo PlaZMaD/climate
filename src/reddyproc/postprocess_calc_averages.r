@@ -176,7 +176,7 @@ save_averages <- function(dfs, output_dir, output_unmask, ext){
     write_with_units <- function(df, fname) {
         units_row <- gsub('NULL$', '', as.character(lapply(df, attr, which = "units")))
         df <- insert_row(df, units_row, 1)
-        write.csv(df, file = fname, row.names = FALSE, na = "-9999")
+        write.csv(df, file = fname, row.names = FALSE, na = "-9999", quote = FALSE)
     }
 
     write_with_units(dfs$hourly, fname = h_name)
