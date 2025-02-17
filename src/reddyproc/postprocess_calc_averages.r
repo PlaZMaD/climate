@@ -1,7 +1,6 @@
 library(dplyr)
 library(lubridate)
 library(tibble)
-library(gsubfn)
 
 source('src/reddyproc/r_helpers.r')
 
@@ -78,7 +77,7 @@ source('src/reddyproc/r_helpers.r')
     df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '-')
     df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '-')
 
-    list(df_h, df_d, df_m, df_y)
+    list(h = df_h, d = df_d, m = df_m, y = df_y)
 }
 
 
@@ -151,11 +150,11 @@ calc_averages <- function(df_full){
     df_m <- merge_cols_aligning(df_means_m, df_nna_m, unique_cols_m, align_f_sqc)
     df_y <- merge_cols_aligning(df_means_y, df_nna_y, unique_cols_y, align_f_sqc)
 
-    list[df_h, df_d, df_m, df_y] <- .restore_unit_attributes(df_h, df_d, df_m, df_y,
-                                                             unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
-                                                             df_full)
+    dfs <- .restore_unit_attributes(df_h, df_d, df_m, df_y,
+                                    unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
+                                    df_full)
 
-    return(list(hourly = df_h, daily = df_d, monthly = df_m, yearly = df_y))
+    return(list(hourly = dfs$h, daily = dfs$d, monthly = dfs$m, yearly = dfs$y))
 }
 
 
