@@ -1,6 +1,7 @@
 library(dplyr)
 library(lubridate)
 library(tibble)
+library(gsubfn)
 
 source('src/reddyproc/r_helpers.r')
 
@@ -54,6 +55,30 @@ source('src/reddyproc/r_helpers.r')
     }
 
     df[first:last,]
+}
+
+
+.restore_unit_attributes <- function(df_h, df_d, df_m, df_y,
+                                     unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
+                                     df_full) {
+    # most of the ops will drop attrs, unit attrs must be restored back
+    # TODO or save them to list instead? but REddyProc stores in attrs
+    df_h <- .copy_attributes(df_h, df_full, 'units')
+    df_d <- .copy_attributes(df_d, df_full, 'units')
+    df_m <- .copy_attributes(df_m, df_full, 'units')
+    df_y <- .copy_attributes(df_y, df_full, 'units')
+
+    df_h <- .apply_attributes(df_h, colnames(df_h %>% select(ends_with("_sqc"))), 'units', '%')
+    df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '%')
+    df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '%')
+    df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '%')
+
+    df_h <- .apply_attributes(df_h, unique_cols_h, 'units', '-')
+    df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '-')
+    df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '-')
+    df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '-')
+
+    list(df_h, df_d, df_m, df_y)
 }
 
 
@@ -128,22 +153,9 @@ calc_averages <- function(df_full){
     df_m <- merge_cols_aligning(df_means_m, df_nna_m, unique_cols_m, align_f_sqc)
     df_y <- merge_cols_aligning(df_means_y, df_nna_y, unique_cols_y, align_f_sqc)
 
-    # most of the ops will drop attrs, unit attrs must be restored back
-    # TODO or save them to list instead? but REddyProc stores in attrs
-    df_h <- .copy_attributes(df_h, df_full, 'units')
-    df_d <- .copy_attributes(df_d, df_full, 'units')
-    df_m <- .copy_attributes(df_m, df_full, 'units')
-    df_y <- .copy_attributes(df_y, df_full, 'units')
-
-    df_h <- .apply_attributes(df_h, colnames(df_h %>% select(ends_with("_sqc"))), 'units', '%')
-    df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '%')
-    df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '%')
-    df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '%')
-
-    df_h <- .apply_attributes(df_h, unique_cols_h, 'units', '-')
-    df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '-')
-    df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '-')
-    df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '-')
+    list[df_h, df_d, df_m, df_y] <- .restore_unit_attributes(df_h, df_d, df_m, df_y,
+                                                             unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
+                                                             df_full)
 
     return(list(hourly = df_h, daily = df_d, monthly = df_m, yearly = df_y))
 }
