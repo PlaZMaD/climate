@@ -134,7 +134,7 @@ calc_averages <- function(df_full){
     names(df_to_nna) <- gsub("$", "_sqc", names(df_to_nna))
     names(df_to_nna_h) <- gsub("$", "_sqc", names(df_to_nna_h))
 
-    df_nna_h <- .aggregate_df(df_to_nna, by_col = df[unique_cols_h], nna_ratio)
+    df_nna_h <- .aggregate_df(df_to_nna_h, by_col = df[unique_cols_h], nna_ratio)
     df_nna_d <- .aggregate_df(df_to_nna, by_col = df[unique_cols_d], nna_ratio)
     df_nna_m <- .aggregate_df(df_to_nna, by_col = df[unique_cols_m], nna_ratio)
     df_nna_y <- .aggregate_df(df_to_nna, by_col = df[unique_cols_y], nna_ratio)

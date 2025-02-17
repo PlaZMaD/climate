@@ -106,6 +106,7 @@ mean_nna <- function(x, nna_threshold = NULL){
     # mean skipping NA values,
     # if enough values exist above threshold ratio
 
+    # TODO mean(-9999) -> -9999 or NaN?
     nna_mean <- mean(x, na.rm = TRUE)
     if (is.null(nna_threshold)) {
         return(nna_mean)
