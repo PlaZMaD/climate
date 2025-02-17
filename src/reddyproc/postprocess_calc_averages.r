@@ -89,18 +89,18 @@ calc_averages <- function(df_full){
     # i.e. mean and NA percent will be calculated between rows
     # for which unique_cols values are matching, duplicates are ok
     unique_cols_d <- c('Year', 'Month', 'DoM', 'DoY')
-    unique_cols_t <- c('Year', 'Month', 'Hour')
+    unique_cols_h <- c('Year', 'Month', 'Hour')
     unique_cols_m <- c('Year', 'Month')
     unique_cols_y <- c('Year')
 
 
 
     # hourly should also contain averages of columns before EProc
-    df_to_mean_t <- cbind(df[cols_to_mean], df[paired_cols_in])
+    df_to_mean_h <- cbind(df[cols_to_mean], df[paired_cols_in])
     # daily should also contain ch4 if avaliable
     df_to_mean_d <- cbind(df[cols_to_mean], df[extra_daily_cols])
 
-    df_means_t <- .aggregate_df(df_to_mean_t, by_col = df[unique_cols_t], mean_nna)
+    df_means_h <- .aggregate_df(df_to_mean_h, by_col = df[unique_cols_h], mean_nna)
     df_means_d <- .aggregate_df(df_to_mean_d, by_col = df[unique_cols_d], mean_nna)
     df_means_m <- .aggregate_df(df_to_mean, by_col = df[unique_cols_m], mean_nna)
     df_means_y <- .aggregate_df(df_to_mean, by_col = df[unique_cols_y], mean_nna)
@@ -112,7 +112,7 @@ calc_averages <- function(df_full){
     stopifnot(ncol(df_to_nna) == length(cols_nna_sqc) - length(missing))
     names(df_to_nna) <- cols_nna_sqc
 
-    df_nna_t <- .aggregate_df(df_to_nna, by_col = df[unique_cols_t], nna_ratio)
+    df_nna_h <- .aggregate_df(df_to_nna, by_col = df[unique_cols_h], nna_ratio)
     df_nna_d <- .aggregate_df(df_to_nna, by_col = df[unique_cols_d], nna_ratio)
     df_nna_m <- .aggregate_df(df_to_nna, by_col = df[unique_cols_m], nna_ratio)
     df_nna_y <- .aggregate_df(df_to_nna, by_col = df[unique_cols_y], nna_ratio)
@@ -120,8 +120,8 @@ calc_averages <- function(df_full){
 
 
     align_raw_sqc <- function(cn) gsub('*_sqc$', '', cn)
-    df_t <- merge_cols_aligning(df_means_t, df_nna_t, unique_cols_t, align_raw_sqc)
-    df_t <- add_column(df_t, ' ' = ' ', .after = tail(cols_to_mean, 1))
+    df_h <- merge_cols_aligning(df_means_h, df_nna_h, unique_cols_h, align_raw_sqc)
+    df_h <- add_column(df_h, ' ' = ' ', .after = tail(cols_to_mean, 1))
 
     align_f_sqc <- function(cn) gsub('*_sqc$', '_f', cn)
     df_d <- merge_cols_aligning(df_means_d, df_nna_d, unique_cols_d, align_f_sqc)
@@ -130,22 +130,22 @@ calc_averages <- function(df_full){
 
     # most of the ops will drop attrs, unit attrs must be restored back
     # TODO or save them to list instead? but REddyProc stores in attrs
-    df_t <- .copy_attributes(df_t, df_full, 'units')
+    df_h <- .copy_attributes(df_h, df_full, 'units')
     df_d <- .copy_attributes(df_d, df_full, 'units')
     df_m <- .copy_attributes(df_m, df_full, 'units')
     df_y <- .copy_attributes(df_y, df_full, 'units')
 
-    df_t <- .apply_attributes(df_t, colnames(df_t %>% select(ends_with("_sqc"))), 'units', '%')
+    df_h <- .apply_attributes(df_h, colnames(df_h %>% select(ends_with("_sqc"))), 'units', '%')
     df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '%')
     df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '%')
     df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '%')
 
-    df_t <- .apply_attributes(df_t, unique_cols_t, 'units', '-')
+    df_h <- .apply_attributes(df_h, unique_cols_h, 'units', '-')
     df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '-')
     df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '-')
     df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '-')
 
-    return(list(hourly = df_t, daily = df_d, monthly = df_m, yearly = df_y))
+    return(list(hourly = df_h, daily = df_d, monthly = df_m, yearly = df_y))
 }
 
 

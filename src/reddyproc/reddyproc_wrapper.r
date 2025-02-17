@@ -111,7 +111,7 @@ OUTPUT_DIR <- NULL
 }
 
 
-.reddyproc_io_wrapper <- function(eddyproc_config){
+.run_reddyproc_via_io_wrapper <- function(eddyproc_config){
     # more specifically, still calls processEddyData wrapper from web tool,
     # which finally calls REddyProc library
 
@@ -135,8 +135,8 @@ OUTPUT_DIR <- NULL
 }
 
 
-.reddyproc_ustar_fallback_wrapper <- function(eddyproc_config){
-    res <- .reddyproc_io_wrapper(eddyproc_config)
+.run_reddyproc_via_ustar_fallback_wrapper <- function(eddyproc_config){
+    res <- .run_reddyproc_via_io_wrapper(eddyproc_config)
 
     if (is.null(res$err$call))
         return(res)
@@ -144,6 +144,7 @@ OUTPUT_DIR <- NULL
     do_fallback <- FALSE
 
     # if REddypoc in ignore errors mode, stop will happend not on ustar failure, but later
+    # TODO switch to more specified check not before the next release
     # res$err$message == 'must provide finite uStarThresholds', ..., ?
     if (grepl('sMDSGapFillAfterUstar', res$err$call, fixed = TRUE) %>% any)
         do_fallback <- TRUE
@@ -159,7 +160,7 @@ OUTPUT_DIR <- NULL
                 'Fallback attempt to eddyproc_config$isToApplyUStarFiltering = FALSE \n')
 
         eddyproc_config$isToApplyUStarFiltering <- FALSE
-        res <- .reddyproc_io_wrapper(eddyproc_config)
+        res <- .run_reddyproc_via_io_wrapper(eddyproc_config)
         res$changed_config <- eddyproc_config
     }
 
@@ -184,7 +185,7 @@ reddyproc_and_postprocess <- function(user_options){
     INPUT_FILE <<- user_options$input_file
     OUTPUT_DIR <<- user_options$output_dir
     eddyproc_config <- .finalise_config(user_options)
-    wr_res <- .reddyproc_ustar_fallback_wrapper(eddyproc_config)
+    wr_res <- .run_reddyproc_via_ustar_fallback_wrapper(eddyproc_config)
 
     # processEddyData guaranteed to output equi-time-distant series
     dfs = calc_averages(wr_res$df_output)

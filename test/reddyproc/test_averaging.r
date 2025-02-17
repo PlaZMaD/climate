@@ -193,6 +193,6 @@ test_real_year <- function(){
 	cat('Test test_real_year ok \n\n')
 }
 
-
+# TODO not coverred by any tests: output csv will contain not numbers, but strings in some cases
 test_real_year()
 test_model_3_month()
