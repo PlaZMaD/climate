@@ -93,23 +93,13 @@ calc_averages <- function(df_full){
     cols_f <- colnames(df %>% select(ends_with("_f")))
     paired_cols_out <- setdiff(cols_f, 'GPP_f')
     paired_cols_in <- gsub("_f$", "", paired_cols_out)
-
-    # additional optional mean columns
-    extra_mean_cols <- intersect('Reco', colnames(df))
-    # additional optional daily columns
-    extra_daily_cols <- intersect('CH4flux', colnames(df))
-
-    cols_to_mean <- c(cols_f, extra_mean_cols)
-    cat('Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
-
     cat('Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
+
 
     missing = setdiff(paired_cols_in, colnames(df))
     if (length(missing) > 0)
         stop(msg = paste('Expected columns are missing: \n', missing, '\n'))
 
-    df_to_mean <- df[cols_to_mean]
-    df_to_nna <- df[paired_cols_in]
 
     # i.e. mean and NA percent will be calculated between rows
     # for which unique_cols values are matching, duplicates are ok
@@ -120,22 +110,30 @@ calc_averages <- function(df_full){
 
 
 
-    # hourly should also contain averages of columns before EProc
-    df_to_mean_h <- cbind(df[cols_to_mean], df[paired_cols_in])
-    # daily should also contain ch4 if avaliable
-    df_to_mean_d <- cbind(df[cols_to_mean], df[extra_daily_cols])
+    # additional optional mean columns
+    extra_mean_cols <- intersect('Reco', colnames(df))
+    # additional optional hourly columns
+    extra_cols_h <- intersect('CH4flux', colnames(df))
+
+    cols_to_mean <- c(cols_f, extra_mean_cols)
+    cat('Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
+
+    df_to_mean <- df[cols_to_mean]
+    # hourly should also contain averages of columns before EProc and ch4 if avaliable
+    df_to_mean_h <- df[c(cols_to_mean, paired_cols_in, extra_cols_h)]
 
     df_means_h <- .aggregate_df(df_to_mean_h, by_col = df[unique_cols_h], mean_nna)
-    df_means_d <- .aggregate_df(df_to_mean_d, by_col = df[unique_cols_d], mean_nna)
+    df_means_d <- .aggregate_df(df_to_mean, by_col = df[unique_cols_d], mean_nna)
     df_means_m <- .aggregate_df(df_to_mean, by_col = df[unique_cols_m], mean_nna)
     df_means_y <- .aggregate_df(df_to_mean, by_col = df[unique_cols_y], mean_nna)
 
 
 
+    df_to_nna <- df[paired_cols_in]
+    df_to_nna_h <- df[c(paired_cols_in,  extra_cols_h)]
     # renaming is easier before the actual calc
-    cols_nna_sqc <- gsub("_f$", "_sqc", paired_cols_out)
-    stopifnot(ncol(df_to_nna) == length(cols_nna_sqc) - length(missing))
-    names(df_to_nna) <- cols_nna_sqc
+    names(df_to_nna) <- gsub("$", "_sqc", names(df_to_nna))
+    names(df_to_nna_h) <- gsub("$", "_sqc", names(df_to_nna_h))
 
     df_nna_h <- .aggregate_df(df_to_nna, by_col = df[unique_cols_h], nna_ratio)
     df_nna_d <- .aggregate_df(df_to_nna, by_col = df[unique_cols_d], nna_ratio)
