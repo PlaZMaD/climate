@@ -44,7 +44,7 @@ merge_cols_aligning <- function(df, df_add, expected_col_dupes, f_align_rule){
     #     function(<df_add_col_name>) -> <df_col_name>
     #     if returns NULL or df_column is missing, just adds df_add column to the right of df
     #
-    #     for example, if f_align_rule is: function(cn) gsub('*_f$', '_sqc', cn)
+    #     for example, if f_align_rule is: function(cn) sub('_f$', '_sqc', cn)
     #     merge will be: H_f LE_f H_sqc LE_sqc -> H_f H_sqc U_f U_sqc LE_f LE_sqc
 
     stopifnot(df[expected_col_dupes] == df_add[expected_col_dupes])

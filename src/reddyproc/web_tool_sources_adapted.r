@@ -191,6 +191,35 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
 }
 
 
+.plotFilledDataVariable <- function(eddyProcConfiguration, EProc, processedEddyData, baseNameVal, baseNameSdVal) {
+    EProc$sPlotFingerprint(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
+    EProc$sPlotDiurnalCycle(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
+
+    table_unit <- attr(processedEddyData[, baseNameVal], "units")
+    dsum_unit = get_patched_daily_sum_unit(eddyProcConfiguration, baseNameVal, table_unit)
+
+    # TODO 1 OR
+    # with_patch(s4 = EProc, closure_name = '.sxSetTitle', set_title_patched, code = {
+    #     EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
+    #                          Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
+    # })
+    # TODO 2 OR
+
+    tryCatch(
+        expr = {
+            EProc[['.sxSetTitleOrig']] <- EProc[['.sxSetTitle']]
+            EProc[['.sxSetTitle']] <- function (...) {patch_daily_sums_plot_name(EProc$.sxSetTitleOrig, baseNameVal, ...)}
+            EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
+                                 Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
+        },
+        finally = EProc[['.sxSetTitle']] <- EProc$.sxSetTitleOrig
+    )
+
+
+    EProc$sPlotHHFluxes(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
+}
+
+
 .plotFilledDataVariables <- function(eddyProcConfiguration, EProc, dataVariablesToFill) {
     processedEddyData <- EProc$sExportResults()
     vars_amend <- if ("NEE" %in% dataVariablesToFill)
@@ -203,21 +232,7 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
 
         if (baseNameVal %ni% colnames(processedEddyData))
             next
-
-        # TODO report bug in REddyProc ?
-        table_unit <- attr(processedEddyData[, baseNameVal], "units")
-
-        EProc$sPlotFingerprint(baseNameVal, Dir = OUTPUT_DIR,
-                               Format = eddyProcConfiguration$figureFormat)
-        EProc$sPlotDiurnalCycle(baseNameVal, Dir = OUTPUT_DIR,
-                                Format = eddyProcConfiguration$figureFormat)
-
-        dsum_unit = get_patched_daily_sum_unit(eddyProcConfiguration, baseNameVal, table_unit)
-        EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
-                             Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
-
-        EProc$sPlotHHFluxes(baseNameVal, Dir = OUTPUT_DIR,
-                            Format = eddyProcConfiguration$figureFormat)
+        .plotFilledDataVariable(eddyProcConfiguration, EProc, processedEddyData, baseNameVal, baseNameSdVal)
     }
 }
 

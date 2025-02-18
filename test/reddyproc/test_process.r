@@ -6,6 +6,7 @@ debugSource('test/reddyproc/helpers/init_test_env.r')
 debugSource('src/reddyproc/postprocess_calc_averages.r')
 debugSource('src/reddyproc/web_tool_sources_adapted.r')
 debugSource('src/reddyproc/reddyproc_wrapper.r')
+debugSource('src/reddyproc/plot_patches.r')
 debugSource('src/reddyproc/r_helpers.r')
 
 

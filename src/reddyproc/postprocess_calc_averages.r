@@ -91,7 +91,7 @@ calc_averages <- function(df_full){
     # indeed, R have no default list(str) better than %>% select
     cols_f <- colnames(df %>% select(ends_with("_f")))
     paired_cols_out <- setdiff(cols_f, 'GPP_f')
-    paired_cols_in <- gsub("_f$", "", paired_cols_out)
+    paired_cols_in <- sub("_f$", "", paired_cols_out)
     cat('Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
 
 
@@ -131,8 +131,8 @@ calc_averages <- function(df_full){
     df_to_nna <- df[paired_cols_in]
     df_to_nna_h <- df[c(paired_cols_in,  extra_cols_h)]
     # renaming is easier before the actual calc
-    names(df_to_nna) <- gsub("$", "_sqc", names(df_to_nna))
-    names(df_to_nna_h) <- gsub("$", "_sqc", names(df_to_nna_h))
+    names(df_to_nna) <- sub("$", "_sqc", names(df_to_nna))
+    names(df_to_nna_h) <- sub("$", "_sqc", names(df_to_nna_h))
 
     df_nna_h <- .aggregate_df(df_to_nna_h, by_col = df[unique_cols_h], nna_ratio)
     df_nna_d <- .aggregate_df(df_to_nna, by_col = df[unique_cols_d], nna_ratio)
@@ -141,11 +141,11 @@ calc_averages <- function(df_full){
 
 
 
-    align_raw_sqc <- function(cn) gsub('*_sqc$', '', cn)
+    align_raw_sqc <- function(cn) sub('*_sqc$', '', cn)
     df_h <- merge_cols_aligning(df_means_h, df_nna_h, unique_cols_h, align_raw_sqc)
     df_h <- add_column(df_h, ' ' = ' ', .after = tail(cols_to_mean, 1))
 
-    align_f_sqc <- function(cn) gsub('*_sqc$', '_f', cn)
+    align_f_sqc <- function(cn) sub('*_sqc$', '_f', cn)
     df_d <- merge_cols_aligning(df_means_d, df_nna_d, unique_cols_d, align_f_sqc)
     df_m <- merge_cols_aligning(df_means_m, df_nna_m, unique_cols_m, align_f_sqc)
     df_y <- merge_cols_aligning(df_means_y, df_nna_y, unique_cols_y, align_f_sqc)
@@ -171,7 +171,7 @@ save_averages <- function(dfs, output_dir, output_unmask, ext){
 
 
     write_with_units <- function(df, fname) {
-        units_row <- gsub('NULL$', '', as.character(lapply(df, attr, which = "units")))
+        units_row <- sub('NULL$', '', as.character(lapply(df, attr, which = "units")))
         df <- insert_row(df, units_row, 1)
         write.csv(df, file = fname, row.names = FALSE, na = "-9999", quote = FALSE)
     }
