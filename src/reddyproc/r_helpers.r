@@ -95,25 +95,44 @@ add_file_prefix <- function(fpath, prefix){
 }
 
 
+anyNAN <- function(df) {
+    if (is.list(df))
+        df <- as.matrix(df)
+    is.nan(df) %>% any
+}
+
+
 nna_ratio <- function(x) {
-    # 0 if all NA, 1 if all exist
+    # 0 if all NA or NaN, 1 if all exist
 
     return(mean(!is.na(x)))
 }
 
 
 mean_nna <- function(x, nna_threshold = NULL){
-    # mean skipping NA values,
+    # fixes:
+    # mean(c(), na.rm = TRUE) = NA
+    # mean(c(NA), na.rm = TRUE) = NaN ?
+    # to:
+    # mean_nna(c()) = NA
+    # mean_nna(c(NA, NA)) = NA
+    #
+    # also examples:
+    # mean_nna(c(1, NA, 3)) = 2
+    # mean_nna(c(NaN, ...)) = undefined
     # if enough values exist above threshold ratio
 
-    # TODO mean(-9999) -> -9999 or NaN?
-    nna_mean <- mean(x, na.rm = TRUE)
+    res <- mean(x, na.rm = TRUE)
+
+    if (is.nan(res) && length((x) > 0))
+        res <- NA
+
     if (is.null(nna_threshold)) {
-        return(nna_mean)
+        return(res)
     } else {
         stopifnot(between(nna_threshold, 0, 1))
         if (nna_ratio(x) > nna_threshold)
-            return(nna_mean)
+            return(res)
         else
             return(NA)
     }

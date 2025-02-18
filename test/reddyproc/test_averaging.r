@@ -3,6 +3,7 @@
 setwd(dirname(dirname(dirname(rstudioapi::getSourceEditorContext()$path))))
 debugSource('test/reddyproc/helpers/init_test_env.r')
 debugSource('src/reddyproc/postprocess_calc_averages.r')
+debugSource('src/reddyproc/r_helpers.r')
 
 
 test_dir = tempdir()
@@ -66,6 +67,7 @@ test_model_3_month <- function(){
 	dd <- dfs$daily
 	dm <- dfs$monthly
 	dy <- dfs$yearly
+	dh <- dfs$hourly
 
 	# ensure years are processed separately
 	stopifnot(dd[dd$Year == YB & dd$DoY == 354,]$LE_f == 17)
@@ -83,6 +85,10 @@ test_model_3_month <- function(){
 
 	# ensure NA calculated correctly
 	stopifnot(dm[dm$Year == YA & dm$Month == 1,]$H_sqc == 0.0)
+
+	# some math can lead to undesired NaN
+
+	stopifnot(!anyNAN(dy), !anyNAN(dm), !anyNAN(dd), !anyNAN(dh))
 
 	ensure_correct_names(names(dd), names(dm), names(dy))
 	cat('Test test_model_3_month ok \n\n')
@@ -187,6 +193,9 @@ test_real_year <- function(){
 	stopifnot(nrow(dm) == expected_months - 1)
 	stopifnot(nrow(dd) == expected_days - 1)
 	stopifnot(nrow(dt) == expected_hours - 1)
+
+	# some math can lead to undesired NaN
+	stopifnot(!anyNAN(dy), !anyNAN(dm), !anyNAN(dd), !anyNAN(dt))
 
 	ensure_correct_names(names(dd), names(dm), names(dy))
 	save_averages(dfs, tempdir(), 'tmp', '.csv')
