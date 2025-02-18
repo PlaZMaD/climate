@@ -5,6 +5,7 @@
 
 
 source('src/reddyproc/r_helpers.r')
+source('src/reddyproc/plot_patches.r')
 
 
 readInputData <- function(dataFileName, input_format) {
@@ -190,16 +191,6 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
 }
 
 
-.dsumsUnit <- function(eddyProcConfiguration, baseNameVal, table_unit){
-    unit <- eddyProcConfiguration$dailySumsUnits[[baseNameVal]]
-    if (is.null(unit)){
-        warning("\n\n Missing variable units for daily sums: ", baseNameVal,
-             "\nunit in the table: ", table_unit, ' daily sum unit: ', baseNameVal)
-    }
-    return(unit)
-}
-
-
 .plotFilledDataVariables <- function(eddyProcConfiguration, EProc, dataVariablesToFill) {
     processedEddyData <- EProc$sExportResults()
     vars_amend <- if ("NEE" %in% dataVariablesToFill)
@@ -221,7 +212,7 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
         EProc$sPlotDiurnalCycle(baseNameVal, Dir = OUTPUT_DIR,
                                 Format = eddyProcConfiguration$figureFormat)
 
-        dsum_unit = .dsumsUnit(eddyProcConfiguration, baseNameVal, table_unit)
+        dsum_unit = get_patched_daily_sum_unit(eddyProcConfiguration, baseNameVal, table_unit)
         EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
                              Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
 

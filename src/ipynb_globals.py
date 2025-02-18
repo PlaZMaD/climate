@@ -28,8 +28,3 @@ eddyproc: SimpleNamespace
 
 
 arc_exclude_files: List[Path]
-
-reddyproc_daily_sums_units = {'NEE_f': 'gC_m-2_day-1', 'NEE_uStar_f': 'gC_m-2_day-1',
-                              'LE_f': 'Wm-2', 'H_f': 'Wm-2', 'Rg_f': 'Wm-2',
-                              'Tair_f': 'degC', 'Tsoil_f': 'degC',
-                              'rH_f': '%', 'VPD_f': 'hPa', 'Ustar_f': 'ms-1', 'CH4flux_f': 'mg_m-2_d-1'}

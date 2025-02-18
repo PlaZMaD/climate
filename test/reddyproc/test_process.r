@@ -33,10 +33,6 @@ eddyproc_user_options <- list(
 
     # TSoil
     temperature_data_variable = "Tair",
-    daily_sums_units = list(NEE_f = 'gC_m-2_day-1', NEE_uStar_f = 'gC_m-2_day-1',
-                            LE_f = 'Wm-2', H_f = 'Wm-2', Rg_f = 'Wm-2',
-                            Tair_f = 'degC', Tsoil_f = 'degC',
-                            rH_f = '%', VPD_f = 'hPa', Ustar_f = 'ms-1', CH4flux_f = 'mg_m-2_d-1'),
 
     input_file = "output/REddyProc_tv_fy4_2023.txt",
     output_dir = "output/reddyproc"
@@ -56,8 +52,8 @@ test_reddyproc <- function(options, input_file = NULL) {
     reddyproc_and_postprocess(options)
 
     # stopifnot(...)
-    message('Test dir is: ', test_dir)
     if (is.not.null(input_file))
+        message('Test dir is: ', test_dir)
         utils::browseURL(test_dir)
 }
 
