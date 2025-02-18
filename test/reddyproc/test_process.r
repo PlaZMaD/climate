@@ -53,9 +53,10 @@ test_reddyproc <- function(options, input_file = NULL) {
     reddyproc_and_postprocess(options)
 
     # stopifnot(...)
-    if (is.not.null(input_file))
+    if (is.not.null(input_file)) {
         message('Test dir is: ', test_dir)
         utils::browseURL(test_dir)
+    }
 }
 
 

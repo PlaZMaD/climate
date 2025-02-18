@@ -197,24 +197,11 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
 
     table_unit <- attr(processedEddyData[, baseNameVal], "units")
     dsum_unit = get_patched_daily_sum_unit(eddyProcConfiguration, baseNameVal, table_unit)
-
-    # TODO 1 OR
-    # with_patch(s4 = EProc, closure_name = '.sxSetTitle', set_title_patched, code = {
-    #     EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
-    #                          Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
-    # })
-    # TODO 2 OR
-
-    tryCatch(
-        expr = {
-            EProc[['.sxSetTitleOrig']] <- EProc[['.sxSetTitle']]
-            EProc[['.sxSetTitle']] <- function (...) {patch_daily_sums_plot_name(EProc$.sxSetTitleOrig, baseNameVal, ...)}
-            EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
-                                 Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
-        },
-        finally = EProc[['.sxSetTitle']] <- EProc$.sxSetTitleOrig
-    )
-
+    with_patch(s4 = EProc, closure_name = '.sxSetTitle',
+              patched_closure = patch_daily_sums_plot_name, extra_args = baseNameVal, code = {
+        EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
+                             Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
+    })
 
     EProc$sPlotHHFluxes(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
 }

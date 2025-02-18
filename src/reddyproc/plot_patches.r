@@ -25,21 +25,25 @@ patch_daily_sums_plot_name <- function(orig_call, var_name, ...) {
     if (var_name %in% DAILY_SUMS_PLOT_TITLE_RENAMES)
         title <- sub('Daily sums', 'Daily means', title)
 
-    title
+    return(title)
 }
 
 
 # TODO does not work yet, should simplify patch_daily_sums_plot_name
-with_patch <- function(s4, closure_name, patch, code){
-    orig_method <- s4[[closure_name]]
+with_patch <- function(s4, closure_name, patched_closure, extra_args, code){
+    # instead of original closure,
+    # patched_closure(original_closure, extra_args, ...) will be called
 
+    original_closure <- s4[[closure_name]]
     tryCatch(
         expr = {
-            s4[[closure_name]] <- patch
+            s4[[closure_name]] <- function(...) {
+                return(patched_closure(original_closure, extra_args, ...))
+                }
             code
         },
         finally = {
-            s4[[closure_name]] <- orig_method
+            s4[[closure_name]] <- original_closure
         }
     )
 }
