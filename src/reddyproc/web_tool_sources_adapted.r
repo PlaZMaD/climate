@@ -387,13 +387,28 @@ encodeEddyProcTasks <- function(eddyProcConfiguration) {
 
 
 .ustarThresholdFallback <- function(eddyProcConfiguration, EProc) {
-    if (!anyNA(EProc$sUSTAR_SCEN$uStar))
-        return()
+    seasons_ok <- !is.null(EProc$sUSTAR_SCEN) && ncol(EProc$sUSTAR_SCEN) > 0
+    all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
+    can_substitute_by_preset <- !is.na(eddyProcConfiguration$ustar_fallback_value)
+    season_guess <- factor(levels(EProc$sTEMP$season))
 
-    if (is.na(eddyProcConfiguration$ustar_fallback_value)) {
-        warning('\n\nREddyProc uStar filter have not detected some thresholds.\n',
+
+    if (seasons_ok && all_thresgolds_ok) {
+        if (any(EProc$sUSTAR_SCEN$season != season_guess))
+            warning('\n\n\nREddyProc uStar patch: unexpected seasons.\n',
+                    'Current run is ok, but others with experimental seasons wont be. \n\n')
+        return()
+    }
+
+    if (!can_substitute_by_preset) {
+        warning('\n\nREddyProc uStar patch: option is NA, skipping user threshold.\n',
                 'Fallback value is NaN. Gap fill failure is expected.\n')
         return()
+    }
+
+    if (!seasons_ok) {
+        warning('\n\n\nREddyProc uStar patch: an attempt of  experimental seasons\n\n')
+        EProc$sUSTAR_SCEN <- data.frame(season = season_guess, uStar = NA, row.names = NULL)
     }
 
     before <- EProc$sUSTAR_SCEN
@@ -403,7 +418,7 @@ encodeEddyProcTasks <- function(eddyProcConfiguration) {
     printed_df <- function(df)
         paste(capture.output(df), collapse = '\n')
 
-    warning('\n\nREddyProc uStar filter have not automatically detected thresholds for some values.\n',
+    warning('\n\nREddyProc uStar patch: filter have not automatically detected thresholds for some values.\n',
             'They were replaced with fixed fallback values. Before:\n',
             printed_df(before), '\nAfter: \n', printed_df(EProc$sUSTAR_SCEN), '\n')
 }
@@ -440,9 +455,8 @@ processEddyData <- function(eddyProcConfiguration, dataFileName = INPUT_FILE,
         ans <- estUStarThresholdOrError(eddyProcConfiguration, EProc)
         if (!length(caught_error) && inherits(ans, "error"))
             caught_error <- ans
+        .ustarThresholdFallback(eddyProcConfiguration, EProc)
     }
-
-    .ustarThresholdFallback(eddyProcConfiguration, EProc)
 
     if (eddyProcConfiguration$isToApplyGapFilling) {
         ans <- gapFillAndPlotDataVariablesOrError(eddyProcConfiguration, EProc, dataVariablesToFill)
