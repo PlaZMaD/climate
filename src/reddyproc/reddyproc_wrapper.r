@@ -16,9 +16,9 @@ INPUT_FILE <- NULL
 OUTPUT_DIR <- NULL
 
 
-# corresponds 06.2024 run, only types are important !
-.eddyproc_all_required_options <- list(
-    siteId = 'yourSiteID',
+# used only to ensure correct types
+.eddyproc_user_config_template <- list(
+    siteId = 'NotUsedID',
 
     isToApplyUStarFiltering = TRUE,
     # custom, not from default package; number or NULL
@@ -38,9 +38,13 @@ OUTPUT_DIR <- NULL
     longitude = 32.6,
     timezone = +3,
 
-    temperatureDataVariable = "Tair",
+    temperatureDataVariable = "Tair"
+)
 
-    isCatchingErrorsEnabled = TRUE,
+
+# unlike template, is actually applied
+.eddyproc_extra_config <- list(
+    isCatchingErrorsEnabled = FALSE,
 
     input_format = "onlinetool",
     output_format = "onlinetool",
@@ -51,19 +55,7 @@ OUTPUT_DIR <- NULL
 )
 
 
-.eddyproc_extra_options <- list(
-    isCatchingErrorsEnabled = TRUE,
-
-    input_format = "onlinetool",
-    output_format = "onlinetool",
-
-    # figureFormat used from processEddyData
-    useDevelopLibraryPath = FALSE,
-    debugFlags = ""
-)
-
-
-.merge_options <- function(user_opts, extra_opts){
+.convert_options_types <- function(user_opts){
     as_numeric_or_nan <- function (x) ifelse(is.null(x), NaN, as.numeric(x))
 
     merge <- list()
@@ -87,22 +79,23 @@ OUTPUT_DIR <- NULL
 
     merge$temperatureDataVariable <- user_opts$temperature_data_variable
 
-    return(c(merge, extra_opts))
+    return(merge)
 }
 
 
 .finalise_config <- function(user_options){
-    eddyproc_config <- .merge_options(user_options, .eddyproc_extra_options)
+    user_config <- .convert_options_types(user_options)
 
-    got_types <- sapply(eddyproc_config, class)
-    need_types <- sapply(.eddyproc_all_required_options, class)
+    got_types <- sapply(user_config, class)
+    need_types <- sapply(.eddyproc_user_config_template, class)
 
     if (any(got_types != need_types)) {
         df_cmp = data.frame(got_types, need_types)
         cmp_str = paste(capture.output(df_cmp), collapse = '\n')
         stop("Incorrect options or options types: ", cmp_str)
     }
-    return(eddyproc_config)
+
+    return(c(user_config, .eddyproc_extra_config))
 }
 
 
