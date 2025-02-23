@@ -124,16 +124,18 @@ getAdditionalDataVariablesToKeep <- function(allDataVariables, keepDataVariables
 }
 
 
-estUStarThresholdOrError <- function(eddyProcConfiguration, ...) {
+estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
+    estUStarThresholdCall <- function(){.estUStarThreshold(eddyProcConfiguration, EProc)}
+
     ans <- if (eddyProcConfiguration$isCatchingErrorsEnabled) {
         tryCatch({
-            .estUStarThreshold(eddyProcConfiguration, ...)
+            estUStarThresholdRgSafeguard(estUStarThresholdCall, EProc, ...)
         }, error = function(e) {
             print(paste("Error during GapFilling:", e$message))
             return(e)
         })
     } else {
-        .estUStarThreshold(eddyProcConfiguration, ...)
+        estUStarThresholdRgSafeguard(estUStarThresholdCall, EProc, ...)
     }
 }
 

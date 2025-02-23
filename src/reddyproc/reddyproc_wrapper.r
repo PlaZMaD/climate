@@ -44,7 +44,7 @@ OUTPUT_DIR <- NULL
 
 # unlike template, is actually applied
 .eddyproc_extra_config <- list(
-    isCatchingErrorsEnabled = FALSE,
+    isCatchingErrorsEnabled = TRUE,
 
     input_format = "onlinetool",
     output_format = "onlinetool",
@@ -138,8 +138,7 @@ OUTPUT_DIR <- NULL
         do_fallback <- TRUE
 
     # fallback if Rg (solar radiation) is missing, but required
-    if (grepl('EProc$sEstUstarThold', res$err$call, fixed = TRUE) %>% any &&
-        res$err$message == 'Missing columns in dataset: Rg')
+    if (is_error_ustar_need_rg(res$err))
         do_fallback <- TRUE
 
     if (do_fallback) {
