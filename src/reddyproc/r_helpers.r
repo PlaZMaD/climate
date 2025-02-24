@@ -3,6 +3,11 @@
 library(dplyr)
 
 
+RE <- '\nREP EXT: '
+RM <- 'REP MEANS: '
+RU <- 'uStar patch: '
+
+
 is.not.null <- function(x) !is.null(x)
 `%ni%` <- Negate(`%in%`)
 

@@ -16,12 +16,10 @@ INPUT_FILE <- NULL
 OUTPUT_DIR <- NULL
 
 
-# used only to ensure correct types
-.eddyproc_user_config_template <- list(
+.reddyproc_user_config_types <- sapply(list(
     siteId = 'NotUsedID',
 
     isToApplyUStarFiltering = TRUE,
-    # custom, not from default package; number or NULL
     ustar_fallback_value = 0.1,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
@@ -32,18 +30,17 @@ OUTPUT_DIR <- NULL
     isToApplyGapFilling = TRUE,
     isToApplyPartitioning = TRUE,
 
-    # "Reichstein05", "Lasslop10", ...
     partitioningMethods = c("Reichstein05", "Lasslop10"),
     latitude = 56.5,
     longitude = 32.6,
     timezone = +3,
 
-    temperatureDataVariable = "Tair"
-)
+    t_temperatureDataVariable = "Tair"
+), class)
 
 
 # unlike template, is actually applied
-.eddyproc_extra_config <- list(
+.reddyproc_extra_config <- list(
     isCatchingErrorsEnabled = TRUE,
 
     input_format = "onlinetool",
@@ -87,7 +84,7 @@ OUTPUT_DIR <- NULL
     user_config <- .convert_options_types(user_options)
 
     got_types <- sapply(user_config, class)
-    need_types <- sapply(.eddyproc_user_config_template, class)
+    need_types <- .reddyproc_user_config_types
 
     if (any(got_types != need_types)) {
         df_cmp = data.frame(got_types, need_types)
@@ -95,7 +92,7 @@ OUTPUT_DIR <- NULL
         stop("Incorrect options or options types: ", cmp_str)
     }
 
-    return(c(user_config, .eddyproc_extra_config))
+    return(c(user_config, .reddyproc_extra_config))
 }
 
 
@@ -143,7 +140,7 @@ OUTPUT_DIR <- NULL
 
     if (do_fallback) {
         assert(eddyproc_config$isToApplyUStarFiltering, 'ustar failed while disabled.')
-        warning('\n\nOPTION FAILURE: uStar filtering failed. \n',
+        warning(RE, RU, 'filtering failed. \n',
                 'Fallback attempt to eddyproc_config$isToApplyUStarFiltering = FALSE \n')
 
         eddyproc_config$isToApplyUStarFiltering <- FALSE
@@ -167,7 +164,7 @@ reddyproc_and_postprocess <- function(user_options){
     options(warn = 1)
 
     options(max.print = 50)
-    message("Output of R is truncated to improve rpy2 output.")
+    message(RE, 'Max length of R output is reduced to improve rpy2 output.')
 
     INPUT_FILE <<- user_options$input_file
     OUTPUT_DIR <<- user_options$output_dir

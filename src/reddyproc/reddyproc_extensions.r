@@ -12,7 +12,7 @@ DAILY_SUMS_UNITS = list(NEE_f = 'gC_m-2_day-1', NEE_uStar_f = 'gC_m-2_day-1',
 get_patched_daily_sum_unit <- function(eddyProcConfiguration, baseNameVal, table_unit){
     unit <- DAILY_SUMS_UNITS[[baseNameVal]]
     if (is.null(unit)){
-        warning("\n\n Missing variable units for daily sums: ", baseNameVal,
+        warning(RM, 'Missing variable units for daily sums: ', baseNameVal,
                 "\nunit in the table: ", table_unit, ' daily sum unit: ', baseNameVal)
         return(table_unit)
     }
@@ -55,7 +55,7 @@ is_error_ustar_need_rg <- function(err) {
 }
 
 
-.ustarThresholdFallback <- function(eddyProcConfiguration, EProc) {
+ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
     can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_fallback_value)
 
@@ -63,7 +63,7 @@ is_error_ustar_need_rg <- function(err) {
         return()
 
     if (!can_substitute_by_user_preset) {
-        warning('\n\nREddyProc uStar patch: option is NA, skipping user threshold.\n',
+        warning(RE, RU, 'option is NA, skipping user threshold.\n',
                 'Fallback value is NaN. Gap fill failure is expected.\n')
         return()
     }
@@ -74,22 +74,23 @@ is_error_ustar_need_rg <- function(err) {
     printed_df <- function(df)
         paste(capture.output(df), collapse = '\n')
 
-    warning('\n\nREddyProc uStar patch: filter have not automatically detected thresholds for some values.\n',
+    warning(RE, RU, 'filter have not automatically detected thresholds for some values.\n',
             'They were replaced with fixed fallback values. Before:\n',
-            printed_df(before), '\nAfter: \n', printed_df(EProc$sUSTAR_SCEN), '\n')
+            printed_df(before), '\nAfter: \n', printed_df(EProc$sUSTAR_SCEN))
 }
 
 
-estUStarThresholdRgSafeguard <- function(estUStarThreshold_call, EProc, ...) {
+est_ustar_threshold_rg_safeguard <- function(estUStarThreshold_call, EProc, ...) {
+	season_guess <- function() {factor(levels(EProc$sTEMP$season))}
+
 	# if Rg (solar radiation) is missing, still estimate season with NA u*
 	tryCatch({
 
 		estUStarThreshold_call()
 
-		season_guess <- factor(levels(EProc$sTEMP$season))
-		if (any(EProc$sUSTAR_SCEN$season != season_guess))
-			warning('\n\n\nREddyProc uStar patch: unexpected seasons.\n',
-					'Current run is ok, but other runs with experimental seasons wont be. \n\n')
+		if (any(EProc$sUSTAR_SCEN$season != season_guess()))
+			warning(RE, RU, 'unexpected seasons.\n',
+					'Current run is ok, but other runs with experimental seasons wont be. \n')
 	}, error = function(err) {
 		if (!is_error_ustar_need_rg(err))
 			stop(err)
@@ -98,9 +99,8 @@ estUStarThresholdRgSafeguard <- function(estUStarThreshold_call, EProc, ...) {
 		seasons_ok <- !is.null(p$EProc$sUSTAR_SCEN) && ncol(p$EProc$sUSTAR_SCEN) > 0
 		assert(!seasons_ok)
 
-		warning('\n\n\nREddyProc uStar patch: an attempt of  experimental seasons\n\n')
-		season_guess <- factor(levels(EProc$sTEMP$season))
-		p$EProc$sUSTAR_SCEN <- data.frame(season = season_guess, uStar = NA, row.names = NULL)
+		warning(RE, RU, 'an attempt of  experimental seasons\n')
+		p$EProc$sUSTAR_SCEN <- data.frame(season = season_guess(), uStar = NA, row.names = NULL)
 	})
 }
 

@@ -3,7 +3,7 @@
 
 setwd(dirname(dirname(dirname(rstudioapi::getSourceEditorContext()$path))))
 debugSource('test/reddyproc/helpers/init_test_env.r')
-devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
+# devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
 debugSource('src/reddyproc/postprocess_calc_averages.r')
 debugSource('src/reddyproc/web_tool_sources_adapted.r')
 debugSource('src/reddyproc/reddyproc_wrapper.r')
@@ -16,7 +16,7 @@ eddyproc_user_options <- list(
     site_id = 'tv_fy4',
 
     is_to_apply_u_star_filtering = TRUE,
-    # NaN or double
+    # NaN to disable or double
     ustar_fallback_value = 0.01,
 
     u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),

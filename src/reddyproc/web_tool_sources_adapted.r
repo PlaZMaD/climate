@@ -129,13 +129,13 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
 
     ans <- if (eddyProcConfiguration$isCatchingErrorsEnabled) {
         tryCatch({
-            estUStarThresholdRgSafeguard(estUStarThresholdCall, EProc, ...)
+        	est_ustar_threshold_rg_safeguard(estUStarThresholdCall, EProc, ...)
         }, error = function(e) {
             print(paste("Error during GapFilling:", e$message))
             return(e)
         })
     } else {
-        estUStarThresholdRgSafeguard(estUStarThresholdCall, EProc, ...)
+    	est_ustar_threshold_rg_safeguard(estUStarThresholdCall, EProc, ...)
     }
 }
 
@@ -421,7 +421,7 @@ processEddyData <- function(eddyProcConfiguration, dataFileName = INPUT_FILE,
         ans <- estUStarThresholdOrError(eddyProcConfiguration, EProc)
         if (!length(caught_error) && inherits(ans, "error"))
             caught_error <- ans
-        .ustarThresholdFallback(eddyProcConfiguration, EProc)
+        ustar_threshold_fallback(eddyProcConfiguration, EProc)
     }
 
     if (eddyProcConfiguration$isToApplyGapFilling) {

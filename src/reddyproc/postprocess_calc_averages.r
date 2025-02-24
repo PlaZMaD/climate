@@ -45,11 +45,11 @@ source('src/reddyproc/r_helpers.r')
     last <- nrow(df)
 
     if (df$Year[1] < df$Year[2]) {
-        cat('Averages: first row excluded due to too short year \n')
+        cat(RM, 'first row excluded due to too short year \n')
         first <- 2
     }
     if (df$Year[nrow(df) - 1] < df$Year[nrow(df)]) {
-        cat('Averages: last row excluded due to too short year \n')
+        cat(RM, 'last row excluded due to too short year \n')
         last <- nrow(df) - 1
     }
 
@@ -92,7 +92,7 @@ calc_averages <- function(df_full){
     cols_f <- colnames(df %>% select(ends_with("_f")))
     paired_cols_out <- setdiff(cols_f, 'GPP_f')
     paired_cols_in <- sub("_f$", "", paired_cols_out)
-    cat('Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
+    cat(RM, 'Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
 
 
     missing = setdiff(paired_cols_in, colnames(df))
@@ -115,7 +115,7 @@ calc_averages <- function(df_full){
     extra_cols_h <- intersect('CH4flux', colnames(df))
 
     cols_to_mean <- c(cols_f, extra_mean_cols)
-    cat('Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
+    cat(RM, 'Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
 
     df_to_mean <- df[cols_to_mean]
     # hourly should also contain averages of columns before EProc and ch4 if avaliable
@@ -181,7 +181,7 @@ save_averages <- function(dfs, output_dir, output_unmask, ext){
     write_with_units(dfs$monthly, fname = m_name)
     write_with_units(dfs$yearly, fname = y_name)
 
-    cat(sprintf('Saved summary stats to : \n %s \n %s \n %s \n %s \n',
+    cat(RM, sprintf('Saved summary stats to : \n %s \n %s \n %s \n %s \n',
                 d_name, m_name, y_name, h_name))
 
 }
