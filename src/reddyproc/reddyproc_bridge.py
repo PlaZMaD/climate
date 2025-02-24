@@ -56,6 +56,7 @@ def reddyproc_and_postprocess(options):
             fnames_prefix=r_res.rx2['out_prefix'][0]
         )
 
+    # TODO return options instead of indirect
     changed_config = r_res.rx2['changed_config']
     if changed_config:
         changed_ustar = changed_config.rx2['isToApplyUStarFiltering'][0]
