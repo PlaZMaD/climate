@@ -3,7 +3,7 @@
 
 setwd(dirname(dirname(dirname(rstudioapi::getSourceEditorContext()$path))))
 debugSource('test/reddyproc/helpers/init_test_env.r')
-# devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
+devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
 debugSource('src/reddyproc/postprocess_calc_averages.r')
 debugSource('src/reddyproc/web_tool_sources_adapted.r')
 debugSource('src/reddyproc/reddyproc_wrapper.r')
@@ -18,6 +18,9 @@ eddyproc_user_options <- list(
     is_to_apply_u_star_filtering = TRUE,
     # NaN to disable or double
     ustar_fallback_value = 0.01,
+    # TODO remove all after python Rg guess implemented
+    # experimental option to apply uStar to all data (instead of only nights) when Rg is missing
+    ustar_allow_skip_rg_filter = TRUE,
 
     u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     u_star_method = factor("RTw", levels = "RTw"),
@@ -25,7 +28,7 @@ eddyproc_user_options <- list(
     is_bootstrap_u_star = FALSE,
 
     is_to_apply_gap_filling = TRUE,
-    is_to_apply_partitioning = TRUE,
+    is_to_apply_partitioning = FALSE,
 
     partitioning_methods = c("Reichstein05", "Lasslop10"),
     latitude = 56.5,

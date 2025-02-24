@@ -125,18 +125,18 @@ getAdditionalDataVariablesToKeep <- function(allDataVariables, keepDataVariables
 
 
 estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
-    estUStarThresholdCall <- function(){.estUStarThreshold(eddyProcConfiguration, EProc)}
+    thres_call <- function() { .estUStarThreshold(eddyProcConfiguration, EProc) }
+    wrap_call <- function() { est_ustar_threshold_fixes(thres_call, eddyProcConfiguration, EProc) }
 
     ans <- if (eddyProcConfiguration$isCatchingErrorsEnabled) {
-        tryCatch({
-        	est_ustar_threshold_rg_safeguard(estUStarThresholdCall, EProc, ...)
-        }, error = function(e) {
+        tryCatch(
+        	wrap_call()
+        , error = function(e) {
             print(paste("Error during GapFilling:", e$message))
             return(e)
         })
-    } else {
-    	est_ustar_threshold_rg_safeguard(estUStarThresholdCall, EProc, ...)
-    }
+    } else
+    	wrap_call()
 }
 
 
@@ -152,8 +152,16 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
     for (dataVariable in dataVariablesToFill) {
         if (eddyProcConfiguration$isToApplyUStarFiltering && dataVariable == "NEE") {
 
+            isFilterDayTime <- get_ustar_daytime_filter_option(eddyProcConfiguration, dataVariablesWithoutUncertainty)
+
             # only uStar bootstrap to NEE gapfilling, not to the other variables
-            EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty), isVerbose = TRUE)
+            if (is.null(isFilterDayTime))
+                EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),
+                                            isVerbose = TRUE)
+            else
+                EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),
+                                            isVerbose = TRUE, isFilterDayTime = isFilterDayTime)
+
 
             # EProc$sMDSGapFillAfterUStarDistr(dataVariable \t\t, uStarTh = uStarRes$uStarTh \t\t, uStarSuffixes =
             # uStarRes$suffixes \t\t, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty) \t\t, isVerbose = T)
@@ -421,7 +429,6 @@ processEddyData <- function(eddyProcConfiguration, dataFileName = INPUT_FILE,
         ans <- estUStarThresholdOrError(eddyProcConfiguration, EProc)
         if (!length(caught_error) && inherits(ans, "error"))
             caught_error <- ans
-        ustar_threshold_fallback(eddyProcConfiguration, EProc)
     }
 
     if (eddyProcConfiguration$isToApplyGapFilling) {

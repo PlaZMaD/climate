@@ -18,7 +18,7 @@ output_sequence: Tuple[Union[List[str], str], ...] = (
     eog.diurnal_cycle_row('NEE_*'),
     eog.diurnal_cycle_row('LE_f'),
     eog.diurnal_cycle_row('H_f'),
-    "## 30-минутные потоки",
+    "## 30-минутные потоки и суточные средние",
     eog.flux_compare_row('NEE_*'),
     eog.flux_compare_row('LE_f'),
     eog.flux_compare_row('H_f')

@@ -19,10 +19,21 @@ assert <- function(x, msg){
 
 
 insert_row <- function(df, row, r) {
-    df <- rbind(df, row)
-    df <- df[order(c(1:(nrow(df)-1), r-0.5)),]
-    row.names(df) <- 1:nrow(df)
-    return(df)
+    nrows <- nrow(df)
+
+    if (is.null(nrows)) {
+        warning(RE, 'Attempt to insert a row in the empty df canceled.')
+        return()
+    }
+    if (r > nrows) {
+        warning(RE, 'Attempt to insert a row outside of df, inserting as last.')
+        r <- nrows
+    }
+
+    res <- df
+    res[seq(r + 1, nrow(df) + 1), ] <- df[seq(r, nrow(df)), ]
+    res[r,] <- row
+    res
 }
 
 

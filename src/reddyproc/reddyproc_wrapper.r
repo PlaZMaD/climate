@@ -17,10 +17,11 @@ OUTPUT_DIR <- NULL
 
 
 .reddyproc_user_config_types <- sapply(list(
-    siteId = 'NotUsedID',
+    siteId = 'DefaultID',
 
     isToApplyUStarFiltering = TRUE,
     ustar_fallback_value = 0.1,
+    ustar_allow_skip_rg_filter = FALSE,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     uStarMethod = factor("RTw", levels = "RTw"),
@@ -61,6 +62,8 @@ OUTPUT_DIR <- NULL
 
     merge$isToApplyUStarFiltering <- user_opts$is_to_apply_u_star_filtering
     merge$ustar_fallback_value <- as_numeric_or_nan(user_opts$ustar_fallback_value)
+    merge$ustar_allow_skip_rg_filter  <- user_opts$ustar_allow_skip_rg_filter
+
     merge$uStarSeasoning <- factor(user_opts$u_star_seasoning)
     merge$uStarMethod <- factor(user_opts$u_star_method)
 

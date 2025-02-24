@@ -10,6 +10,8 @@ ig.eddyproc.options = SimpleNamespace(
 
     is_to_apply_u_star_filtering=True,
     ustar_fallback_value=0.01,
+    # experimental option to apply uStar to all data (instead of only nights) when Rg is missing
+    ustar_allow_skip_rg_filter=True,
 
     # uStarSeasoning = "WithinYear", "Continuous" , "User"
     u_star_seasoning="Continuous",
@@ -27,7 +29,6 @@ ig.eddyproc.options = SimpleNamespace(
 
     # "Tsoil"
     temperature_data_variable="Tair",
-    daily_sums_units = reddyproc_daily_sums_units,
 
     input_file=f"output/{reddyproc_filename}",
     output_dir="output/reddyproc",

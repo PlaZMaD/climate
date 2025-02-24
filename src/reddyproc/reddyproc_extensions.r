@@ -55,7 +55,20 @@ is_error_ustar_need_rg <- function(err) {
 }
 
 
-ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
+get_ustar_daytime_filter_option <- function(eddyProcConfiguration, dataVariablesWithoutUncertainty) {
+	rg_missing <- 'Rg' %ni% dataVariablesWithoutUncertainty
+	if (rg_missing)
+		if (eddyProcConfiguration$ustar_allow_skip_rg_filter){
+			warning(RE, RU, 'Rg is missing, using uStar to both day and night')
+			return(rg_missing)
+		} else
+			warning(RE, RU, 'Rg is missing, gap fill failure is expected.\n',
+					'Consider enabling experimental option ustar_allow_skip_rg_filter.\n')
+	return(NULL)
+}
+
+
+.ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
     can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_fallback_value)
 
@@ -80,7 +93,7 @@ ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
 }
 
 
-est_ustar_threshold_rg_safeguard <- function(estUStarThreshold_call, EProc, ...) {
+.ustar_rg_safeguard <- function(estUStarThreshold_call, EProc) {
 	season_guess <- function() {factor(levels(EProc$sTEMP$season))}
 
 	# if Rg (solar radiation) is missing, still estimate season with NA u*
@@ -104,3 +117,8 @@ est_ustar_threshold_rg_safeguard <- function(estUStarThreshold_call, EProc, ...)
 	})
 }
 
+
+est_ustar_threshold_fixes <- function(estUStarThreshold_call, eddyProcConfiguration, EProc) {
+	.ustar_rg_safeguard(estUStarThreshold_call, EProc)
+	.ustar_threshold_fallback(eddyProcConfiguration, EProc)
+}
