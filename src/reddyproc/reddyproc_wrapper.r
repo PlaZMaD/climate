@@ -19,8 +19,8 @@ OUTPUT_DIR <- NULL
 .reddyproc_user_config_types <- sapply(list(
     siteId = 'DefaultID',
 
-    isToApplyUStarFiltering = TRUE,
-    ustar_fallback_value = 0.1,
+    isToApplyUStarFiltering = FALSE,
+    ustar_fallback_value = 0.123456,
     ustar_allow_skip_rg_filter = FALSE,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),

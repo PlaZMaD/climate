@@ -55,16 +55,18 @@ is_error_ustar_need_rg <- function(err) {
 }
 
 
-get_ustar_daytime_filter_option <- function(eddyProcConfiguration, dataVariablesWithoutUncertainty) {
-	rg_missing <- 'Rg' %ni% dataVariablesWithoutUncertainty
-	if (rg_missing)
-		if (eddyProcConfiguration$ustar_allow_skip_rg_filter){
-			warning(RE, RU, 'Rg is missing, using uStar to both day and night')
-			return(rg_missing)
-		} else
-			warning(RE, RU, 'Rg is missing, gap fill failure is expected.\n',
-					'Consider enabling experimental option ustar_allow_skip_rg_filter.\n')
-	return(NULL)
+get_ustar_daytime_arg <- function(rg_missing, default_arg, ustar_allow_skip_rg_filter) {
+	if (!rg_missing)
+		return(default_arg)
+
+	if (ustar_allow_skip_rg_filter){
+		warning(RE, RU, 'Rg is missing, uStar will be applied to both day and night')
+		return(TRUE)
+	} else {
+		warning(RE, RU, 'Rg is missing, failure is expected during day/night detection when applying uStar.\n',
+				'Consider enabling experimental option ustar_allow_skip_rg_filter.\n')
+		return(default_arg)
+	}
 }
 
 
@@ -87,8 +89,8 @@ get_ustar_daytime_filter_option <- function(eddyProcConfiguration, dataVariables
     printed_df <- function(df)
         paste(capture.output(df), collapse = '\n')
 
-    warning(RE, RU, 'filter have not automatically detected thresholds for some values.\n',
-            'They were replaced with fixed fallback values. Before:\n',
+    warning(RE, RU, 'Thresholds not for all seasons were calcualted automatically.\n',
+            'Fallback value from the user options will be used. Before:\n',
             printed_df(before), '\nAfter: \n', printed_df(EProc$sUSTAR_SCEN))
 }
 
@@ -103,7 +105,7 @@ get_ustar_daytime_filter_option <- function(eddyProcConfiguration, dataVariables
 
 		if (any(EProc$sUSTAR_SCEN$season != season_guess()))
 			warning(RE, RU, 'unexpected seasons.\n',
-					'Current run is ok, but other runs with experimental seasons wont be. \n')
+					'Current run is ok, but workaround for seasons wont work on similar data. \n')
 	}, error = function(err) {
 		if (!is_error_ustar_need_rg(err))
 			stop(err)
@@ -112,7 +114,7 @@ get_ustar_daytime_filter_option <- function(eddyProcConfiguration, dataVariables
 		seasons_ok <- !is.null(p$EProc$sUSTAR_SCEN) && ncol(p$EProc$sUSTAR_SCEN) > 0
 		assert(!seasons_ok)
 
-		warning(RE, RU, 'an attempt of  experimental seasons\n')
+		message(RE, RU, 'workaround for seasons detection will be applied')
 		p$EProc$sUSTAR_SCEN <- data.frame(season = season_guess(), uStar = NA, row.names = NULL)
 	})
 }

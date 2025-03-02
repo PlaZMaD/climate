@@ -152,16 +152,14 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
     for (dataVariable in dataVariablesToFill) {
         if (eddyProcConfiguration$isToApplyUStarFiltering && dataVariable == "NEE") {
 
-            isFilterDayTime <- get_ustar_daytime_filter_option(eddyProcConfiguration, dataVariablesWithoutUncertainty)
+            default_arg <- get_default_arg_value(EProc$sMDSGapFillAfterUstar, 'isFilterDayTime')
+            rg_missing <- 'Rg' %ni% dataVariablesToFill
+            isFilterDayTime <- get_ustar_daytime_arg(rg_missing, default_arg,
+                                                     eddyProcConfiguration$ustar_allow_skip_rg_filter)
 
             # only uStar bootstrap to NEE gapfilling, not to the other variables
-            if (is.null(isFilterDayTime))
-                EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),
-                                            isVerbose = TRUE)
-            else
-                EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),
-                                            isVerbose = TRUE, isFilterDayTime = isFilterDayTime)
-
+            EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),
+                                        isVerbose = TRUE, isFilterDayTime = isFilterDayTime)
 
             # EProc$sMDSGapFillAfterUStarDistr(dataVariable \t\t, uStarTh = uStarRes$uStarTh \t\t, uStarSuffixes =
             # uStarRes$suffixes \t\t, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty) \t\t, isVerbose = T)

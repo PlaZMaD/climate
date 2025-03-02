@@ -3,8 +3,8 @@
 library(dplyr)
 
 
-RE <- '\nREP EXT: '
-RM <- 'REP MEANS: '
+RE <- '\nREddyProc Extended: '
+RM <- 'REddyProc Means: '
 RU <- 'uStar patch: '
 
 
@@ -122,6 +122,11 @@ nna_ratio <- function(x) {
     # 0 if all NA or NaN, 1 if all exist
 
     return(mean(!is.na(x)))
+}
+
+
+get_default_arg_value<- function(fun, arg) {
+    formals(fun)[[arg]]
 }
 
 

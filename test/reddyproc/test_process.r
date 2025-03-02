@@ -16,7 +16,7 @@ eddyproc_user_options <- list(
     site_id = 'tv_fy4',
 
     is_to_apply_u_star_filtering = TRUE,
-    # NaN to disable or double
+    # NA to disable or double
     ustar_fallback_value = 0.01,
     # TODO remove all after python Rg guess implemented
     # experimental option to apply uStar to all data (instead of only nights) when Rg is missing
