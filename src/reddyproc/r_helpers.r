@@ -3,7 +3,7 @@
 library(dplyr)
 
 
-RE <- '\nREddyProc Extended: '
+RE <- 'REddyProc Extended: '
 RM <- 'REddyProc Means: '
 RU <- 'uStar patch: '
 
@@ -22,11 +22,11 @@ insert_row <- function(df, row, r) {
     nrows <- nrow(df)
 
     if (is.null(nrows)) {
-        warning(RE, 'Attempt to insert a row in the empty df canceled.')
+        warning('\n', RE, 'Attempt to insert a row in the empty df cancelled')
         return()
     }
     if (r > nrows) {
-        warning(RE, 'Attempt to insert a row outside of df, inserting as last.')
+        warning('\n', RE, 'Attempt to insert a row outside of df, inserting as last')
         r <- nrows
     }
 

@@ -154,8 +154,7 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
 
             default_arg <- get_default_arg_value(EProc$sMDSGapFillAfterUstar, 'isFilterDayTime')
             rg_missing <- 'Rg' %ni% dataVariablesToFill
-            isFilterDayTime <- get_ustar_daytime_arg(rg_missing, default_arg,
-                                                     eddyProcConfiguration$ustar_allow_skip_rg_filter)
+            isFilterDayTime <- get_ustar_daytime_arg(rg_missing, default_arg, eddyProcConfiguration$ustar_allowed_on_days)
 
             # only uStar bootstrap to NEE gapfilling, not to the other variables
             EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),

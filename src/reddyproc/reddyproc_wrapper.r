@@ -20,8 +20,8 @@ OUTPUT_DIR <- NULL
     siteId = 'DefaultID',
 
     isToApplyUStarFiltering = FALSE,
-    ustar_fallback_value = 0.123456,
-    ustar_allow_skip_rg_filter = FALSE,
+    ustar_threshold_fallback_guess = 0.123456,
+    ustar_allowed_on_days = FALSE,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     uStarMethod = factor("RTw", levels = "RTw"),
@@ -61,8 +61,8 @@ OUTPUT_DIR <- NULL
     merge$siteId <- user_opts$site_id
 
     merge$isToApplyUStarFiltering <- user_opts$is_to_apply_u_star_filtering
-    merge$ustar_fallback_value <- as_numeric_or_nan(user_opts$ustar_fallback_value)
-    merge$ustar_allow_skip_rg_filter  <- user_opts$ustar_allow_skip_rg_filter
+    merge$ustar_threshold_fallback_guess <- as_numeric_or_nan(user_opts$ustar_threshold_fallback_guess)
+    merge$ustar_allowed_on_days  <- user_opts$ustar_allowed_on_days
 
     merge$uStarSeasoning <- factor(user_opts$u_star_seasoning)
     merge$uStarMethod <- factor(user_opts$u_star_method)
@@ -143,8 +143,8 @@ OUTPUT_DIR <- NULL
 
     if (do_fallback) {
         assert(eddyproc_config$isToApplyUStarFiltering, 'ustar failed while disabled.')
-        warning(RE, RU, 'filtering failed. \n',
-                'Fallback attempt to eddyproc_config$isToApplyUStarFiltering = FALSE \n')
+        warning('\n', RE, RU, 'Ustar filtering failed. \n',
+                'Fallback attempt to isToApplyUStarFiltering = FALSE \n')
 
         eddyproc_config$isToApplyUStarFiltering <- FALSE
         res <- .run_reddyproc_via_io_wrapper(eddyproc_config)

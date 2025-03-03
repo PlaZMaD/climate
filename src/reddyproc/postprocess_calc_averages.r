@@ -45,11 +45,11 @@ source('src/reddyproc/r_helpers.r')
     last <- nrow(df)
 
     if (df$Year[1] < df$Year[2]) {
-        cat(RM, 'first row excluded due to too short year \n')
+        cat(RM, 'First row excluded due to too short year \n')
         first <- 2
     }
     if (df$Year[nrow(df) - 1] < df$Year[nrow(df)]) {
-        cat(RM, 'last row excluded due to too short year \n')
+        cat(RM, 'Last row excluded due to too short year \n')
         last <- nrow(df) - 1
     }
 
