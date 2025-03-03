@@ -67,15 +67,15 @@ source('src/reddyproc/r_helpers.r')
     df_m <- .copy_attributes(df_m, df_full, 'units')
     df_y <- .copy_attributes(df_y, df_full, 'units')
 
-    df_h <- .apply_attributes(df_h, colnames(df_h %>% select(ends_with("_sqc"))), 'units', '%')
-    df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '%')
-    df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '%')
-    df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '%')
+    df_h <- .apply_attributes(df_h, colnames(df_h %>% select(ends_with("_sqc"))), 'units', '--')
+    df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '--')
+    df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '--')
+    df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '--')
 
-    df_h <- .apply_attributes(df_h, unique_cols_h, 'units', '-')
-    df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '-')
-    df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '-')
-    df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '-')
+    df_h <- .apply_attributes(df_h, unique_cols_h, 'units', '--')
+    df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '--')
+    df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '--')
+    df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '--')
 
     list(h = df_h, d = df_d, m = df_m, y = df_y)
 }
