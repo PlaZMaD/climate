@@ -56,15 +56,15 @@ def reddyproc_and_postprocess(options):
             fnames_prefix=r_res.rx2['out_prefix'][0]
         )
 
-    # TODO return options instead of indirect
+    changed_options = options
     changed_config = r_res.rx2['changed_config']
     if changed_config:
         changed_ustar = changed_config.rx2['isToApplyUStarFiltering'][0]
         if changed_ustar != options.is_to_apply_u_star_filtering:
             warn('REddyProc fallback on isToApplyUStarFiltering is detected and propagated.')
-            options.is_to_apply_u_star_filtering = changed_ustar
+            changed_options.is_to_apply_u_star_filtering = changed_ustar
 
     new_path = draft_log_name.parent / draft_log_name.name.replace(err_prefix, res.fnames_prefix)
     draft_log_name.rename(new_path)
 
-    return res
+    return res, changed_options

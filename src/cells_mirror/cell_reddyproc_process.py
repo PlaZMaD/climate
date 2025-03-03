@@ -36,4 +36,4 @@ ig.eddyproc.options = SimpleNamespace(
 )
 
 ensure_empty_dir(ig.eddyproc.options.output_dir)
-ig.eddyproc.out_info = reddyproc_and_postprocess(ig.eddyproc.options)
+ig.eddyproc.out_info, ig.eddyproc.options = reddyproc_and_postprocess(ig.eddyproc.options)

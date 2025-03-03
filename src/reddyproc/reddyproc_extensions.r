@@ -1,5 +1,5 @@
-# TODO report bugfix
-# daily sums plots of which variables rename to daily means
+# TODO report bugfix to REP:
+# daily sums plots should be named daily means for:
 DAILY_SUMS_PLOT_TITLE_RENAMES = c('Tair_f', 'rH_f', 'Rg_f', 'H_f', 'LE_f', 'VPD_f')
 
 
@@ -29,7 +29,6 @@ patch_daily_sums_plot_name <- function(orig_call, var_name, ...) {
 }
 
 
-# TODO does not work yet, should simplify patch_daily_sums_plot_name
 with_patch <- function(s4, closure_name, patched_closure, extra_args, code){
     # instead of original closure,
     # patched_closure(original_closure, extra_args, ...) will be called
