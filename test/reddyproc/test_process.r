@@ -17,7 +17,7 @@ eddyproc_user_options <- list(
 
     is_to_apply_u_star_filtering = TRUE,
     # NA to disable or double
-    ustar_threshold_fallback_guess = 0.01,
+    ustar_threshold_fallback = 0.01,
     # TODO remove all after python Rg guess implemented
     # experimental option to apply uStar to all data (REP default is only nights), used only when Rg is missing
     ustar_allowed_on_days = TRUE,

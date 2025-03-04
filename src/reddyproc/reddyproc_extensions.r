@@ -71,7 +71,7 @@ get_ustar_daytime_arg <- function(rg_missing, default_arg, ustar_allowed_on_days
 
 .ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
-    can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_threshold_fallback_guess)
+    can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_threshold_fallback)
 
     if (all_thresgolds_ok)
         return()
@@ -79,12 +79,12 @@ get_ustar_daytime_arg <- function(rg_missing, default_arg, ustar_allowed_on_days
 
     if (!can_substitute_by_user_preset) {
         warning(RE, RU, 'Fallback value is NaN, gap fill failure is expected.\n',
-				'Consider changing ustar_threshold_fallback_guess option\n')
+				'Consider changing ustar_threshold_fallback option\n')
         return()
     }
 
     before <- EProc$sUSTAR_SCEN
-    EProc$sUSTAR_SCEN$uStar[is.na(EProc$sUSTAR_SCEN$uStar)] <- eddyProcConfiguration$ustar_threshold_fallback_guess
+    EProc$sUSTAR_SCEN$uStar[is.na(EProc$sUSTAR_SCEN$uStar)] <- eddyProcConfiguration$ustar_threshold_fallback
 
     printed_df <- function(df)
         paste(capture.output(df), collapse = '\n')

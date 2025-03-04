@@ -20,7 +20,7 @@ OUTPUT_DIR <- NULL
     siteId = 'DefaultID',
 
     isToApplyUStarFiltering = FALSE,
-    ustar_threshold_fallback_guess = 0.123456,
+    ustar_threshold_fallback = 0.123456,
     ustar_allowed_on_days = FALSE,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
@@ -61,7 +61,7 @@ OUTPUT_DIR <- NULL
     merge$siteId <- user_opts$site_id
 
     merge$isToApplyUStarFiltering <- user_opts$is_to_apply_u_star_filtering
-    merge$ustar_threshold_fallback_guess <- as_numeric_or_nan(user_opts$ustar_threshold_fallback_guess)
+    merge$ustar_threshold_fallback <- as_numeric_or_nan(user_opts$ustar_threshold_fallback)
     merge$ustar_allowed_on_days  <- user_opts$ustar_allowed_on_days
 
     merge$uStarSeasoning <- factor(user_opts$u_star_seasoning)
