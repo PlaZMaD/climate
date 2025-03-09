@@ -20,6 +20,24 @@ source('src/reddyproc/r_helpers.r')
 }
 
 
+.copy_attributes <- function(df_target, df_source, attr_name) {
+    same_cols <- intersect(colnames(df_target), colnames(df_source))
+    for (col in same_cols)
+        attr(df_target[,col], attr_name) <- attr(df_source[,col], attr_name)
+    df_target
+    # attr.names <- names(attributes(df_source))
+    # attr.names <- attr.names[attr.names != 'names']
+    # attributes(df_target)[attr.names] <- attributes(df_source)[attr.names]
+}
+
+
+.apply_attributes <- function(df, columns, attr_name, value) {
+    for (col in columns)
+        attr(df[,col], attr_name) <- value
+    df
+}
+
+
 .remove_too_short_years <- function(df) {
     stopifnot(nrow(df) > 3)
 
@@ -27,15 +45,39 @@ source('src/reddyproc/r_helpers.r')
     last <- nrow(df)
 
     if (df$Year[1] < df$Year[2]) {
-        cat('Averages: first row excluded due to too short year \n')
+        cat(RM, 'First row excluded due to too short year \n')
         first <- 2
     }
     if (df$Year[nrow(df) - 1] < df$Year[nrow(df)]) {
-        cat('Averages: last row excluded due to too short year \n')
+        cat(RM, 'Last row excluded due to too short year \n')
         last <- nrow(df) - 1
     }
 
     df[first:last,]
+}
+
+
+.restore_unit_attributes <- function(df_h, df_d, df_m, df_y,
+                                     unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
+                                     df_full) {
+    # most of the ops will drop attrs, unit attrs must be restored back
+    # TODO or save them to list instead? but REddyProc stores in attrs
+    df_h <- .copy_attributes(df_h, df_full, 'units')
+    df_d <- .copy_attributes(df_d, df_full, 'units')
+    df_m <- .copy_attributes(df_m, df_full, 'units')
+    df_y <- .copy_attributes(df_y, df_full, 'units')
+
+    df_h <- .apply_attributes(df_h, colnames(df_h %>% select(ends_with("_sqc"))), 'units', '--')
+    df_d <- .apply_attributes(df_d, colnames(df_d %>% select(ends_with("_sqc"))), 'units', '--')
+    df_m <- .apply_attributes(df_m, colnames(df_m %>% select(ends_with("_sqc"))), 'units', '--')
+    df_y <- .apply_attributes(df_y, colnames(df_y %>% select(ends_with("_sqc"))), 'units', '--')
+
+    df_h <- .apply_attributes(df_h, unique_cols_h, 'units', '--')
+    df_d <- .apply_attributes(df_d, unique_cols_d, 'units', '--')
+    df_m <- .apply_attributes(df_m, unique_cols_m, 'units', '--')
+    df_y <- .apply_attributes(df_y, unique_cols_y, 'units', '--')
+
+    list(h = df_h, d = df_d, m = df_m, y = df_y)
 }
 
 
@@ -49,57 +91,70 @@ calc_averages <- function(df_full){
     # indeed, R have no default list(str) better than %>% select
     cols_f <- colnames(df %>% select(ends_with("_f")))
     paired_cols_out <- setdiff(cols_f, 'GPP_f')
-    paired_cols_in <- gsub("_f", "", paired_cols_out)
+    paired_cols_in <- sub("_f$", "", paired_cols_out)
+    cat(RM, 'Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
 
-    cols_to_mean <- cols_f
-    if ('Reco' %in% colnames(df))
-        cols_to_mean <- c(cols_to_mean, 'Reco')
-    cat('Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
-
-    cat('Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
 
     missing = setdiff(paired_cols_in, colnames(df))
     if (length(missing) > 0)
         stop(msg = paste('Expected columns are missing: \n', missing, '\n'))
 
-    df_to_mean <- df[cols_to_mean]
-    df_to_nna <- df[paired_cols_in]
 
     # i.e. mean and NA percent will be calculated between rows
     # for which unique_cols values are matching, duplicates are ok
     unique_cols_d <- c('Year', 'Month', 'DoM', 'DoY')
-    unique_cols_t <- c('Year', 'Month', 'Hour')
+    unique_cols_h <- c('Year', 'Month', 'Hour')
     unique_cols_m <- c('Year', 'Month')
     unique_cols_y <- c('Year')
 
-    # hourly should also contain averages of columns before EProc
-    df_to_mean_t <- cbind(df[cols_to_mean], df[paired_cols_in])
 
-    df_means_t <- .aggregate_df(df_to_mean_t, by_col = df[unique_cols_t], mean_nna)
+
+    # additional optional mean columns
+    extra_mean_cols <- intersect('Reco', colnames(df))
+    # additional optional hourly columns
+    extra_cols_h <- intersect('CH4flux', colnames(df))
+
+    cols_to_mean <- c(cols_f, extra_mean_cols)
+    cat(RM, 'Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
+
+    df_to_mean <- df[cols_to_mean]
+    # hourly should also contain averages of columns before EProc and ch4 if avaliable
+    df_to_mean_h <- df[c(cols_to_mean, paired_cols_in, extra_cols_h)]
+
+    df_means_h <- .aggregate_df(df_to_mean_h, by_col = df[unique_cols_h], mean_nna)
     df_means_d <- .aggregate_df(df_to_mean, by_col = df[unique_cols_d], mean_nna)
     df_means_m <- .aggregate_df(df_to_mean, by_col = df[unique_cols_m], mean_nna)
     df_means_y <- .aggregate_df(df_to_mean, by_col = df[unique_cols_y], mean_nna)
 
-    # renaming is easier before the actual calc
-    cols_nna_sqc <- gsub("_f", "_sqc", paired_cols_out)
-    stopifnot(ncol(df_to_nna) == length(cols_nna_sqc) - length(missing))
-    names(df_to_nna) <- cols_nna_sqc
 
-    df_nna_t <- .aggregate_df(df_to_nna, by_col = df[unique_cols_t], nna_ratio)
+
+    df_to_nna <- df[paired_cols_in]
+    df_to_nna_h <- df[c(paired_cols_in,  extra_cols_h)]
+    # renaming is easier before the actual calc
+    names(df_to_nna) <- sub("$", "_sqc", names(df_to_nna))
+    names(df_to_nna_h) <- sub("$", "_sqc", names(df_to_nna_h))
+
+    df_nna_h <- .aggregate_df(df_to_nna_h, by_col = df[unique_cols_h], nna_ratio)
     df_nna_d <- .aggregate_df(df_to_nna, by_col = df[unique_cols_d], nna_ratio)
     df_nna_m <- .aggregate_df(df_to_nna, by_col = df[unique_cols_m], nna_ratio)
     df_nna_y <- .aggregate_df(df_to_nna, by_col = df[unique_cols_y], nna_ratio)
 
-    align_raw_sqc <- function(cn) gsub('*_sqc$', '', cn)
-    df_t <- merge_cols_aligning(df_means_t, df_nna_t, unique_cols_t, align_raw_sqc)
-    df_t <- add_column(df_t, ' ' = ' ', .after = tail(cols_to_mean, 1))
 
-    align_f_sqc <- function(cn) gsub('*_sqc$', '_f', cn)
+
+    align_raw_sqc <- function(cn) sub('*_sqc$', '', cn)
+    df_h <- merge_cols_aligning(df_means_h, df_nna_h, unique_cols_h, align_raw_sqc)
+    df_h <- add_column(df_h, ' ' = ' ', .after = tail(cols_to_mean, 1))
+
+    align_f_sqc <- function(cn) sub('*_sqc$', '_f', cn)
     df_d <- merge_cols_aligning(df_means_d, df_nna_d, unique_cols_d, align_f_sqc)
     df_m <- merge_cols_aligning(df_means_m, df_nna_m, unique_cols_m, align_f_sqc)
     df_y <- merge_cols_aligning(df_means_y, df_nna_y, unique_cols_y, align_f_sqc)
 
-    return(list(hourly = df_t, daily = df_d, monthly = df_m, yearly = df_y))
+    dfs <- .restore_unit_attributes(df_h, df_d, df_m, df_y,
+                                    unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
+                                    df_full)
+
+    return(list(hourly = dfs$h, daily = dfs$d, monthly = dfs$m, yearly = dfs$y))
 }
 
 
@@ -110,14 +165,23 @@ save_averages <- function(dfs, output_dir, output_unmask, ext){
     m_name <- paste0(prename, '_monthly', ext)
     y_name <- paste0(prename, '_yearly', ext)
 
+    bkp_attr <- attr(dfs$hourly$Hour, 'units')
     dfs$hourly$Hour <- fmt_hm(dfs$hourly$Hour)
+    attr(dfs$hourly$Hour, 'units') <- bkp_attr
 
-    write.csv(dfs$hourly, file = h_name, row.names = FALSE, na = "-9999")
-    write.csv(dfs$daily, file = d_name, row.names = FALSE, na = "-9999")
-    write.csv(dfs$monthly, file = m_name, row.names = FALSE, na = "-9999")
-    write.csv(dfs$yearly, file = y_name, row.names = FALSE, na = "-9999")
 
-    cat(sprintf('Saved summary stats to : \n %s \n %s \n %s \n %s \n',
+    write_with_units <- function(df, fname) {
+        units_row <- sub('NULL$', '', as.character(lapply(df, attr, which = "units")))
+        df <- insert_row(df, units_row, 1)
+        write.csv(df, file = fname, row.names = FALSE, na = "-9999", quote = FALSE)
+    }
+
+    write_with_units(dfs$hourly, fname = h_name)
+    write_with_units(dfs$daily, fname = d_name)
+    write_with_units(dfs$monthly, fname = m_name)
+    write_with_units(dfs$yearly, fname = y_name)
+
+    cat(RM, sprintf('Saved summary stats to : \n %s \n %s \n %s \n %s \n',
                 d_name, m_name, y_name, h_name))
 
 }

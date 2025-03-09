@@ -9,6 +9,7 @@ from rpy2 import rinterface_lib as rl
 from rpy2.rinterface_lib.sexp import NULLType
 from rpy2.robjects import conversion, default_converter
 
+
 @contextmanager
 def capture_r_output(file: TextIOWrapper):
     # proper file name is not known yet, but expected to be finalized under yield
@@ -37,6 +38,7 @@ def r_converter():
 def reddyproc_and_postprocess(options):
     py_options_fix = options
     py_options_fix.partitioning_methods = ro.StrVector(options.partitioning_methods)
+    # py_options_fix.daily_sums_units = ro.ListVector(options.daily_sums_units)
     with r_converter():
         r_options = ro.ListVector(vars(py_options_fix))
 
@@ -54,14 +56,15 @@ def reddyproc_and_postprocess(options):
             fnames_prefix=r_res.rx2['out_prefix'][0]
         )
 
+    changed_options = options
     changed_config = r_res.rx2['changed_config']
     if changed_config:
         changed_ustar = changed_config.rx2['isToApplyUStarFiltering'][0]
         if changed_ustar != options.is_to_apply_u_star_filtering:
             warn('REddyProc fallback on isToApplyUStarFiltering is detected and propagated.')
-            options.is_to_apply_u_star_filtering = changed_ustar
+            changed_options.is_to_apply_u_star_filtering = changed_ustar
 
     new_path = draft_log_name.parent / draft_log_name.name.replace(err_prefix, res.fnames_prefix)
     draft_log_name.rename(new_path)
 
-    return res
+    return res, changed_options
