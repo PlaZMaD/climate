@@ -16,13 +16,12 @@ INPUT_FILE <- NULL
 OUTPUT_DIR <- NULL
 
 
-# corresponds 06.2024 run
-.eddyproc_all_required_options <- list(
-    siteId = 'yourSiteID',
+.reddyproc_user_config_types <- sapply(list(
+    siteId = 'DefaultID',
 
-    isToApplyUStarFiltering = TRUE,
-    # custom, not from default package; number or NULL
-    ustar_fallback_value = 0.1,
+    isToApplyUStarFiltering = FALSE,
+    ustar_threshold_fallback = 0.123456,
+    ustar_allowed_on_days = FALSE,
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     uStarMethod = factor("RTw", levels = "RTw"),
@@ -32,14 +31,17 @@ OUTPUT_DIR <- NULL
     isToApplyGapFilling = TRUE,
     isToApplyPartitioning = TRUE,
 
-    # "Reichstein05", "Lasslop10", ...
     partitioningMethods = c("Reichstein05", "Lasslop10"),
     latitude = 56.5,
     longitude = 32.6,
     timezone = +3,
 
-    temperatureDataVariable = "Tair",
+    t_temperatureDataVariable = "Tair"
+), class)
 
+
+# unlike template, is actually applied
+.reddyproc_extra_config <- list(
     isCatchingErrorsEnabled = TRUE,
 
     input_format = "onlinetool",
@@ -51,19 +53,7 @@ OUTPUT_DIR <- NULL
 )
 
 
-.eddyproc_extra_options <- list(
-    isCatchingErrorsEnabled = TRUE,
-
-    input_format = "onlinetool",
-    output_format = "onlinetool",
-
-    # figureFormat used from processEddyData
-    useDevelopLibraryPath = FALSE,
-    debugFlags = ""
-)
-
-
-.merge_options <- function(user_opts, extra_opts){
+.convert_options_types <- function(user_opts){
     as_numeric_or_nan <- function (x) ifelse(is.null(x), NaN, as.numeric(x))
 
     merge <- list()
@@ -71,7 +61,9 @@ OUTPUT_DIR <- NULL
     merge$siteId <- user_opts$site_id
 
     merge$isToApplyUStarFiltering <- user_opts$is_to_apply_u_star_filtering
-    merge$ustar_fallback_value <- as_numeric_or_nan(user_opts$ustar_fallback_value)
+    merge$ustar_threshold_fallback <- as_numeric_or_nan(user_opts$ustar_threshold_fallback)
+    merge$ustar_allowed_on_days  <- user_opts$ustar_allowed_on_days
+
     merge$uStarSeasoning <- factor(user_opts$u_star_seasoning)
     merge$uStarMethod <- factor(user_opts$u_star_method)
 
@@ -87,26 +79,27 @@ OUTPUT_DIR <- NULL
 
     merge$temperatureDataVariable <- user_opts$temperature_data_variable
 
-    return(c(merge, extra_opts))
+    return(merge)
 }
 
 
 .finalise_config <- function(user_options){
-    eddyproc_config <- .merge_options(user_options, .eddyproc_extra_options)
+    user_config <- .convert_options_types(user_options)
 
-    got_types <- sapply(eddyproc_config, class)
-    need_types <- sapply(.eddyproc_all_required_options, class)
+    got_types <- sapply(user_config, class)
+    need_types <- .reddyproc_user_config_types
 
     if (any(got_types != need_types)) {
         df_cmp = data.frame(got_types, need_types)
         cmp_str = paste(capture.output(df_cmp), collapse = '\n')
         stop("Incorrect options or options types: ", cmp_str)
     }
-    return(eddyproc_config)
+
+    return(c(user_config, .reddyproc_extra_config))
 }
 
 
-.reddyproc_io_wrapper <- function(eddyproc_config){
+.run_reddyproc_via_io_wrapper <- function(eddyproc_config){
     # more specifically, still calls processEddyData wrapper from web tool,
     # which finally calls REddyProc library
 
@@ -130,22 +123,34 @@ OUTPUT_DIR <- NULL
 }
 
 
-.reddyproc_ustar_fallback_wrapper <- function(eddyproc_config){
-    res <- .reddyproc_io_wrapper(eddyproc_config)
+.run_reddyproc_via_ustar_fallback_wrapper <- function(eddyproc_config){
+    res <- .run_reddyproc_via_io_wrapper(eddyproc_config)
 
     if (is.null(res$err$call))
         return(res)
 
-    # full fallback to ustar disabled, possibly not nessesary anymore?
-    if (grepl('sMDSGapFillAfterUstar', res$err$call, fixed = TRUE) %>% any) {
-        if (eddyproc_config$isToApplyUStarFiltering != TRUE)
-            stop('Unexpected option: ustar failed while disabled.')
-        warning('\n\n\n OPTION FAILURE: uStar filtering failed. Fallback attempt ',
-                'to eddyproc_config$isToApplyUStarFiltering = FALSE \n\n')
+    do_fallback <- FALSE
+
+    # if REddypoc in ignore errors mode, stop will happend not on ustar failure, but later
+    # TODO switch to more specified check not before the next release
+    # res$err$message == 'must provide finite uStarThresholds', ..., ?
+    if (grepl('sMDSGapFillAfterUstar', res$err$call, fixed = TRUE) %>% any)
+        do_fallback <- TRUE
+
+    # fallback if Rg (solar radiation) is missing, but required
+    if (is_error_ustar_need_rg(res$err))
+        do_fallback <- TRUE
+
+    if (do_fallback) {
+        assert(eddyproc_config$isToApplyUStarFiltering, 'ustar failed while disabled.')
+        warning('\n', RE, RU, 'Ustar filtering failed. \n',
+                'Fallback attempt to isToApplyUStarFiltering = FALSE \n')
+
         eddyproc_config$isToApplyUStarFiltering <- FALSE
-        res <- .reddyproc_io_wrapper(eddyproc_config)
+        res <- .run_reddyproc_via_io_wrapper(eddyproc_config)
         res$changed_config <- eddyproc_config
     }
+
 
     return(res)
 }
@@ -162,12 +167,12 @@ reddyproc_and_postprocess <- function(user_options){
     options(warn = 1)
 
     options(max.print = 50)
-    message("Output of R is truncated to improve rpy2 output.")
+    message(RE, 'Max length of R output is reduced to improve rpy2 output.')
 
     INPUT_FILE <<- user_options$input_file
     OUTPUT_DIR <<- user_options$output_dir
     eddyproc_config <- .finalise_config(user_options)
-    wr_res <- .reddyproc_ustar_fallback_wrapper(eddyproc_config)
+    wr_res <- .run_reddyproc_via_ustar_fallback_wrapper(eddyproc_config)
 
     # processEddyData guaranteed to output equi-time-distant series
     dfs = calc_averages(wr_res$df_output)

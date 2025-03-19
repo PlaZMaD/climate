@@ -3,6 +3,40 @@
 library(dplyr)
 
 
+RE <- 'REddyProc Extended: '
+RM <- 'REddyProc Means: '
+RU <- 'uStar patch: '
+
+
+is.not.null <- function(x) !is.null(x)
+`%ni%` <- Negate(`%in%`)
+
+
+assert <- function(x, msg){
+    if (x != TRUE)
+        stop('Assertion failure: ', msg)
+}
+
+
+insert_row <- function(df, row, r) {
+    nrows <- nrow(df)
+
+    if (is.null(nrows)) {
+        warning('\n', RE, 'Attempt to insert a row in the empty df cancelled')
+        return()
+    }
+    if (r > nrows) {
+        warning('\n', RE, 'Attempt to insert a row outside of df, inserting as last')
+        r <- nrows
+    }
+
+    res <- df
+    res[seq(r + 1, nrow(df) + 1), ] <- df[seq(r, nrow(df)), ]
+    res[r,] <- row
+    res
+}
+
+
 .combine_cols_alternating <- function(df, df_add, expected_col_dupes){
     # not tested
 
@@ -26,7 +60,7 @@ merge_cols_aligning <- function(df, df_add, expected_col_dupes, f_align_rule){
     #     function(<df_add_col_name>) -> <df_col_name>
     #     if returns NULL or df_column is missing, just adds df_add column to the right of df
     #
-    #     for example, if f_align_rule is: function(cn) gsub('*_f$', '_sqc', cn)
+    #     for example, if f_align_rule is: function(cn) sub('_f$', '_sqc', cn)
     #     merge will be: H_f LE_f H_sqc LE_sqc -> H_f H_sqc U_f U_sqc LE_f LE_sqc
 
     stopifnot(df[expected_col_dupes] == df_add[expected_col_dupes])
@@ -77,24 +111,49 @@ add_file_prefix <- function(fpath, prefix){
 }
 
 
+anyNAN <- function(df) {
+    if (is.list(df))
+        df <- as.matrix(df)
+    is.nan(df) %>% any
+}
+
+
 nna_ratio <- function(x) {
-    # 0 if all NA, 1 if all exist
+    # 0 if all NA or NaN, 1 if all exist
 
     return(mean(!is.na(x)))
 }
 
 
+get_default_arg_value<- function(fun, arg) {
+    formals(fun)[[arg]]
+}
+
+
 mean_nna <- function(x, nna_threshold = NULL){
-    # mean skipping NA values,
+    # fixes:
+    # mean(c(), na.rm = TRUE) = NA
+    # mean(c(NA), na.rm = TRUE) = NaN ?
+    # to:
+    # mean_nna(c()) = NA
+    # mean_nna(c(NA, NA)) = NA
+    #
+    # also examples:
+    # mean_nna(c(1, NA, 3)) = 2
+    # mean_nna(c(NaN, ...)) = undefined
     # if enough values exist above threshold ratio
 
-    nna_mean <- mean(x, na.rm = TRUE)
+    res <- mean(x, na.rm = TRUE)
+
+    if (is.nan(res) && length((x) > 0))
+        res <- NA
+
     if (is.null(nna_threshold)) {
-        return(nna_mean)
+        return(res)
     } else {
         stopifnot(between(nna_threshold, 0, 1))
         if (nna_ratio(x) > nna_threshold)
-            return(nna_mean)
+            return(res)
         else
             return(NA)
     }
