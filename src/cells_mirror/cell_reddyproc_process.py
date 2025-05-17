@@ -12,10 +12,12 @@ ig.eddyproc.options = SimpleNamespace(
 
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
-    ustar_threshold_fallback=None,
-    # default REP detects nights by Rg; when Rg is missing, theoretical value can be calculated
-    ustar_use_theor_rg=True,
-    is_bootstrap_u_star=True,
+    ustar_threshold_fallback=0.129638375,
+    # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
+    # "Rg_th_Py", "Rg_th_REP" - estimate by theoretical algs,
+    # "Rg" - by real data, "" - ignore Rg and filter both days and nights
+    ustar_rg_source="Rg_th_Py",
+    is_bootstrap_u_star=False,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
 
@@ -23,9 +25,9 @@ ig.eddyproc.options = SimpleNamespace(
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
     partitioning_methods=["Reichstein05", "Lasslop10"],
 
-    latitude=56.5,
-    longitude=32.6,
-    timezone=+3.0,
+    latitude=64.2,
+    longitude=100,
+    timezone=+7,
 
     # "Tsoil"
     temperature_data_variable="Tair",
@@ -37,7 +39,6 @@ ig.eddyproc.options = SimpleNamespace(
     output_dir="output/reddyproc",
     log_fname_end='_log.txt'
 )
-
 
 prepare_rg(ig.eddyproc.options)
 ensure_empty_dir(ig.eddyproc.options.output_dir)

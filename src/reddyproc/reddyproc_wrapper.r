@@ -21,7 +21,7 @@ OUTPUT_DIR <- NULL
 
     isToApplyUStarFiltering = FALSE,
     ustar_threshold_fallback = 0.123456,
-    ustar_use_theor_rg = FALSE,
+    ustar_rg_source = 'Column name',
 
     uStarSeasoning = factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     uStarMethod = factor("RTw", levels = "RTw"),
@@ -54,7 +54,7 @@ OUTPUT_DIR <- NULL
 
 
 .convert_options_types <- function(user_opts){
-    as_numeric_or_nan <- function (x) ifelse(is.null(x), NaN, as.numeric(x))
+    as_numeric_or_nan <- function(x) ifelse(is.null(x), NaN, as.numeric(x))
 
     merge <- list()
 
@@ -62,7 +62,7 @@ OUTPUT_DIR <- NULL
 
     merge$isToApplyUStarFiltering <- user_opts$is_to_apply_u_star_filtering
     merge$ustar_threshold_fallback <- as_numeric_or_nan(user_opts$ustar_threshold_fallback)
-    merge$ustar_use_theor_rg  <- user_opts$ustar_use_theor_rg
+    merge$ustar_rg_source  <- user_opts$ustar_rg_source
 
     merge$uStarSeasoning <- factor(user_opts$u_star_seasoning)
     merge$uStarMethod <- factor(user_opts$u_star_method)
