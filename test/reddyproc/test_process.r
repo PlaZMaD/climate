@@ -17,10 +17,13 @@ eddyproc_user_options <- list(
 
     is_to_apply_u_star_filtering = TRUE,
     # NA to disable or double
-    ustar_threshold_fallback = 0.01,
+    ustar_threshold_fallback = 0.1,
     # TODO remove leftovers after python Rg guess implemented
-    # default REP detects nights by Rg; when Rg is missing, theoretical value can be calculated
-    ustar_use_theor_rg = TRUE,
+    # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
+    # "Rg_th_Py", "Rg_th_REP" - estimate by theoretical algs,
+    # "Rg" - by real data, "" - ignore Rg and filter both days and nights
+    ustar_rg_source = "",
+
 
     u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     u_star_method = factor("RTw", levels = "RTw"),
@@ -31,14 +34,14 @@ eddyproc_user_options <- list(
     is_to_apply_partitioning = FALSE,
 
     partitioning_methods = c("Reichstein05", "Lasslop10"),
-    latitude = 56.5,
-    longitude = 32.6,
-    timezone = +3,
+    latitude = 64.2,
+    longitude = 100,
+    timezone = +7,
 
     # TSoil
     temperature_data_variable = "Tair",
 
-    input_file = "output/REddyProc_tv_fy4_2023.txt",
+    input_file = "output/REddyProc.txt",
     output_dir = "output/reddyproc"
 )
 

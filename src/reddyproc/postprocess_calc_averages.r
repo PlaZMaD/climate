@@ -123,14 +123,13 @@ calc_averages <- function(df_full){
     unique_cols_y <- c('Year')
 
 
-    #TODO test
     # additional optional mean columns
     extra_mean_cols <- intersect(c('GPP_DT', 'Reco', 'Reco_DT'), colnames(df))
     # additional optional hourly columns
     extra_cols_h <- intersect('CH4flux', colnames(df))
 
     cols_to_mean <- c(col_pairs$out, extra_mean_cols)
-    cat(RM, 'Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
+    cat(RM, 'Columns picked for means: \n', cols_to_mean, '\n')
 
     df_to_mean <- df[cols_to_mean]
     # hourly should also contain averages of columns before EProc and ch4 if avaliable

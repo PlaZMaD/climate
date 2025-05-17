@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 import src.helpers.os_helpers  # noqa: F401
+from reddyproc.helpers.io_helpers import find_rep_file
 from src.helpers.io_helpers import ensure_empty_dir
 import src.ipynb_globals as ig
 
@@ -28,8 +29,11 @@ def use_r_from_python_env():
 
 
 def test_process(use_r_from_python_env):
-    ig.ias_output_prefix = 'tv_fy4'
-    ig.reddyproc_filename = 'REddyProc_tv_fy4_2023.txt'
+    # ig.ias_output_prefix = 'kr_tur'
+    # ig.reddyproc_filename = 'REddyProc.txt'
+    rep_input_file = find_rep_file('output/*REddyProc*.txt')
+    ig.reddyproc_filename = rep_input_file.fname
+    ig.ias_output_prefix = rep_input_file.ias_prefix
 
     import src.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
