@@ -3,6 +3,8 @@ from types import SimpleNamespace
 from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
 import src.ipynb_globals as ig
 from src.helpers.io_helpers import ensure_empty_dir
+from src.reddyproc.preprocess_rg import prepare_rg
+
 
 ig.eddyproc = SimpleNamespace()
 ig.eddyproc.options = SimpleNamespace(
@@ -10,17 +12,17 @@ ig.eddyproc.options = SimpleNamespace(
 
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
-    ustar_threshold_fallback=0.01,
-    # default REP detects nights by Rg; when Rg is missing, this is experimental fallback to apply uStar over all data
-    ustar_allowed_on_days=False,
+    ustar_threshold_fallback=None,
+    # default REP detects nights by Rg; when Rg is missing, theoretical value can be calculated
+    ustar_use_theor_rg=True,
     is_bootstrap_u_star=True,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
 
     is_to_apply_partitioning=True,
-
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
-    partitioning_methods=["Lasslop10"],
+    partitioning_methods=["Reichstein05", "Lasslop10"],
+
     latitude=56.5,
     longitude=32.6,
     timezone=+3.0,
@@ -30,12 +32,13 @@ ig.eddyproc.options = SimpleNamespace(
 
     # other values may not work
     u_star_method="RTw",
-
     is_to_apply_gap_filling=True,
     input_file=f"output/{reddyproc_filename}",
     output_dir="output/reddyproc",
     log_fname_end='_log.txt'
 )
 
+
+prepare_rg(ig.eddyproc.options)
 ensure_empty_dir(ig.eddyproc.options.output_dir)
 ig.eddyproc.out_info, ig.eddyproc.options = reddyproc_and_postprocess(ig.eddyproc.options)

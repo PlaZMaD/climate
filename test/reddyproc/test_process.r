@@ -17,20 +17,20 @@ eddyproc_user_options <- list(
 
     is_to_apply_u_star_filtering = TRUE,
     # NA to disable or double
-    ustar_threshold_fallback = NA,
-    # TODO remove all after python Rg guess implemented
-    # experimental option to apply uStar to all data (REP default is only nights), used only when Rg is missing
-    ustar_allowed_on_days = FALSE,
+    ustar_threshold_fallback = 0.01,
+    # TODO remove leftovers after python Rg guess implemented
+    # default REP detects nights by Rg; when Rg is missing, theoretical value can be calculated
+    ustar_use_theor_rg = TRUE,
 
-    u_star_seasoning =  factor("WithinYear", levels = c("Continuous", "WithinYear", "User")),
+    u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     u_star_method = factor("RTw", levels = "RTw"),
 
     is_bootstrap_u_star = FALSE,
 
     is_to_apply_gap_filling = TRUE,
-    is_to_apply_partitioning = TRUE,
+    is_to_apply_partitioning = FALSE,
 
-    partitioning_methods = character(0),
+    partitioning_methods = c("Reichstein05", "Lasslop10"),
     latitude = 56.5,
     longitude = 32.6,
     timezone = +3,
