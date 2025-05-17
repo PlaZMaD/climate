@@ -12,15 +12,15 @@ ig.eddyproc.options = SimpleNamespace(
     # if default REP cannot detect threshold, this value may be used instead; None to disable
     ustar_threshold_fallback=0.01,
     # default REP detects nights by Rg; when Rg is missing, this is experimental fallback to apply uStar over all data
-    ustar_allowed_on_days=True,
-
+    ustar_allowed_on_days=False,
+    is_bootstrap_u_star=True,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
 
     is_to_apply_partitioning=True,
 
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
-    partitioning_methods=["Reichstein05", "Lasslop10"],
+    partitioning_methods=["Lasslop10"],
     latitude=56.5,
     longitude=32.6,
     timezone=+3.0,
@@ -30,7 +30,7 @@ ig.eddyproc.options = SimpleNamespace(
 
     # other values may not work
     u_star_method="RTw",
-    is_bootstrap_u_star=False,
+
     is_to_apply_gap_filling=True,
     input_file=f"output/{reddyproc_filename}",
     output_dir="output/reddyproc",
