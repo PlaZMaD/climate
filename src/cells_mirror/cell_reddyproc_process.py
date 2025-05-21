@@ -5,14 +5,13 @@ import src.ipynb_globals as ig
 from src.helpers.io_helpers import ensure_empty_dir
 from src.reddyproc.preprocess_rg import prepare_rg
 
-
 ig.eddyproc = SimpleNamespace()
 ig.eddyproc.options = SimpleNamespace(
     site_id=ias_output_prefix,
 
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
-    ustar_threshold_fallback=0.129638375,
+    ustar_threshold_fallback=0.01,
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # "Rg_th_Py", "Rg_th_REP" - estimate by theoretical algs,
     # "Rg" - by real data, "" - ignore Rg and filter both days and nights
@@ -32,7 +31,7 @@ ig.eddyproc.options = SimpleNamespace(
     # "Tsoil"
     temperature_data_variable="Tair",
 
-    # other values may not work
+    # do not change
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
     input_file=f"output/{reddyproc_filename}",
