@@ -2022,6 +2022,8 @@ assert cur_dir == '/content'
 # %cd /content
 # !cp -r src/repo1/src .
 
+# %pip install pysolar
+
 # 1.3.2 vs 1.3.3 have slightly different last columns
 # alternative for windows
 # install.packages('https://cran.r-project.org/bin/windows/contrib/4.1/REddyProc_1.3.2.zip', repos = NULL, type = "binary")
@@ -2054,12 +2056,14 @@ enable_word_wrap()
 # Метод Eddy Covariance прменим только при развитой турбулентности. При динамической скорости ветра, или скорости трения (столбец *uStar*), ниже определенного порога поток CO2 может быть занижен. Данные о потоках в этих условиях заменяются на пропуски.
 #
 # Выбор метода разметки сезонов, для каждого из которых отдельно определяется уровень насыщения. `Continuous` - начало сезонов в Марте, Июне, Сентябре, и Декабре, Декабрь при этом включается в *следующий* год. `WithinYear` - каждый год отдельно. `User` - по столбцу *season*.  
-# `u_star_seasoning="Continuous"`
+# `u_star_seasoning="Continuous"`  
+# Итеративная оценка точности вычисленного порога u* (bootstrap)  
+# `is_bootstrap_u_star=False`  
 #
 # По сравнению с исходным инструментом REddyProc в этой тетради добавлена дополнительная возможность подстановки пользовательского значения порога в случае, когда порог невозможно рассчитать (например, если недостаточно данных или отсутствует солнечная коротковолновая радиация *Rg*). Для травянистых экосистем можно использовать `0.01`, для лесных - `0.1`, для отключения подстановки - `None`.  
 # `ustar_threshold_fallback=0.01`  
-# REddyProc по умолчанию применяет порог uStar только в ночное время, для определения которого требуется столбец *Rg*. Следующая экспериментальная опция позволяет игнорировать отсутствие *Rg* и применить порог ко всем данным без учета времени суток  
-# `ustar_allowed_on_days=True`  
+# REddyProc по умолчанию применяет порог uStar только в ночное время, для определения которого требуется столбец *Rg*. Следующая экспериментальная опция позволяет использовать теоретическое значение `"Rg_th_Py"` или `"Rg_th_REP"`, либо игнорировать отсутствие *Rg* и применить порог ко всем данным без учета времени суток - `None`:  
+# `ustar_rg_source="Rg"`  
 #
 # В случае ошибок фильтрации будет предупреждение в логе ячейки и повторная попытка запуска с переходом к заполнению пропусков.
 # Заполнение пропусков в 30-минутных потоках соответствует онлайн-инструменту и включено по умолчанию.
@@ -2067,7 +2071,8 @@ enable_word_wrap()
 # Включение и выбор одного или обоих методов разделения потока C02 на валовую первичную продукцию (GPP) и дыхание экосистемы (Reco). Метод `Reichstein05` проводит разделение по ночным данным, метод `Lasslop10` - по дневным данным.
 # `is_to_apply_partitioning=True`  
 # `partitioning_methods=["Reichstein05", "Lasslop10"]`  
-# При отсутствии данных об Rg разделение выполняться не будет! Для корректного завершения работы блока в этом случае поставьте `is_to_apply_partitioning=False`
+# При отсутствии данных об Rg разделение выполняться не будет! Для корректного завершения работы блока в этом случае поставьте  
+# `is_to_apply_partitioning=False`  
 #
 # Широта, долгота, временная зона  
 # `latitude = 56.5`  
@@ -2082,9 +2087,7 @@ enable_word_wrap()
 # **Опции, изменение которых не предполагается в этой тетради:**
 #
 # В EddyProc доступен только метод подвижной точки `RTw` для определения порога uStar  
-# `u_star_method="RTw"`  
-# Итеративная оценка точности вычисленного порога u* (bootstrap)  
-# `is_bootstrap_u_star=False`  
+# `u_star_method="RTw"`
 # Заполнение пробелов в 30-минутных потоках  
 # `is_to_apply_gap_filling=True`  
 #
@@ -2114,7 +2117,7 @@ ig.eddyproc.options = SimpleNamespace(
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # "Rg_th_Py", "Rg_th_REP" - estimate by theoretical algs,
     # "Rg" - by real data, "" - ignore Rg and filter both days and nights
-    ustar_rg_source="Rg_th_Py",
+    ustar_rg_source="Rg",
     is_bootstrap_u_star=False,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
@@ -2124,9 +2127,9 @@ ig.eddyproc.options = SimpleNamespace(
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
     partitioning_methods=["Reichstein05", "Lasslop10"],
 
-    latitude=64.2,
-    longitude=100,
-    timezone=+7,
+    latitude=56.5,
+    longitude=32.6,
+    timezone=+3.0,
 
     # "Tsoil"
     temperature_data_variable="Tair",
