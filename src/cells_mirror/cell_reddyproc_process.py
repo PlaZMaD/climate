@@ -15,7 +15,7 @@ ig.eddyproc.options = SimpleNamespace(
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # "Rg_th_Py", "Rg_th_REP" - estimate by theoretical algs,
     # "Rg" - by real data, "" - ignore Rg and filter both days and nights
-    ustar_rg_source="Rg_th_Py",
+    ustar_rg_source="Rg",
     is_bootstrap_u_star=False,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
