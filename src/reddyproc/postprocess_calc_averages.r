@@ -3,6 +3,7 @@ library(lubridate)
 library(tibble)
 
 source('src/reddyproc/r_helpers.r')
+# TODO rename to postprocess_means
 
 
 .aggregate_df <- function(data, by_col, FUN) {
@@ -16,7 +17,6 @@ source('src/reddyproc/r_helpers.r')
 
     # restore YMD column order
     res <- res[c(colnames(by_col), colnames(data))]
-    return(res)
 }
 
 
@@ -81,6 +81,28 @@ source('src/reddyproc/r_helpers.r')
 }
 
 
+.get_gapfill_column_pairs <- function(df, known_unpaired_out) {
+    # picks and checks REP gapfill column pairs:
+    # if columns are
+    # "DateTime" "Year" "DoM" ... "NEE" "LE" "Tair" "rH" ... "NEE_f" "LE_f" ...
+    # then rreturns out columns: ["NEE_f", "LE_f"]
+    # and corresponding in columns: ["NEE", "LE"]
+
+    # indeed, R have no default list(str) better than %>% select
+    cols_f <- colnames(df %>% select(ends_with("_f")))
+
+    expected_cols_in <- sub("_f$", "", setdiff(cols_f, known_unpaired_out))
+    cols_in = intersect(expected_cols_in, colnames(df))
+
+    # TODO Bootstrap  -> NEE, GPP and Reco all into outputs
+    missing_in = setdiff(expected_cols_in, cols_in)
+    if (length(missing_in) > 0)
+        stop(msg = paste('Expected columns are missing: \n', missing_in, '\n'))
+
+    list(ins = cols_in, out = cols_f)
+}
+
+
 calc_averages <- function(df_full){
     # save_reddyproc_df(df_full, 'test.csv')
 
@@ -88,16 +110,9 @@ calc_averages <- function(df_full){
     df <- add_column(df, Month = month(df$DateTime), .after = 'Year')
     df <- add_column(df, DoM = day(df$DateTime), .after = 'Year')
 
-    # indeed, R have no default list(str) better than %>% select
-    cols_f <- colnames(df %>% select(ends_with("_f")))
-    paired_cols_out <- setdiff(cols_f, 'GPP_f')
-    paired_cols_in <- sub("_f$", "", paired_cols_out)
-    cat(RM, 'Columns picked for NA counts (GPP_f omitted): \n',paired_cols_in, '\n')
-
-
-    missing = setdiff(paired_cols_in, colnames(df))
-    if (length(missing) > 0)
-        stop(msg = paste('Expected columns are missing: \n', missing, '\n'))
+    known_unpaired_out <- c('NEE_U05_f', 'NEE_U50_f', 'NEE_U95_f',
+                            'GPP_U05_f', 'GPP_U95_f', 'GPP_U50_f', 'GPP_f')
+    col_pairs <- .get_gapfill_column_pairs(df, known_unpaired_out)
 
 
     # i.e. mean and NA percent will be calculated between rows
@@ -108,18 +123,17 @@ calc_averages <- function(df_full){
     unique_cols_y <- c('Year')
 
 
-
     # additional optional mean columns
-    extra_mean_cols <- intersect('Reco', colnames(df))
+    extra_mean_cols <- intersect(c('GPP_DT', 'Reco', 'Reco_DT'), colnames(df))
     # additional optional hourly columns
     extra_cols_h <- intersect('CH4flux', colnames(df))
 
-    cols_to_mean <- c(cols_f, extra_mean_cols)
-    cat(RM, 'Columns picked for averaging (Reco added if possible): \n', cols_to_mean, '\n')
+    cols_to_mean <- c(col_pairs$out, extra_mean_cols)
+    cat(RM, 'Columns picked for means: \n', cols_to_mean, '\n')
 
     df_to_mean <- df[cols_to_mean]
     # hourly should also contain averages of columns before EProc and ch4 if avaliable
-    df_to_mean_h <- df[c(cols_to_mean, paired_cols_in, extra_cols_h)]
+    df_to_mean_h <- df[c(cols_to_mean, col_pairs$ins, extra_cols_h)]
 
     df_means_h <- .aggregate_df(df_to_mean_h, by_col = df[unique_cols_h], mean_nna)
     df_means_d <- .aggregate_df(df_to_mean, by_col = df[unique_cols_d], mean_nna)
@@ -127,9 +141,9 @@ calc_averages <- function(df_full){
     df_means_y <- .aggregate_df(df_to_mean, by_col = df[unique_cols_y], mean_nna)
 
 
-
-    df_to_nna <- df[paired_cols_in]
-    df_to_nna_h <- df[c(paired_cols_in,  extra_cols_h)]
+    cat(RM, 'Columns picked for NA counts: \n',col_pairs$ins , '\n')
+    df_to_nna <- df[col_pairs$ins]
+    df_to_nna_h <- df[c(col_pairs$ins,  extra_cols_h)]
     # renaming is easier before the actual calc
     names(df_to_nna) <- sub("$", "_sqc", names(df_to_nna))
     names(df_to_nna_h) <- sub("$", "_sqc", names(df_to_nna_h))
@@ -154,7 +168,7 @@ calc_averages <- function(df_full){
                                     unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
                                     df_full)
 
-    return(list(hourly = dfs$h, daily = dfs$d, monthly = dfs$m, yearly = dfs$y))
+    list(hourly = dfs$h, daily = dfs$d, monthly = dfs$m, yearly = dfs$y)
 }
 
 

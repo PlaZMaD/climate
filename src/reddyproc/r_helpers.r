@@ -125,7 +125,10 @@ nna_ratio <- function(x) {
 }
 
 
-get_default_arg_value<- function(fun, arg) {
+get_default_arg_value <- function(fun, arg) {
+    # example:
+    # mean_nna <- function(x, nna_threshold = NULL){
+    # NULL <- get_default_arg_value(mean_nna, nna_threshold)
     formals(fun)[[arg]]
 }
 
@@ -157,6 +160,16 @@ mean_nna <- function(x, nna_threshold = NULL){
         else
             return(NA)
     }
+}
+
+
+interactive_plot_columns <- function(col1, col2) {
+    library(plotly)
+    x <- c(1:length(col1))
+    df <- data.frame(x, col1, col2)
+    fig <- plot_ly(df, x = ~x, y = ~col1, type = 'scatter', mode = 'lines', name = 'col1')
+    fig <- fig %>% add_trace(y = ~col2, name = 'col2', mode = 'lines')
+    fig
 }
 
 
