@@ -27,13 +27,12 @@ def use_r_from_python_env():
     # robjects.r("install.packages('https://cran.r-project.org/bin/windows/contrib/4.2/REddyProc_1.3.3.zip', repos = NULL, type = 'binary')")
 
 
-
 def test_process(use_r_from_python_env):
     # ig.ias_output_prefix = 'kr_tur'
     # ig.reddyproc_filename = 'REddyProc.txt'
     rep_input_file = find_rep_file('output/*REddyProc*.txt')
     ig.reddyproc_filename = rep_input_file.fname
-    ig.ias_output_prefix = rep_input_file.ias_prefix
+    ig.ias_output_prefix = rep_input_file.site_id
 
     import src.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
@@ -42,7 +41,7 @@ def test_process(use_r_from_python_env):
 def test_draw():
     ig.eddyproc = SimpleNamespace()
     ig.eddyproc.out_info = SimpleNamespace()
-    ig.eddyproc.options = SimpleNamespace(is_to_apply_u_star_filtering=False)
+    ig.eddyproc.options = SimpleNamespace(is_to_apply_u_star_filtering=True)
     ig.eddyproc.out_info.fnames_prefix = 'tv_fy4_2023'
     ig.eddyproc.out_info.start_year = 2023
     ig.eddyproc.out_info.end_year = 2023

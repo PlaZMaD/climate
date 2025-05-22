@@ -49,15 +49,16 @@ with_patched_func <- function(s4, closure_name, patched_closure, extra_args, cod
 
 
 is_error_ustar_need_rg <- function(err) {
+	# TODO exact column name?
 	grepl('EProc$sEstUstarThold', err$call, fixed = TRUE) %>% any &&
 		err$message == 'Missing columns in dataset: '
 }
 
 
-check_ustar_daytime_arg <- function(rg_missing, eddyProcConfiguration) {
+check_ustar_daytime_arg <- function(real_rg_missing, eddyProcConfiguration) {
 	epc <- eddyProcConfiguration
 
-	if (rg_missing && epc$ustar_rg_source == "Rg")
+	if (real_rg_missing && epc$ustar_rg_source == 'Rg')
 		warning(RE, RU, 'Missing Rg column is picked for day/night detection, ',
 				'failure is expected when applying uStar.\n',
 				' Consider changing option ustar_rg_source')
