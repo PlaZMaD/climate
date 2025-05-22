@@ -105,7 +105,8 @@ getAdditionalDataVariablesToKeep <- function(allDataVariables, keepDataVariables
         # EProc$untrace(sEstUstarThold) trace(usEstUstarThreshold, recover);
         # #untrace(usEstUstarThreshold) trace(REddyProc:::usGetValidUstarIndices, recover);
         # untrace(usGetValidUstarIndices)
-	# TODO RgColName in other calls?
+
+	    # TODO RgColName in other calls?
         EProc$sEstUstarThold(seasonFactor = seasonFactor, RgColName = eddyProcConfiguration$ustar_rg_source)
     }
 
@@ -153,14 +154,15 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
     for (dataVariable in dataVariablesToFill) {
         if (eddyProcConfiguration$isToApplyUStarFiltering && dataVariable == "NEE") {
 
-            rg_missing <- 'Rg' %ni% dataVariablesToFill
-            check_ustar_daytime_arg(rg_missing, eddyProcConfiguration)
-            can_use_rg <- eddyProcConfiguration$ustar_rg_source == ''
+            real_rg_missing <- 'Rg' %ni% dataVariablesToFill
+            check_ustar_daytime_arg(real_rg_missing, eddyProcConfiguration)
+            # no theoretical, no real
+            any_rg_missing <- eddyProcConfiguration$ustar_rg_source == ''
 
             # only uStar bootstrap to NEE gapfilling, not to the other variables
             EProc$sMDSGapFillUStarScens(dataVariable, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty),
                                         isVerbose = TRUE, RgColName = eddyProcConfiguration$ustar_rg_source,
-                                        isFilterDayTime = can_use_rg)
+                                        isFilterDayTime = any_rg_missing)
 
             # EProc$sMDSGapFillAfterUStarDistr(dataVariable \t\t, uStarTh = uStarRes$uStarTh \t\t, uStarSuffixes =
             # uStarRes$suffixes \t\t, FillAll = !(dataVariable %in% dataVariablesWithoutUncertainty) \t\t, isVerbose = T)

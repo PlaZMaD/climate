@@ -33,7 +33,7 @@ def test_process(use_r_from_python_env):
     # ig.reddyproc_filename = 'REddyProc.txt'
     rep_input_file = find_rep_file('output/*REddyProc*.txt')
     ig.reddyproc_filename = rep_input_file.fname
-    ig.ias_output_prefix = rep_input_file.ias_prefix
+    ig.ias_output_prefix = rep_input_file.site_id
 
     import src.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
