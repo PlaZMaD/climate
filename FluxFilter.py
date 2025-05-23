@@ -105,8 +105,8 @@ pio.renderers.default = "colab"
 from IPython.display import display
 
 
-from google.colab import output
-output.enable_custom_widget_manager()
+# from google.colab import output
+# output.enable_custom_widget_manager()
 
 from plotly.subplots import make_subplots
 import plotly.express as px
@@ -123,13 +123,15 @@ import sys
 # import bglabutils.boosting as bb
 # import textwrap
 
-from google.colab import output
-output.no_vertical_scroll()
+# from google.colab import output
+# output.no_vertical_scroll()
 
 # %load_ext autoreload
 # %autoreload 2
 
-logging.basicConfig(level=logging.INFO, filename="/content/output/log.log", filemode="w", force=True)
+
+# logging.basicConfig(level=logging.INFO, filename="/content/output/log.log", filemode="w", force=True)
+logging.basicConfig(level=logging.INFO, filename="output/log.log", filemode="w", force=True)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 logging.info("START")
 
@@ -1998,6 +2000,7 @@ logging.info(f"New basic file saved to {os.path.join('output','output_summary.cs
 # %autoreload 2
 
 # def section_*(): + ipynb to py convert?
+'''
 try:
     import google.colab
 except ImportError:
@@ -2008,7 +2011,7 @@ except ImportError:
 
 # cur_dir = %pwd
 assert cur_dir == '/content'
-
+'''
 # !mkdir -p src/repo1/
 # %cd src/repo1/
 
@@ -2027,6 +2030,7 @@ assert cur_dir == '/content'
 # 1.3.2 vs 1.3.3 have slightly different last columns
 # alternative for windows
 # install.packages('https://cran.r-project.org/bin/windows/contrib/4.1/REddyProc_1.3.2.zip', repos = NULL, type = "binary")
+
 setup_colab_r_code = """
 install_if_missing <- function(package, version, repos) {
     if (!require(package, character.only = TRUE)) {
@@ -2039,11 +2043,20 @@ sink(stdout(), type = "message")
 install_if_missing("REddyProc", "1.3.3", repos = 'http://cran.rstudio.com/')
 sink()
 """
-from rpy2 import robjects
-robjects.r(setup_colab_r_code)
 
+from pathlib import Path
+env_folder = os.path.dirname(sys.executable)
+r_folder = str(Path(env_folder) / "Lib/R")
+assert Path(r_folder).exists()
+os.environ['R_HOME'] = r_folder
+
+from rpy2 import robjects
+
+robjects.r(setup_colab_r_code)
+'''
 from src.ipynb_helpers import enable_word_wrap
 enable_word_wrap()
+'''
 # + [markdown] id="034b04a5"
 # ## Фильтрация и заполнение пропусков
 #
