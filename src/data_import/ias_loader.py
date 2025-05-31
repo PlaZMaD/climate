@@ -8,11 +8,11 @@ from src.data_import.ias_error_check import set_lang, draft_check_ias
 from src.helpers.pd_helpers import df_intersect_cols
 
 
-def load_ias_csv(fpath):
+def load_csv(fpath):
 	return pd.read_csv(fpath)
 
 
-def load_ias_xls(fpath):
+def load_xls(fpath):
 	data = pd.read_excel(fpath)
 	if len(data) > 1:
 		raise Exception(_("Several lists in data file!"))
@@ -23,9 +23,9 @@ def load_ias_xls(fpath):
 def load_ias_file_by_ext(fpath):
 	suffix = Path(fpath).suffix.lower()
 	if suffix == '.csv':
-		data = load_ias_csv(fpath)
+		data = load_csv(fpath)
 	elif suffix == ['.xls', '.xlsx']:
-		data = load_ias_xls(fpath)
+		data = load_xls(fpath)
 	else:
 		raise Exception(_(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file."))
 	return data
@@ -67,27 +67,37 @@ def check_with_bglabutils(fpath, data):
 	assert df1 == df2
 
 
-def rename_ias_cols_to_standard(df_ias):
-	col_match = {"co2_flux": "FC_1_1_1", "qc_co2_flux": "FC_SSITC_TEST_1_1_1", "LE": "LE_1_1_1",
-	             "qc_LE": "LE_SSITC_TEST_1_1_1", "H": "H_1_1_1", "qc_H": "H_SSITC_TEST_1_1_1", "Tau": "TAU_1_1_1",
-	             "qc_Tau": "TAU_SSITC_TEST_1_1_1", "co2_strg": "SC_1_1_1", "co2_mole_fraction": "CO2_1_1_1",
-	             "h2o_mole_fraction": "H2O_1_1_1", "sonic_temperature": "T_SONIC_1_1_1", "u_star": "USTAR_1_1_1",
-	             "Ta_1_1_1": "TA_1_1_1", "Pa_1_1_1": "PA_1_1_1", "Swin_1_1_1": "SW_IN_1_1_1",
-	             "Swout_1_1_1": "SW_OUT_1_1_1",
-	             "Lwin_1_1_1": "LW_IN_1_1_1", "Lwout_1_1_1": "LW_OUT_1_1_1", "PPFD_1_1_1": "PPFD_IN_1_1_1",
-	             "Rn_1_1_1": "NETRAD_1_1_1", "MWS_1_1_1": "WS_1_1_1", "Ts_1_1_1": "TS_1_1_1", "Ts_2_1_1": "TS_2_1_1",
-	             "Ts_3_1_1": "TS_3_1_1", "Pswc_1_1_1": "SWC_1_1_1", "Pswc_2_1_1": "SWC_2_1_1",
-	             "Pswc_3_1_1": "SWC_3_1_1",
-	             "SHF_1_1_1": "G_1_1_1", "SHF_2_1_1": "G_2_1_1", "SHF_3_1_1": "G_3_1_1", "L": "MO_LENGTH_1_1_1",
-	             "(z-d)/L": "ZL_1_1_1", "x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1",
-	             "x_90%": "FETCH_90_1_1_1",
-	             "ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction": "CH4_1_1_1",
-	             "ch4_strg": "SCH4_1_1_1",
-	             "ch4_signal_strength": "CH4_RSSI_1_1_1", "co2_signal_strength": "CO2_STR_1_1_1",
-	             "rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"}
-	col_match = {item: key.lower() for key, item in col_match.items()}
+def rename_cols_ias_to_eddy(df_ias: pd.DataFrame):
+	eddy_to_ias_map = {
+		"co2_flux": "FC_1_1_1", "qc_co2_flux": "FC_SSITC_TEST_1_1_1", "LE": "LE_1_1_1",
+		"qc_LE": "LE_SSITC_TEST_1_1_1", "H": "H_1_1_1", "qc_H": "H_SSITC_TEST_1_1_1", "Tau": "TAU_1_1_1",
+		"qc_Tau": "TAU_SSITC_TEST_1_1_1", "co2_strg": "SC_1_1_1", "co2_mole_fraction": "CO2_1_1_1",
+		"h2o_mole_fraction": "H2O_1_1_1", "sonic_temperature": "T_SONIC_1_1_1", "u_star": "USTAR_1_1_1",
+		"Ta_1_1_1": "TA_1_1_1", "Pa_1_1_1": "PA_1_1_1", "Swin_1_1_1": "SW_IN_1_1_1",
+		"Swout_1_1_1": "SW_OUT_1_1_1",
+		"Lwin_1_1_1": "LW_IN_1_1_1", "Lwout_1_1_1": "LW_OUT_1_1_1", "PPFD_1_1_1": "PPFD_IN_1_1_1",
+		"Rn_1_1_1": "NETRAD_1_1_1", "MWS_1_1_1": "WS_1_1_1", "Ts_1_1_1": "TS_1_1_1",
+		"Ts_2_1_1": "TS_2_1_1",
+		"Ts_3_1_1": "TS_3_1_1", "Pswc_1_1_1": "SWC_1_1_1", "Pswc_2_1_1": "SWC_2_1_1",
+		"Pswc_3_1_1": "SWC_3_1_1",
+		"SHF_1_1_1": "G_1_1_1", "SHF_2_1_1": "G_2_1_1", "SHF_3_1_1": "G_3_1_1", "L": "MO_LENGTH_1_1_1",
+		"(z-d)/L": "ZL_1_1_1", "x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1",
+		"x_90%": "FETCH_90_1_1_1",
+		"ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1",
+		"ch4_mole_fraction": "CH4_1_1_1",
+		"ch4_strg": "SCH4_1_1_1",
+		"ch4_signal_strength": "CH4_RSSI_1_1_1", "co2_signal_strength": "CO2_STR_1_1_1",
+		"rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
+	}
+	ias_to_eddy_map = {item.lower(): key for key, item in eddy_to_ias_map.items()}
 
-	return df_ias.rename(columns=col_match)
+	rename_map = {col: ias_to_eddy_map[col.lower()] for col in df_ias.columns if col.lower() in ias_to_eddy_map}
+	unknown_cols = set(df_ias.columns) - set(rename_map.keys())
+
+	if len(unknown_cols) > 0:
+		raise Exception(f'Cannot process, next columns are not recognised: {unknown_cols}')
+
+	return df_ias.rename(columns=rename_map)
 
 
 def load_ias(config, config_meteo):
@@ -104,6 +114,7 @@ def load_ias(config, config_meteo):
 	fpath = config['path'][0]
 	draft_check_ias(fpath)
 	df = load_ias_file_safe(fpath)
+	check_with_bglabutils(fpath, df)
 
 	df['datetime'] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
 	time_col = 'datetime'
@@ -120,7 +131,7 @@ def load_ias(config, config_meteo):
 	ias_df = ias_df.fillna(-9999)
 	'''
 
-	df = rename_ias_cols_to_standard(df)
+	df = rename_cols_ias_to_eddy(df)
 
 	'''
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
