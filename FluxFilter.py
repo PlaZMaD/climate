@@ -916,16 +916,6 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
 
 
 # + [markdown] id="WfWRVITABzrz"
-# Converting IAS file if present
-#
-
-from src.ias.error_check import check_file_proto
-from src.ias.file_loader import load_ias
-ias_input = "tv_fy4_2023_v01.csv"
-# check_file_proto(ias_input)
-df_ias = load_ias(ias_input, None)
-
-# + [markdown] id="WfWRVITABzrz"
 # #Задаем параметры для загрузки и обработки данных
 #
 
@@ -981,9 +971,13 @@ def my_datetime_converter(x):
 config['time']['converter'] = my_datetime_converter
 #####################
 
+# Тип файлов для импорта: 'CSF-1', 'IAS-1', 'EDDY-1'
+config['mode'] = 'EDDY-1'
+
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
 config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
+# config['path'] = ['tv_fy4_2023_v01.csv']
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -1220,66 +1214,37 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-data, time = bg.load_df(config)
-data = data[next(iter(data))]  #т.к. изначально у нас словарь
-data_freq = data.index.freq
-data_bkp = copy(data)
 
-print("Диапазон времени full_output: ", data.index[[0, -1]])
-logging.info(f"Data loaded from {config['path']}")
-logging.info("Time range for full_output: "+ " - ".join(data.index[[0,-1]].strftime('%Y-%m-%d %H:%M')))
+from src.data_import.eddypro_loader import load_eddypro
+from src.data_import.ias_loader import load_ias
 
-# + [markdown] id="6j7ombDYqyC8"
-# Проверяем корректность временных меток. Убираем повторы, дополняем пропуски. На случай загрузки нескольких файлов. При загрузке одного делается автоматически.
+mode_str = config['mode']
+if mode_str == 'EDDY-1':
+    res = load_eddypro(config, config_meteo)
+elif mode_str == 'IAS-1':
+    # TODO biomet_columns
+    res = load_ias(config, config_meteo)
+elif mode_str == 'CSF-1':
+    assert False
+else:
+    print(f"Please double check value of config['mode'], {config['mode']} is probably typo")
+    assert False
 
-# + id="65DLIIucNOPe"
-if config_meteo ['use_biomet']:
-  data_meteo, time_meteo  = bg.load_df(config_meteo)
-  data_meteo = data_meteo[next(iter(data_meteo))]  #т.к. изначально у нас словарь
-  data_meteo_bkp = copy(data_meteo)
-  meteo_freq = data_meteo.index.freq
-  print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
-  logging.info(f"MeteoData loaded from {config_meteo['path']}")
-  logging.info("Time range for meteo: "+ " - ".join(data_meteo.index[[0,-1]].strftime('%Y-%m-%d %H:%M')))
+data, time, biomet_columns, data_freq, config_meteo = res
 
-# + id="3fVgA8UTMfJ3"
-if config_meteo ['use_biomet']:
-  if data_freq != meteo_freq:
-    print("Resampling meteo data")
-    logging.info(f"Resampling meteo data")
-    data_meteo = data_meteo.asfreq(data_freq)
-
-# + id="rZbqd6adhHEP"
-print("Колонки в FullOutput \n", data.columns.to_list())
-if config_meteo ['use_biomet']:
-  print("Колонки в метео \n", data_meteo.columns.to_list())
-
-# + [markdown] id="FF78Wlq9rD_n"
-# Сливаем в один DataFrame.
-
-# + id="9v0rxHehhZEI"
-if config_meteo ['use_biomet']:
-  data = data.join(data_meteo, how='outer', rsuffix='_meteo')
-  data[time] = data.index
-  data = bg.repair_time(data, time)
-  if data[data_meteo.columns[-1]].isna().sum() == len(data.index):
-    print("Bad meteo data range, skipping! Setting config_meteo ['use_biomet']=False")
-    config_meteo ['use_biomet'] = False
-
-
+'''
 from helpers.pd_helpers import df_get_unique_cols
 d1, d2 = df_get_unique_cols(data_bkp, data)
 m1, m2 = df_get_unique_cols(data_meteo_bkp, data)
 i1, i2 = df_get_unique_cols(df_ias, data[:-1])
-
-df_ias.index.freq = df_ias.index[2] - df_ias.index[1]
-data = df_ias
+assert df_ias.index.freq > 0
+'''
 
 points_per_day = int(pd.Timedelta('24H')/data_freq)
 
 # + id="C8lLDYOWzH2d"
 data.columns = data.columns.str.lower()
-if not config_meteo ['use_biomet']:
+if not config_meteo['use_biomet']:
   for col in ['rh', 'vpd']:
     data[col+"_1_1_1"] = data[col]
 
@@ -1292,9 +1257,6 @@ cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength', 
                 'p_1_1_1', 'ta_1_1_1', 'co2_strg', 'le', 'h']
 
 
-biomet_columns = []
-if config_meteo ['use_biomet']:
-  biomet_columns = data_meteo.columns.str.lower()
 data_type_error_flag = False
 for col in cols_2_check:
   if col not in data.columns:

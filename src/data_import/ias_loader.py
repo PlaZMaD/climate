@@ -1,11 +1,10 @@
 import logging
-import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
 import bglabutils.basic as bg
-from ias.error_check import set_lang
+from src.data_import.ias_error_check import set_lang, draft_check_ias
 from helpers.pd_helpers import df_intersect_cols
 
 
@@ -91,14 +90,16 @@ def rename_ias_cols_to_standard(df_ias):
 	return df_ias.rename(columns=col_match)
 
 
-def load_ias(fpath, config_meteo=None):
+def load_ias(config, config_meteo):
 	# TODO move to ipynb?
 	set_lang('ru')
 
 	# TODO merge with config?
-	# assert config_meteo['use_biomet']
+	assert config_meteo['use_biomet']
 
-	df = load_ias_file_safe(fpath)
+	# TODO merge
+	draft_check_ias(config['path'])
+	df = load_ias_file_safe(config['path'])
 
 	df['datetime'] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
 	df.index = df['datetime']
@@ -169,4 +170,10 @@ def load_ias(fpath, config_meteo=None):
 	# ias_filename = f"{ias_output_prefix}_{ias_year}_{ias_output_version}.csv"
 	# ias_df.to_csv(os.path.join('output',ias_filename), index=False)
 	# logging.info(f"IAS file saved to {os.path.join('output',ias_filename)}.csv")
-	return df
+
+	df.index.freq = df.index[2] - df.index[1]
+	# TODO 1 fix
+	biomet_columns = None
+	return df, biomet_columns, df.index.freq, config_meteo
+
+

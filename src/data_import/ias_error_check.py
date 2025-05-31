@@ -24,9 +24,6 @@ def set_lang(language):
     lang.install()
 
 
-logging.basicConfig(level=logging.INFO, filename="log.log", filemode="w", force=True, encoding='utf-8')
-logging.info("START")
-
 known_columns = ["ALB", "APAR", "CH4", "CO2", "CO2C13", "D_SNOW", "DBH", "EVI", "FC", "FC_CMB", "FC_SSITC_TEST", "FCH4",
                  "FCH4_CMB", "FCH4_PI", "FETCH_70", "FETCH_80", "FETCH_90", "FETCH_FILTER", "FETCH_MAX", "FH2O", "FN2O",
                  "FN2O_CMB", "FNO", "FNO_CMB", "FNO2", "FNO2_CMB", "FO3", "FO3_SSITC_ TEST", "G", "GPP_PI", "H", "H_PI",
@@ -326,91 +323,6 @@ def check_file(path_to_file):
     return total_errors
 
 
-class MyHandler(logging.StreamHandler, QtCore.QObject):
-    message = QtCore.pyqtSignal(str)
-
-    def __init__(self, parent=None):
-        logging.StreamHandler.__init__(self)
-        QtCore.QObject.__init__(self, parent)
-
-    def emit(self, record: str):
-        log_msg = self.format(record)
-
-        # Раскрасим строку перед отправкой
-        if "DEBUG" in log_msg:
-            text = f"""<span style='color:#888888;'>{log_msg}</span>"""
-        elif "INFO" in log_msg:
-            text = f"""<span style='color:#008800;'>{log_msg}</span>"""
-        elif "WARNING" in log_msg:
-            text = f"""<span style='color:#888800;'>{log_msg}</span>"""
-        elif "ERROR" in log_msg:
-            text = f"""<span style='color:#880000;'>{log_msg}</span>"""
-        elif "CRITICAL" in log_msg:
-            text = f"""<span style='color:#000088;'>{log_msg}</span>"""
-
-        # генерируем сигнал, передаем раскрашенный текст
-        self.message.emit(text)
-
-        # сбрасываем буфер
-        self.flush()
-
-
-class MyApp(QWidget):
-    def __init__(self, handler: logging.StreamHandler, parent=None):
-        super().__init__()
-        QtWidgets.QTabWidget.__init__(self, parent)
-
-        self.button = QPushButton("Open File", self)
-        self.button.clicked.connect(self.openFileDialog)
-
-        self.langbox = QCheckBox("switch to english")
-        self.langbox.clicked.connect(self.switch_lang)
-
-        self.tab = QTextEdit()
-        self.tab.setAcceptRichText(True)
-
-        self.lic = QLabel("© Kurbatov E., Mamkin V.; A.N. Severtsov IEE of RAS, 2025")
-        self.lic.setFixedHeight(15)
-
-        self.handler = handler
-        self.handler.message.connect(self.__updateText)
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.button, 0)
-        vbox.addWidget(self.langbox, 1)
-        vbox.addWidget(self.tab, 2)
-        vbox.addWidget(self.lic, 3)
-
-
-        self.setLayout(vbox)
-        self.setWindowTitle('IAS file checker')
-        self.setGeometry(300, 300, 1000, 600)
-        self.show()
-        logging.info("READY")
-
-    def openFileDialog(self):
-        file_dialog = QFileDialog(self)
-        file_dialog.setWindowTitle("Open File")
-        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        file_dialog.setViewMode(QFileDialog.ViewMode.Detail)
-
-        if file_dialog.exec():
-            selected_files = file_dialog.selectedFiles()
-            logging.info(f"Selected File: {selected_files[0]}")
-            check_file(selected_files[0])
-
-    def __updateText(self, msg: str):
-        logger.debug(f"{self.tab.__class__.__name__}.__updateText(msg)")
-        self.tab.append(msg)
-
-    def switch_lang(self):
-        if self.langbox.checkState():
-            set_lang('en')
-        else:
-            set_lang('ru')
-    def update_label(self, msg: str):
-        self.lic.setText(f"Vesrsion {msg}   © Kurbatov E., Mamkin V.; A.N. Severtsov IEE of RAS, 2025")
-
 
 class ErrorFlagHandler(logging.Handler):
     def __init__(self):
@@ -423,8 +335,10 @@ class ErrorFlagHandler(logging.Handler):
 
 
 # if __name__ == '__main__':
-def check_file_proto(fpath):
+def draft_check_ias(fpath):
     set_lang('ru')
+
+    logging.info("Checking IAS file...")
 
     logger = logging.getLogger()
     stream_formatter = logging.Formatter(
@@ -450,4 +364,5 @@ def check_file_proto(fpath):
 
     if errors > 0:
         msg = f"Input file {fpath} cannot be used yet. Please fix errors."
+        logging.error(msg)
         raise Exception(msg)
