@@ -83,6 +83,19 @@
 # key = userdata.get('registry_key')
 
 # + id="HT2KP0eYk1r3"
+# %load_ext autoreload
+# %autoreload 2
+
+# TODO add support of testing cells individually using import * and mocking global space vars gs.*
+# possibly utilise ipynb <-> py conversion to store only .py versions?
+
+# !git -c init.defaultBranch=main init
+# !git sparse-checkout init
+# !git sparse-checkout set "src"
+# !git remote add origin https://github.com/PlaZMaD/climate.git
+# !git fetch --depth 1 origin main
+# !git -c advice.detachedHead=false checkout FETCH_HEAD
+
 # !mkdir output
 
 # + id="E-a6ANTGBsqg"
@@ -1215,9 +1228,9 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-
 from src.data_import.eddypro_loader import load_eddypro
 from src.data_import.ias_loader import load_ias
+
 
 mode_str = config['mode']
 if mode_str == 'EDDY-1':
@@ -1980,10 +1993,6 @@ logging.info(f"New basic file saved to {os.path.join('output','output_summary.cs
 # Необходим и автоматически запускается, если детектируется окружение Google Colab.  
 # Загружает используемые в ячейках скрипты в директорию `src` и подготавливает R окружение.
 # + id="06859169"
-# %load_ext autoreload
-# %autoreload 2
-
-# def section_*(): + ipynb to py convert?
 '''
 try:
     import google.colab
@@ -1996,19 +2005,6 @@ except ImportError:
 # cur_dir = %pwd
 assert cur_dir == '/content'
 '''
-# !mkdir -p src/repo1/
-# %cd src/repo1/
-
-# !git -c init.defaultBranch=main init
-# !git sparse-checkout init
-# !git sparse-checkout set "src"
-# !git remote add origin https://github.com/PlaZMaD/climate.git
-# !git fetch --depth 1 origin main
-# !git -c advice.detachedHead=false checkout FETCH_HEAD
-
-# %cd /content
-# !cp -r src/repo1/src .
-
 # %pip install pysolar
 
 # 1.3.2 vs 1.3.3 have slightly different last columns
