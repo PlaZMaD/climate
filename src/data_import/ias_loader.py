@@ -5,7 +5,7 @@ import pandas as pd
 
 import bglabutils.basic as bg
 from src.data_import.ias_error_check import set_lang, draft_check_ias
-from helpers.pd_helpers import df_intersect_cols
+from src.helpers.pd_helpers import df_intersect_cols
 
 
 def load_ias_csv(fpath):
@@ -98,10 +98,15 @@ def load_ias(config, config_meteo):
 	assert config_meteo['use_biomet']
 
 	# TODO merge
-	draft_check_ias(config['path'])
-	df = load_ias_file_safe(config['path'])
+	if len(config['path']) != 1:
+		raise Exception('Multiple IAS files are not supported yet')
+
+	fpath = config['path'][0]
+	draft_check_ias(fpath)
+	df = load_ias_file_safe(fpath)
 
 	df['datetime'] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
+	time_col = 'datetime'
 	df.index = df['datetime']
 
 	print('Replacing -9999 to np.nan')
@@ -122,15 +127,15 @@ def load_ias(config, config_meteo):
 	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in ias_df.columns]
 
 	new_time = pd.DataFrame(
-		index=pd.date_range(start=f"01.01.{ias_df[time].dt.year.min()}", end=f"01.01.{ias_df[time].dt.year.max()}",
+		index=pd.date_range(start=f"01.01.{ias_df[time_col].dt.year.min()}", end=f"01.01.{ias_df[time_col].dt.year.max()}",
 		                    freq=ias_df.index.freq, inclusive='left'))
 	ias_df = new_time.join(ias_df, how='left')
-	ias_df[time] = ias_df.index
+	ias_df[time_col] = ias_df.index
 
-	ias_df['TIMESTAMP_START'] = ias_df[time].dt.strftime('%Y%m%d%H%M')
-	ias_df['TIMESTAMP_END'] = (ias_df[time] + pd.Timedelta(0.5, "H")).dt.strftime('%Y%m%d%H%M')
+	ias_df['TIMESTAMP_START'] = ias_df[time_col].dt.strftime('%Y%m%d%H%M')
+	ias_df['TIMESTAMP_END'] = (ias_df[time_col] + pd.Timedelta(0.5, "H")).dt.strftime('%Y%m%d%H%M')
 	ias_df['DTime'] = np.round(
-		ias_df[time].dt.dayofyear + 1. / 48 * 2 * ias_df[time].dt.hour + 1. / 48 * (ias_df[time].dt.minute // 30),
+		ias_df[time_col].dt.dayofyear + 1. / 48 * 2 * ias_df[time_col].dt.hour + 1. / 48 * (ias_df[time_col].dt.minute // 30),
 		decimals=3)
 
 	if 'h_strg' in ias_df.columns:
@@ -143,16 +148,16 @@ def load_ias(config, config_meteo):
 	if 'SW_IN_1_1_1' in ias_df.columns:
 		ias_df['SW_IN_1_1_1'] = df['swin_1_1_1']
 
-	ias_year = ias_df[time].dt.year.min()
+	ias_year = ias_df[time_col].dt.year.min()
 	var_cols.sort()
-	col_list_ias = time_cols + var_cols + [time]
+	col_list_ias = time_cols + var_cols + [time_col]
 	print(col_list_ias)
 	ias_df = ias_df[col_list_ias]
 
 	for year in ias_df.index.year.unique():
 		ias_filename = f"{ias_output_prefix}_{year}_{ias_output_version}.csv"
-		save_data = ias_df.loc[ias_df[time].dt.year == year]
-		save_data = save_data.drop(time, axis=1)
+		save_data = ias_df.loc[ias_df[time_col].dt.year == year]
+		save_data = save_data.drop(time_col, axis=1)
 		save_data = save_data.fillna(-9999)
 		if len(save_data.index) >= 5:
 			save_data.to_csv(os.path.join('output', ias_filename), index=False)
@@ -171,9 +176,12 @@ def load_ias(config, config_meteo):
 	# ias_df.to_csv(os.path.join('output',ias_filename), index=False)
 	# logging.info(f"IAS file saved to {os.path.join('output',ias_filename)}.csv")
 
+	# TODO improve
 	df.index.freq = df.index[2] - df.index[1]
-	# TODO 1 fix
-	biomet_columns = None
-	return df, biomet_columns, df.index.freq, config_meteo
+	assert df.index.freq == df.index[-1] - df.index[-2]
+	# TODO 'timestamp_1', 'datetime'?
+	expected_biomet_columns = ['ta_1_1_1', 'rh_1_1_1', 'rg_1_1_1', 'lwin_1_1_1',
+	                           'lwout_1_1_1', 'swin_1_1_1', 'swout_1_1_1', 'p_1_1_1']
 
-
+	biomet_columns = list(set(df.columns.str.lower()) & set(expected_biomet_columns))
+	return df, time_col, biomet_columns, df.index.freq, config_meteo

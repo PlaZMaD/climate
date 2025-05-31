@@ -2,8 +2,7 @@
 # pyinstaller.exe --onefile --hidden-import openpyxl.cell._writer --windowed --add-data "locale;locale" --add-data "regulation.ico;."
 #<a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
 
-from PyQt5.QtWidgets import QApplication, QPushButton, QFileDialog, QWidget, QVBoxLayout, QTextEdit, QCheckBox, QLabel
-from PyQt5 import QtCore, QtWidgets, QtGui
+
 import pandas as pd
 import numpy as np
 import os
@@ -15,6 +14,7 @@ from copy import deepcopy as copy
 import gettext
 
 # np.set_printoptions(threshold=sys.maxsize)
+
 
 def set_lang(language):
     bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(
@@ -323,7 +323,6 @@ def check_file(path_to_file):
     return total_errors
 
 
-
 class ErrorFlagHandler(logging.Handler):
     def __init__(self):
         super().__init__()
@@ -334,7 +333,6 @@ class ErrorFlagHandler(logging.Handler):
             self.had_error = True
 
 
-# if __name__ == '__main__':
 def draft_check_ias(fpath):
     set_lang('ru')
 

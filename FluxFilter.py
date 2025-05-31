@@ -972,12 +972,13 @@ config['time']['converter'] = my_datetime_converter
 #####################
 
 # Тип файлов для импорта: 'CSF-1', 'IAS-1', 'EDDY-1'
-config['mode'] = 'EDDY-1'
+config['mode'] = 'IAS-1'
+# config['mode'] = 'EDDY-1'
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
-# config['path'] = ['tv_fy4_2023_v01.csv']
+# config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
+config['path'] = ['tv_fy4_2023_v01.csv']
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -1225,10 +1226,10 @@ elif mode_str == 'IAS-1':
     # TODO biomet_columns
     res = load_ias(config, config_meteo)
 elif mode_str == 'CSF-1':
-    assert False
+    raise NotImplementedError
 else:
-    print(f"Please double check value of config['mode'], {config['mode']} is probably typo")
-    assert False
+    raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
+
 
 data, time, biomet_columns, data_freq, config_meteo = res
 
@@ -1244,7 +1245,7 @@ points_per_day = int(pd.Timedelta('24H')/data_freq)
 
 # + id="C8lLDYOWzH2d"
 data.columns = data.columns.str.lower()
-if not config_meteo['use_biomet']:
+if not config_meteo ['use_biomet']:
   for col in ['rh', 'vpd']:
     data[col+"_1_1_1"] = data[col]
 

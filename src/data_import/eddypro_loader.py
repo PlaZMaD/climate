@@ -25,7 +25,7 @@ def load_biomet(config_meteo, data_freq):
 
 
 def load_eddypro(config, config_meteo):
-	# load of full_output, optionally with biomet
+	# load of eddypro = full_output, optionally with biomet
 
 	data, time = bg.load_df(config)
 	data = data[next(iter(data))]  # т.к. изначально у нас словарь
