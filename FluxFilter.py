@@ -916,6 +916,16 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
 
 
 # + [markdown] id="WfWRVITABzrz"
+# Converting IAS file if present
+#
+
+from src.ias.error_check import check_file_proto
+from src.ias.file_loader import load_ias
+ias_input = "tv_fy4_2023_v01.csv"
+# check_file_proto(ias_input)
+df_ias = load_ias(ias_input, None)
+
+# + [markdown] id="WfWRVITABzrz"
 # #Задаем параметры для загрузки и обработки данных
 #
 
@@ -1213,6 +1223,7 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 data, time = bg.load_df(config)
 data = data[next(iter(data))]  #т.к. изначально у нас словарь
 data_freq = data.index.freq
+data_bkp = copy(data)
 
 print("Диапазон времени full_output: ", data.index[[0, -1]])
 logging.info(f"Data loaded from {config['path']}")
@@ -1225,6 +1236,7 @@ logging.info("Time range for full_output: "+ " - ".join(data.index[[0,-1]].strft
 if config_meteo ['use_biomet']:
   data_meteo, time_meteo  = bg.load_df(config_meteo)
   data_meteo = data_meteo[next(iter(data_meteo))]  #т.к. изначально у нас словарь
+  data_meteo_bkp = copy(data_meteo)
   meteo_freq = data_meteo.index.freq
   print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
   logging.info(f"MeteoData loaded from {config_meteo['path']}")
@@ -1253,6 +1265,15 @@ if config_meteo ['use_biomet']:
   if data[data_meteo.columns[-1]].isna().sum() == len(data.index):
     print("Bad meteo data range, skipping! Setting config_meteo ['use_biomet']=False")
     config_meteo ['use_biomet'] = False
+
+
+from helpers.pd_helpers import df_get_unique_cols
+d1, d2 = df_get_unique_cols(data_bkp, data)
+m1, m2 = df_get_unique_cols(data_meteo_bkp, data)
+i1, i2 = df_get_unique_cols(df_ias, data[:-1])
+
+df_ias.index.freq = df_ias.index[2] - df_ias.index[1]
+data = df_ias
 
 points_per_day = int(pd.Timedelta('24H')/data_freq)
 
