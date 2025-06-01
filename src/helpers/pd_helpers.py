@@ -1,5 +1,7 @@
 import pandas as pd
 
+from helpers.py_helpers import fix_strs_case
+
 
 def equal_series(s1, s2, compare_na=True):
 	return (s1 == s2) | (s1.isna() & s2.isna() & compare_na)
@@ -23,17 +25,13 @@ def df_get_unique_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
 	return df1_unique, df2_unique
 
 
-def df_repair_cols_case(df: pd.DataFrame, correct_case, ignore_missing=True):
-	correct_l_to_correct = {c.lower(): c for c in correct_case}
+def df_repair_cols_case(df: pd.DataFrame, correct_case: list[str], ignore_missing=True):
+	new_strs, renames, missing = fix_strs_case(df.columns, correct_case)
 
-	new_cols = pd.Index([correct_l_to_correct.get(c.lower(), c) for c in df.columns])
-	same_cols = new_cols.intersection(df.columns)
-	renamed_from = list(df.columns.drop(same_cols))
-	renamed_to = list(new_cols.drop(same_cols))
-
-	df.columns = new_cols
-	if len(renamed_from) > 0:
-		print(f'Unexpected columns case fixed: {renamed_from} -> {renamed_to}')
+	df.columns = new_strs
+	if len(renames) > 0:
+		renames_str = [f'{s} -> {n}' for s, n in renames]
+		print('Unexpected columns case fixed: ' + str(renames_str))
 
 	missing = set(df.columns) - set(correct_case)
 	if len(missing) > 0:

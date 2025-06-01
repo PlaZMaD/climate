@@ -11,6 +11,7 @@ from src.helpers.pd_helpers import df_get_unique_cols, df_repair_cols_case
 # TODO fix ias export to match import
 # possibly extract to abstract time series converter class later?
 # possibly store in table file instead?
+
 COLS_EDDYPRO_TO_IAS_MUST = {
 	"co2_flux": "FC_1_1_1", "qc_co2_flux": "FC_SSITC_TEST_1_1_1",
 	"LE": "LE_1_1_1", "qc_LE": "LE_SSITC_TEST_1_1_1",
@@ -30,14 +31,16 @@ COLS_EDDYPRO_TO_IAS_MUST = {
 	"x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1", "x_90%": "FETCH_90_1_1_1",
 	"ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction": "CH4_1_1_1",
 	"ch4_strg": "SCH4_1_1_1", "ch4_signal_strength": "CH4_RSSI_1_1_1", "co2_signal_strength": "CO2_STR_1_1_1",
-	"rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
+	"Rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
 }
 COLS_EDDYPRO_TO_IAS_OPTIONAL = {
-	'h_strg': 'SH_1_1_1', 'le_strg': 'SLE_1_1_1', 'swin_1_1_1': 'SW_IN_1_1_1'
+	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1'
 }
+COLS_EDDYPROL_TO_IAS_MUST = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_MUST.items()}
+COLS_EDDYPROL_TO_IAS_OPTIONAL = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_OPTIONAL.items()}
 
 # IAS optional rules are more complex and placed into IAS check tool
-COLS_IAS_TO_EDDYPRO = invert_dict(COLS_EDDYPRO_TO_IAS_MUST) | invert_dict(COLS_EDDYPRO_TO_IAS_OPTIONAL)
+COLS_IAS_TO_EDDYPRO = invert_dict(COLS_EDDYPROL_TO_IAS_MUST) | invert_dict(COLS_EDDYPROL_TO_IAS_OPTIONAL)
 COLS_IAS_TO_EDDYPRO_SPECIAL = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 
 
@@ -186,8 +189,7 @@ def load_ias(config, config_meteo):
 
 
 	# TODO 'timestamp_1', 'datetime'?
-	expected_biomet_columns = ['ta_1_1_1', 'rh_1_1_1', 'rg_1_1_1', 'lwin_1_1_1',
-							   'lwout_1_1_1', 'swin_1_1_1', 'swout_1_1_1', 'p_1_1_1']
-	biomet_columns = list(set(df.columns.str.lower()) & set(expected_biomet_columns))
-
-	return df, time_col, biomet_columns, df.index.freq, config_meteo
+	expected_biomet_cols = np.strings.lower(['Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1',
+	                                         'Lwout_1_1_1', 'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'])
+	biomet_cols_index = df.columns.intersection(expected_biomet_cols)
+	return df, time_col, biomet_cols_index, df.index.freq, config_meteo

@@ -984,14 +984,16 @@ def my_datetime_converter(x):
 config['time']['converter'] = my_datetime_converter
 #####################
 
-# Тип файлов для импорта: 'CSF-1', 'IAS-1', 'EDDY-1'
-config['mode'] = 'IAS-1'
-# config['mode'] = 'EDDY-1'
+# Тип файлов для импорта: 'CSF_', 'IAS_2', 'EDDYPRO_1'
+# config['mode'] = 'IAS_2'
+config['mode'] = 'EDDYPRO_1'
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-# config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
-config['path'] = ['tv_fy4_2023_v01.csv']
+# #['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
+# config['path'] = ['eddy_pro result_SSB 2023.csv']
+# config['path'] = ['tv_fy4_2023_v01.csv']
+config['path'] = ['_Ckd_FO_2015.csv']
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -1012,7 +1014,7 @@ config['path'] = ['tv_fy4_2023_v01.csv']
 
 # + id="H7E5LGx1DVsA"
 config_meteo = {}
-config_meteo ['use_biomet'] = True
+config_meteo['use_biomet'] = True
 config_meteo['debug'] = False  # True загрузит небольшой кусок файла, а не целый
 config_meteo['-9999_to_nan'] = True #заменяем -9999  на np.nan
 config_meteo['repair_time'] = True #генерируем новые временные метки в случае ошибок
@@ -1029,7 +1031,7 @@ config_meteo['time']['converter'] = my_datetime_converter
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config_meteo['path'] = 'BiometFy4_2023.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
+config_meteo['path'] = '_Ckd_biomet_2015.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -1228,17 +1230,20 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-from src.data_import.eddypro_loader import load_eddypro
+from src.data_import.eddypro_loader import load_eddypro_fulloutput
 from src.data_import.ias_loader import load_ias
 
+# TODO remove
+from src.helpers.py_helpers import debug_stdout_to_log
+debug_stdout_to_log('output/debug_stdout.log')
 
 mode_str = config['mode']
-if mode_str == 'EDDY-1':
-    res = load_eddypro(config, config_meteo)
-elif mode_str == 'IAS-1':
+if mode_str == 'EDDYPRO_1':
+    res = load_eddypro_fulloutput(config, config_meteo)
+elif mode_str == 'IAS_2':
     # TODO biomet_columns
     res = load_ias(config, config_meteo)
-elif mode_str == 'CSF-1':
+elif mode_str == 'CSF_':
     raise NotImplementedError
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
@@ -1246,14 +1251,15 @@ else:
 # rename time to time_col?
 data, time, biomet_columns, data_freq, config_meteo = res
 
-'''
-from helpers.pd_helpers import df_get_unique_cols
-d1, d2 = df_get_unique_cols(data_bkp, data)
-m1, m2 = df_get_unique_cols(data_meteo_bkp, data)
-i1, i2 = df_get_unique_cols(df_ias, data[:-1])
-assert df_ias.index.freq > 0
-'''
 
+'''
+i1, i2 = df_get_unique_cols(df_ias, data[:-1])
+from helpers.pd_helpers import df_get_unique_cols
+config['mode'] = 'EDDYPRO_1'
+config['path'] = ['eddy_pro result_SSB 2023.csv']
+data, time, biomet_columns, data_freq, config_meteo = load_eddypro_fulloutput(config, config_meteo)
+d1, d2 = df_get_unique_cols(data2[:-1], data)
+'''
 points_per_day = int(pd.Timedelta('24H')/data_freq)
 
 # + id="C8lLDYOWzH2d"
@@ -1812,7 +1818,7 @@ if config_meteo['use_biomet']:
 		ias_df['SLE_1_1_1'] = ias_df['le_strg']
 		var_cols.append('SLE_1_1_1')
 
-    # TODO why not added to var_cols ?
+    # TODO why not added to var_cols, why duplicate in col_match with other case?
 	if 'SW_IN_1_1_1' in ias_df.columns:
 		ias_df['SW_IN_1_1_1'] = data['swin_1_1_1']
 
@@ -1829,7 +1835,7 @@ if config_meteo['use_biomet']:
 		save_data = save_data.fillna(-9999)
 		if len(save_data.index) >= 5:
 			save_data.to_csv(os.path.join('output',ias_filename), index=False)
-			logging.info(f"IAS file saved to {os.path.join('output',ias_filename)}.csv")
+			logging.info(f"IAS file saved to {os.path.join('output',ias_filename)}")
 		else:
 			try:
 				os.remove(os.path.join('output',ias_filename))
