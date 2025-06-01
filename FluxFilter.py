@@ -1243,7 +1243,7 @@ elif mode_str == 'CSF-1':
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
 
-
+# rename time to time_col?
 data, time, biomet_columns, data_freq, config_meteo = res
 
 '''
@@ -1769,13 +1769,15 @@ logging.info(f"REddyProc file saved to {os.path.join('output', reddyproc_filenam
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
 # + id="yaLoIQmtzaYd"
-if config_meteo ['use_biomet']:
+if config_meteo['use_biomet']:
+    # may be move to src and add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
 	ias_df = plot_data.copy()
 	for column, filter in filters_db.items():
 		filter = get_column_filter(ias_df, filters_db, column)
 		ias_df.loc[~filter.astype(bool), column] = np.nan
 	ias_df = ias_df.fillna(-9999)
 
+    # duplicated in ias src.data_import.ias_loader
 	col_match =  {"co2_flux" : "FC_1_1_1", "qc_co2_flux" : "FC_SSITC_TEST_1_1_1", "LE" : "LE_1_1_1",
 		"qc_LE" : "LE_SSITC_TEST_1_1_1", "H" : "H_1_1_1", "qc_H" : "H_SSITC_TEST_1_1_1", "Tau" : "TAU_1_1_1",
 		"qc_Tau" : "TAU_SSITC_TEST_1_1_1", "co2_strg" : "SC_1_1_1", "co2_mole_fraction" : "CO2_1_1_1",
@@ -1810,6 +1812,7 @@ if config_meteo ['use_biomet']:
 		ias_df['SLE_1_1_1'] = ias_df['le_strg']
 		var_cols.append('SLE_1_1_1')
 
+    # TODO why not added to var_cols ?
 	if 'SW_IN_1_1_1' in ias_df.columns:
 		ias_df['SW_IN_1_1_1'] = data['swin_1_1_1']
 
