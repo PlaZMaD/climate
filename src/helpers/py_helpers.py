@@ -31,6 +31,8 @@ def fix_strs_case(strs: list[str], correct_case: list[str]):
 
 
 def debug_stdout_to_log(debug_log_fpath):
+	# duplicates all prints to file
+
 	class Logger(object):
 		def __init__(self):
 			self.terminal = sys.stdout

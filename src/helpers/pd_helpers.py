@@ -3,7 +3,7 @@ import pandas as pd
 from helpers.py_helpers import fix_strs_case
 
 
-def equal_series(s1, s2, compare_na=True):
+def equal_series(s1: pd.Series, s2: pd.Series, compare_na=True):
 	return (s1 == s2) | (s1.isna() & s2.isna() & compare_na)
 
 
@@ -15,6 +15,7 @@ def df_intersect_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
 	return df1[equal_cols]
 
 
+# TODO move into class methods
 def df_get_unique_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
 	# removes same cols in both dfs, na == na
 

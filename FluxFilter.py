@@ -979,21 +979,23 @@ def my_datetime_converter(x):
 
     x['tmp_datetime'] = date + " " + time
     #Проверить формат даты-времени в FullOutput
-    format = "%d.%m.%Y %H:%M"#"%d/%m/%Y %H:%M"# "%Y-%m-%d %H:%M"  #"%d/%m/%Y %H:%M"  #"%Y-%m-%d %H:%M:%S"
+    # format = "%d.%m.%Y %H:%M:%S" #"%d/%m/%Y %H:%M"# "%Y-%m-%d %H:%M"  #"%d/%m/%Y %H:%M"  #"%Y-%m-%d %H:%M:%S"
+    format = "%d.%m.%Y %H:%M"
     return pd.to_datetime(x['tmp_datetime'], format=format)#dayfirst=True)#, format=format)
 config['time']['converter'] = my_datetime_converter
 #####################
 
 # Тип файлов для импорта: 'CSF_', 'IAS_2', 'EDDYPRO_1'
-# config['mode'] = 'IAS_2'
-config['mode'] = 'EDDYPRO_1'
+config['mode'] = 'IAS_2'
+# config['mode'] = 'EDDYPRO_1'
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
 # #['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = ['eddy_pro result_SSB 2023.csv']
-# config['path'] = ['tv_fy4_2023_v01.csv']
-config['path'] = ['_Ckd_FO_2015.csv']
+# config['path'] = ['Ckd_FO_2015.csv']
+config['path'] = ['tv_fy4_2015_v01.csv']
+# config['path'] = ['tv_fy4_2015_v01.csv']
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -1031,7 +1033,7 @@ config_meteo['time']['converter'] = my_datetime_converter
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config_meteo['path'] = '_Ckd_biomet_2015.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
+config_meteo['path'] = 'IAS_only_Ckd_biomet_2015.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -1252,14 +1254,19 @@ else:
 data, time, biomet_columns, data_freq, config_meteo = res
 
 
-'''
-i1, i2 = df_get_unique_cols(df_ias, data[:-1])
-from helpers.pd_helpers import df_get_unique_cols
+# TODO remove, extract to test
+
+data = data.rename(columns={'vpd_1_1_1': 'vpd'}).drop('ppfd_1_1_1', axis='columns')
+from helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
 config['mode'] = 'EDDYPRO_1'
-config['path'] = ['eddy_pro result_SSB 2023.csv']
-data, time, biomet_columns, data_freq, config_meteo = load_eddypro_fulloutput(config, config_meteo)
-d1, d2 = df_get_unique_cols(data2[:-1], data)
-'''
+config['path'] = ['IAS_only_Ckd_FO_2015.csv']
+data1, time1, biomet_columns1, data_freq1, config_meteo1 = load_eddypro_fulloutput(config, config_meteo)
+data1.columns = data1.columns.str.lower()
+data1 = data1.drop(['filename', 'date', 'time', 'timestamp_1', 'tmp_datetime', 'datetime_meteo'], axis=1)
+d, d1 = df_get_unique_cols(data[1:], data1)
+d1 = d1[d.columns]
+test = pd.DataFrame.compare(d[d1.columns], d1, align_axis='columns')
+
 points_per_day = int(pd.Timedelta('24H')/data_freq)
 
 # + id="C8lLDYOWzH2d"
@@ -1802,6 +1809,7 @@ if config_meteo['use_biomet']:
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in ias_df.columns]
 
+    # year.min() == year.max() if full 1 year
 	new_time = pd.DataFrame(index=pd.date_range(start=f"01.01.{ias_df[time].dt.year.min()}", end=f"01.01.{ias_df[time].dt.year.max()}",
                                                 freq=ias_df.index.freq, inclusive='left'))
 	ias_df = new_time.join(ias_df, how='left')

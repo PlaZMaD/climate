@@ -12,17 +12,18 @@ from src.helpers.pd_helpers import df_get_unique_cols, df_repair_cols_case
 # possibly extract to abstract time series converter class later?
 # possibly store in table file instead?
 
-COLS_EDDYPRO_TO_IAS_MUST = {
+COLS_EDDYPRO_TO_IAS = {
+	# specifically about conversion of file formats,
+	# SCRIPT_TO_IAS != EDDYPRO_TO_IAS because script renames some of them during run
 	"co2_flux": "FC_1_1_1", "qc_co2_flux": "FC_SSITC_TEST_1_1_1",
 	"LE": "LE_1_1_1", "qc_LE": "LE_SSITC_TEST_1_1_1",
 	"H": "H_1_1_1", "qc_H": "H_SSITC_TEST_1_1_1",
 	"Tau": "TAU_1_1_1", "qc_Tau": "TAU_SSITC_TEST_1_1_1",
 	"co2_strg": "SC_1_1_1", "co2_mole_fraction": "CO2_1_1_1",
-	"h2o_mole_fraction": "H2O_1_1_1", "sonic_temperature": "T_SONIC_1_1_1", "u_star": "USTAR_1_1_1",
+	"h2o_mole_fraction": "H2O_1_1_1", "sonic_temperature": "T_SONIC_1_1_1",
 	"Ta_1_1_1": "TA_1_1_1", "Pa_1_1_1": "PA_1_1_1",
 	"Swin_1_1_1": "SW_IN_1_1_1", "Swout_1_1_1": "SW_OUT_1_1_1",
 	"Lwin_1_1_1": "LW_IN_1_1_1", "Lwout_1_1_1": "LW_OUT_1_1_1",
-	"PPFD_1_1_1": "PPFD_IN_1_1_1",
 	"Rn_1_1_1": "NETRAD_1_1_1", "MWS_1_1_1": "WS_1_1_1",
 	"Ts_1_1_1": "TS_1_1_1", "Ts_2_1_1": "TS_2_1_1", "Ts_3_1_1": "TS_3_1_1",
 	"Pswc_1_1_1": "SWC_1_1_1", "Pswc_2_1_1": "SWC_2_1_1", "Pswc_3_1_1": "SWC_3_1_1",
@@ -31,16 +32,26 @@ COLS_EDDYPRO_TO_IAS_MUST = {
 	"x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1", "x_90%": "FETCH_90_1_1_1",
 	"ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction": "CH4_1_1_1",
 	"ch4_strg": "SCH4_1_1_1", "ch4_signal_strength": "CH4_RSSI_1_1_1", "co2_signal_strength": "CO2_STR_1_1_1",
-	"Rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
+
+	# TODO are they correct?
+	"u*": "USTAR_1_1_1",
+	"PPFD_1_1_1": "PPFD_IN_1_1_1",
+	# TODO test ! change back to "VPD_1_1_1": "VPD_1_1_1"
+	"Rh_1_1_1": "RH_1_1_1", "VPD": "VPD_1_1_1"
+}
+COLS_SCRIPT_TO_IAS = {
+	# unused yet, just to highlight overrides of COLS_EDDYPRO_TO_IAS
+	"u_star": "USTAR_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
 }
 COLS_EDDYPRO_TO_IAS_OPTIONAL = {
 	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1'
 }
-COLS_EDDYPROL_TO_IAS_MUST = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_MUST.items()}
+
+COLS_EDDYPROL_TO_IAS = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS.items()}
 COLS_EDDYPROL_TO_IAS_OPTIONAL = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_OPTIONAL.items()}
 
 # IAS optional rules are more complex and placed into IAS check tool
-COLS_IAS_TO_EDDYPRO = invert_dict(COLS_EDDYPROL_TO_IAS_MUST) | invert_dict(COLS_EDDYPROL_TO_IAS_OPTIONAL)
+COLS_IAS_TO_EDDYPRO = invert_dict(COLS_EDDYPROL_TO_IAS) | invert_dict(COLS_EDDYPROL_TO_IAS_OPTIONAL)
 COLS_IAS_TO_EDDYPRO_SPECIAL = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 
 
@@ -57,6 +68,8 @@ def load_xls(fpath):
 
 
 def load_ias_file_by_ext(fpath):
+	# probably extract to load table? can time repair be generalised operation on table?
+
 	suffix = Path(fpath).suffix.lower()
 	if suffix == '.csv':
 		data = load_csv(fpath)
@@ -99,12 +112,29 @@ def load_via_bglabutils(fpath):
 
 
 def check_with_bglabutils(fpath, data):
-	data_bgl = load_via_bglabutils(fpath)
-	data_cmpr = data[1:]
+	data_bgl = load_via_bglabutils(fpath).drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
+	data_cmpr = data[1:-1]
 	df1, df2 = df_get_unique_cols(data_cmpr, data_bgl)
 
-	if not (df1.columns + df2.columns).empty:
+	if df1.columns.size + df2.columns.size > 0:
 		raise Exception(f'bglabutils.load_df loads different ias table. df1: {df1.columns} df2: {df2.columns}')
+
+
+def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder):
+	# TODO remove and fix export instead?
+	# add extra row, because main script expects currently for 2020 year extra row at the start of 2021
+	# specifically, ias export currently requires 2 years, not 1
+	# it does not look right, but not changing export yet
+
+	last_timestamp: pd.Timestamp = df[time_col].iloc[-1]
+	next_timestamp = last_timestamp + time_step
+	if next_timestamp.year - last_timestamp.year == 1:
+		last_row: pd.Series = df.iloc[-1]
+		last_row[time_col] = next_timestamp
+		last_row.loc[df.columns != time_col] = na_placeholder
+
+		df.loc[next_timestamp] = last_row
+	return df
 
 
 def load_ias(config, config_meteo):
@@ -144,11 +174,17 @@ def load_ias(config, config_meteo):
 
 
 	df['datetime'] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
+	df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis="columns")
 	time_col = 'datetime'
 	df.index = df['datetime']
 	# TODO improve
 	df.index.freq = df.index[2] - df.index[1]
 	assert df.index.freq == df.index[-1] - df.index[-2]
+	print("Диапазон времени IAS (START): ", df.index[[0, -1]])
+	logging.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+	df = ias_table_extend_year(df, df.index.freq, time_col, -9999)
+	# TODO improve
+	df.index.freq = df.index[2] - df.index[1]
 	''' from eddypro to ias
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 
@@ -186,6 +222,7 @@ def load_ias(config, config_meteo):
 	known_correct_cols = list(COLS_IAS_TO_EDDYPRO.keys()) + COLS_IAS_TO_EDDYPRO_SPECIAL
 	df = df_repair_cols_case(df, known_correct_cols, ignore_missing=True)
 	df = df.rename(columns=COLS_IAS_TO_EDDYPRO)
+	print("Колонки в IAS \n", df.columns.to_list())
 
 
 	# TODO 'timestamp_1', 'datetime'?
