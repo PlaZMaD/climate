@@ -68,7 +68,7 @@ def ungrid_image(img: PIL.Image, nx=1, ny=1, flatten=False):
 
 
 def grid_images(images, max_horiz=np.iinfo(int).max):
-    """ Combines images in row or column depending on max_horiz arg """
+    """ Combines images in row or column or both depending on max_horiz arg """
 
     n_images = len(images)
     n_horiz = min(n_images, max_horiz)
@@ -86,7 +86,10 @@ def grid_images(images, max_horiz=np.iinfo(int).max):
 
 
 def remove_strip(img: np.array, strip_axis: Direction, percent_at, margin=10):
-    """ Cuts an image on two parts and crops space from cut side on both parts """
+    """
+    Removes empty rectangle around vertical or horizontal cut:
+    cuts an image, crops space around cut on both parts, joins back
+    """
 
     w, h = img.size
     assert 0 <= percent_at <= 1

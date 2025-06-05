@@ -24,7 +24,7 @@ def load_biomet(config_meteo, data_freq):
 	return data_meteo
 
 
-def load_eddypro(config, config_meteo):
+def load_eddypro_fulloutput(config, config_meteo):
 	# load of eddypro = full_output, optionally with biomet
 
 	data, time = bg.load_df(config)
@@ -56,3 +56,5 @@ def load_eddypro(config, config_meteo):
 		biomet_columns = data_meteo.columns.str.lower()
 
 	return data, time, biomet_columns, data_freq, config_meteo
+
+

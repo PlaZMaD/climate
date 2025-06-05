@@ -5,7 +5,7 @@ from zipfile import ZipFile
 
 
 def tag_to_fname(dir: Path, prefix, tag, ext, must_exist):
-    # meaning of tags here is unique file name endings
+    # meaning of tag here is unique file name ending
     # Test_site_2024_Hd_f.png -> tag is Hd_f
 
     fname = dir / (prefix + '_' + tag + ext)
