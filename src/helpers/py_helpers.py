@@ -21,8 +21,8 @@ def invert_dict(dict):
 
 def fix_strs_case(strs: list[str], correct_case: list[str]):
 	correct_l_to_correct = {c.lower(): c for c in correct_case}
-	assert len(correct_l_to_correct) == len(correct_case), \
-		'Possibly correct_case contains duplicates with different cases'
+	if len(correct_l_to_correct) != len(correct_case):
+		raise Exception('Possibly correct_case contains duplicates with different cases')
 
 	missing = [c for c in strs if c.lower() in correct_l_to_correct]
 	new_strs = [correct_l_to_correct.get(c.lower(), c) for c in strs]
@@ -49,3 +49,11 @@ def debug_stdout_to_log(debug_log_fpath):
 			pass
 
 	sys.stdout = Logger()
+
+
+def sort_fix_underscore(ls: list[str]):
+	# sort: ['NETRAD_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1', 'P_1_1_1']
+	# sort_without_underscore: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
+
+	ls.sort(key=lambda s: s.replace('_', ' '))
+	return ls

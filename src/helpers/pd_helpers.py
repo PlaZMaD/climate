@@ -26,7 +26,7 @@ def df_get_unique_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
 	return df1_unique, df2_unique
 
 
-def df_repair_cols_case(df: pd.DataFrame, correct_case: list[str], ignore_missing=True):
+def df_ensure_cols_case(df: pd.DataFrame, correct_case: list[str], ignore_missing=True):
 	new_strs, renames, missing = fix_strs_case(df.columns, correct_case)
 
 	df.columns = new_strs
