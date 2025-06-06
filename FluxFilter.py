@@ -82,22 +82,6 @@
 # from google.colab import userdata
 # key = userdata.get('registry_key')
 
-# + id="HT2KP0eYk1r3"
-# %load_ext autoreload
-# %autoreload 2
-
-# TODO add support of testing cells individually using import * and mocking global space vars gs.*
-# possibly utilise ipynb <-> py conversion to store only .py versions?
-
-# !git -c init.defaultBranch=main init
-# !git sparse-checkout init
-# !git sparse-checkout set "src"
-# !git remote add origin https://github.com/PlaZMaD/climate.git
-# !git fetch --depth 1 origin main
-# !git -c advice.detachedHead=false checkout FETCH_HEAD
-
-# !mkdir output
-
 # + id="E-a6ANTGBsqg"
 # %pip install plotly-resampler dateparser >> /dev/null
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
@@ -109,22 +93,15 @@ import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pylab as plt
 import os
-from pandas.api.types import is_datetime64_any_dtype as is_datetime
-import dateutil
 from copy import deepcopy as copy
 
-import plotly.io as pio
-pio.renderers.default = "colab"
-from IPython.display import display
-
-
+# move to src.colab_routines?
 # from google.colab import output
 # output.enable_custom_widget_manager()
 
 from plotly.subplots import make_subplots
 import plotly.express as px
 import plotly_resampler
-import dateparser
 
 import bglabutils.basic as bg
 import bglabutils.filters as bf
@@ -136,12 +113,26 @@ import sys
 # import bglabutils.boosting as bb
 # import textwrap
 
-# from google.colab import output
-# output.no_vertical_scroll()
-
 # %load_ext autoreload
 # %autoreload 2
 
+# TODO support of testing cells separately can be added using import * and mocking global space vars gs.*
+# py -> ipynb conversion is great to keep only .py in git, can this be used?
+
+# !git -c init.defaultBranch=main init
+# !git sparse-checkout init
+# !git sparse-checkout set "src"
+# !git remote add origin https://github.com/PlaZMaD/climate.git
+# !git fetch --depth 1 origin main
+# !git -c advice.detachedHead=false checkout FETCH_HEAD
+
+from src.colab_routines import colab_no_scroll
+from src.helpers.env_helpers import setup_plotly
+
+colab_no_scroll()
+setup_plotly()
+
+# !mkdir output
 
 # logging.basicConfig(level=logging.INFO, filename="/content/output/log.log", filemode="w", force=True)
 logging.basicConfig(level=logging.INFO, filename="output/log.log", filemode="w", force=True)
@@ -979,8 +970,7 @@ def my_datetime_converter(x):
 
     x['tmp_datetime'] = date + " " + time
     #Проверить формат даты-времени в FullOutput
-    # format = "%d.%m.%Y %H:%M:%S" #"%d/%m/%Y %H:%M"# "%Y-%m-%d %H:%M"  #"%d/%m/%Y %H:%M"  #"%Y-%m-%d %H:%M:%S"
-    format = "%d.%m.%Y %H:%M"
+    format = "%d.%m.%Y %H:%M"#"%d/%m/%Y %H:%M"# "%Y-%m-%d %H:%M"  #"%d/%m/%Y %H:%M"  #"%Y-%m-%d %H:%M:%S"
     return pd.to_datetime(x['tmp_datetime'], format=format)#dayfirst=True)#, format=format)
 config['time']['converter'] = my_datetime_converter
 #####################
@@ -991,11 +981,7 @@ config['mode'] = 'IAS_2'
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-# #['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
-# config['path'] = ['eddy_pro result_SSB 2023.csv']
-# config['path'] = ['Ckd_FO_2015.csv']
-config['path'] = ['tv_fy4_2018_v01.xlsx']
-# config['path'] = ['tv_fy4_2015_v01.csv']
+config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -1033,7 +1019,7 @@ config_meteo['time']['converter'] = my_datetime_converter
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config_meteo['path'] = 'tv_fy4_2022_v01.xlsx'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
+config_meteo['path'] = 'BiometFy4_2023.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -1235,9 +1221,6 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 from src.data_import.eddypro_loader import load_eddypro_fulloutput
 from src.data_import.ias_loader import load_ias
 
-# TODO remove
-from src.helpers.py_helpers import debug_stdout_to_log
-debug_stdout_to_log('output/debug_stdout.log')
 
 mode_str = config['mode']
 if mode_str == 'EDDYPRO_1':
@@ -1254,19 +1237,6 @@ else:
 data, time, biomet_columns, data_freq, config_meteo = res
 
 
-# TODO remove, extract to test
-'''
-data = data.rename(columns={'vpd_1_1_1': 'vpd'}).drop('ppfd_1_1_1', axis='columns')
-from helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
-config['mode'] = 'EDDYPRO_1'
-config['path'] = ['IAS_only_Ckd_FO_2015.csv']
-data1, time1, biomet_columns1, data_freq1, config_meteo1 = load_eddypro_fulloutput(config, config_meteo)
-data1.columns = data1.columns.str.lower()
-data1 = data1.drop(['filename', 'date', 'time', 'timestamp_1', 'tmp_datetime', 'datetime_meteo'], axis=1)
-d, d1 = df_get_unique_cols(data[1:], data1)
-d1 = d1[d.columns]
-test = pd.DataFrame.compare(d[d1.columns], d1, align_axis='columns')
-'''
 points_per_day = int(pd.Timedelta('24H')/data_freq)
 
 # + id="C8lLDYOWzH2d"
@@ -1376,6 +1346,7 @@ if not (have_p_flag or have_pr_flag):
   print("NO P and P_RAIN")
 else:
   print("Checking P <-> P_rain pair")
+  # TODO 1 P_RAIN -> P_ on export, but not P_ -> P_RAIN, update COLS_NS_IAS ... somehow?
   if not have_p_flag:
     data['p_1_1_1'] = data['p_rain_1_1_1']
   if not have_pr_flag:
@@ -1781,10 +1752,10 @@ logging.info(f"REddyProc file saved to {os.path.join('output', reddyproc_filenam
 # + [markdown] id="e50f7947"
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
+# + id="yaLoIQmtzaYd"
 from src.data_import.ias_loader import COLS_NS_IAS_TO_SCRIPT
 from src.helpers.py_helpers import invert_dict, sort_fix_underscore
 
-# + id="yaLoIQmtzaYd"
 if config_meteo['use_biomet']:
 	# may be move to src and add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
 	ias_df: pd.DataFrame = plot_data.copy()
@@ -2181,7 +2152,7 @@ from typing import List, Tuple, Union
 import src.ipynb_globals as ig
 from src.helpers.io_helpers import create_archive
 from src.reddyproc.postprocess_graphs import EProcOutputHandler, EProcImgTagHandler, EProcOutputGen
-from src.colab_routines import colab_add_download_button, colab_no_scroll
+from src.colab_routines import colab_add_download_button
 
 tag_handler = EProcImgTagHandler(main_path='output/reddyproc', eproc_options=ig.eddyproc, img_ext='.png')
 eog = EProcOutputGen(tag_handler)
@@ -2211,7 +2182,6 @@ create_archive(arc_path=eproc_arc_path, folders='output/reddyproc', top_folder='
 
 colab_add_download_button(eproc_arc_path, 'Download eddyproc outputs')
 
-colab_no_scroll()
 eio.display_images_safe()
 
 tag_handler.display_tag_info(eio.extended_tags())

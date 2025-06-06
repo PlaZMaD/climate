@@ -2,49 +2,31 @@
 Module specifically for Google Colab.
 During local runs, all functions here are to be mocked or cancelled.
 """
-from enum import Enum, auto
+
+from src.helpers.env_helpers import colab_only, ENV
 
 
-class RunMode(Enum):
-    LOCAL, COLAB = auto(), auto()
-
-try:
-    import google.colab
-except ImportError:
-    RUN_MODE = RunMode.LOCAL
-else:
-    RUN_MODE = RunMode.COLAB
-
+if ENV.COLAB:
     from google.colab import output
     from google.colab import files
     from IPython.display import display
     from IPython.core.display import Javascript
 
 
-def colab_only(func):
-    def wrapper(*args, **kwargs):
-        if RUN_MODE == RunMode.COLAB:
-            return func(*args, **kwargs)
-        else:
-            print(f"Colab env not detected. {func.__name__} is skipped by design.")
-            return None
-    return wrapper
-
-
-class StopExecution(Exception):
+class _StopExecution(Exception):
     def _render_traceback_(self):
         return ['Colab env not detected. Current cell is only for Colab.']
 
 
 def colab_only_cell():
     """
-    Works like return, but for cells.
+    Works like return, but for local/colab cells. Allows to avoid if then indents in ipynb.
     Reminder: cannot be imported and used before this file is downloaded.
     """
     try:
         import google.colab
     except ImportError:
-        raise StopExecution()
+        raise _StopExecution()
 
 
 @colab_only
@@ -57,7 +39,7 @@ def colab_no_scroll():
     output.no_vertical_scroll()
 
 
-def move_progress_bar_to_top():
+def _move_progress_bar_to_top():
     display(Javascript('''
         let outputContainer = google.colab.output.getActiveOutputArea().parentNode.parentNode;
         let outputArea = outputContainer.querySelector('#output-area');
@@ -69,7 +51,7 @@ def move_progress_bar_to_top():
 def colab_add_download_button(fname, caption):
     def clicked(arg):
         files.download(fname)
-        move_progress_bar_to_top()
+        _move_progress_bar_to_top()
     import ipywidgets as widgets
 
     button_download = widgets.Button(description=caption)

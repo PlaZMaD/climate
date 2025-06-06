@@ -48,9 +48,9 @@ COLS_SCRIPT_TO_IAS = {
 	"u_star": "USTAR_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
 }
 COLS_NS_IAS = [
-	# NS = Not Supported, i.e. cols ignored by script yet, but should be save-loaded
+	# NS = Not Supported by script yet, but should be kept during save-load
 	'ALB_1_1_1',
-
+	# TODO P_1_1_1, P_RAIN are supported
 	'FH2O_1_1_1', 'P_1_1_1',
 	'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1',
 	'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'VPD_PI_1_1_1', 'V_SIGMA_1_1_1', 'WD_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1'
@@ -163,9 +163,9 @@ def process_col_names(df: pd.DataFrame, time_col):
 
 	unsupported_cols = df.columns.intersection(COLS_NS_IAS)
 	if len(unsupported_cols) > 0:
-		print("Колонки, поддержка которых в тетради пока отсутствует (присутствуют только в загрузке - сохранении): \n" +
-		      str(unsupported_cols))
-		logging.warning('Unsupported by notebook columns (only save loaded): \n' + str(unsupported_cols))
+		print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
+		      unsupported_cols.to_list())
+		logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
 
 	df = df.rename(columns=COLS_IAS_TO_SCRIPT)
 	print("Переменные после загрузки: \n", df.columns.to_list())
