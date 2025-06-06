@@ -246,10 +246,12 @@ def load_ias(fpath):
         assert False
 
     if ext == 'excel':
-        if len(data) > 1:
-            logging.error(_("Several lists in data file!"))
-            assert False
-        data = next(iter(data.values()))
+        if isinstance(data, dict):
+            if len(data.values()) > 1:
+                logging.error(_("Several lists in data file!"))
+                assert False
+            else:
+                data = next(iter(data.values()))
         logging.info(f"File {fpath} loaded.\n")
 
     return data

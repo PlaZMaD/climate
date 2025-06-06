@@ -994,7 +994,7 @@ config['mode'] = 'IAS_2'
 # #['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = ['eddy_pro result_SSB 2023.csv']
 # config['path'] = ['Ckd_FO_2015.csv']
-config['path'] = ['tv_fy4_2015_v01.csv']
+config['path'] = ['tv_fy4_2018_v01.xlsx']
 # config['path'] = ['tv_fy4_2015_v01.csv']
 # config['path'] = '/content/DT_Full output.xlsx'
 
@@ -1033,7 +1033,7 @@ config_meteo['time']['converter'] = my_datetime_converter
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config_meteo['path'] = 'IAS_only_Ckd_biomet_2015.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
+config_meteo['path'] = 'tv_fy4_2022_v01.xlsx'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -1255,7 +1255,7 @@ data, time, biomet_columns, data_freq, config_meteo = res
 
 
 # TODO remove, extract to test
-
+'''
 data = data.rename(columns={'vpd_1_1_1': 'vpd'}).drop('ppfd_1_1_1', axis='columns')
 from helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
 config['mode'] = 'EDDYPRO_1'
@@ -1266,7 +1266,7 @@ data1 = data1.drop(['filename', 'date', 'time', 'timestamp_1', 'tmp_datetime', '
 d, d1 = df_get_unique_cols(data[1:], data1)
 d1 = d1[d.columns]
 test = pd.DataFrame.compare(d[d1.columns], d1, align_axis='columns')
-
+'''
 points_per_day = int(pd.Timedelta('24H')/data_freq)
 
 # + id="C8lLDYOWzH2d"
@@ -1781,16 +1781,19 @@ logging.info(f"REddyProc file saved to {os.path.join('output', reddyproc_filenam
 # + [markdown] id="e50f7947"
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
+from src.data_import.ias_loader import COLS_NS_IAS_TO_SCRIPT
+from src.helpers.py_helpers import invert_dict, sort_fix_underscore
+
 # + id="yaLoIQmtzaYd"
 if config_meteo['use_biomet']:
-    # may be move to src and add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
-	ias_df = plot_data.copy()
+	# may be move to src and add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
+	ias_df: pd.DataFrame = plot_data.copy()
 	for column, filter in filters_db.items():
 		filter = get_column_filter(ias_df, filters_db, column)
 		ias_df.loc[~filter.astype(bool), column] = np.nan
 	ias_df = ias_df.fillna(-9999)
 
-    # duplicated in ias src.data_import.ias_loader
+	# duplicated in ias src.data_import.ias_loader
 	col_match =  {"co2_flux" : "FC_1_1_1", "qc_co2_flux" : "FC_SSITC_TEST_1_1_1", "LE" : "LE_1_1_1",
 		"qc_LE" : "LE_SSITC_TEST_1_1_1", "H" : "H_1_1_1", "qc_H" : "H_SSITC_TEST_1_1_1", "Tau" : "TAU_1_1_1",
 		"qc_Tau" : "TAU_SSITC_TEST_1_1_1", "co2_strg" : "SC_1_1_1", "co2_mole_fraction" : "CO2_1_1_1",
@@ -1804,20 +1807,25 @@ if config_meteo['use_biomet']:
 		"ch4_flux" : "FCH4_1_1_1", "qc_ch4_flux" : "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction" : "CH4_1_1_1", "ch4_strg" : "SCH4_1_1_1",
 		"ch4_signal_strength" : "CH4_RSSI_1_1_1", "co2_signal_strength" : "CO2_STR_1_1_1", "rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"}
 	col_match = {key.lower(): item for key, item in col_match.items()}
+	col_match |= invert_dict(COLS_NS_IAS_TO_SCRIPT)
 
 	ias_df = ias_df.rename(columns=col_match)
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in ias_df.columns]
 
-    # year.min() == year.max() if full 1 year
+    # TODO still not correct at some lines
+	# year.min() == year.max() if full 1 year
 	new_time = pd.DataFrame(index=pd.date_range(start=f"01.01.{ias_df[time].dt.year.min()}", end=f"01.01.{ias_df[time].dt.year.max()}",
-                                                freq=ias_df.index.freq, inclusive='left'))
+												freq=ias_df.index.freq, inclusive='left'))
 	ias_df = new_time.join(ias_df, how='left')
 	ias_df[time] = ias_df.index
 
 	ias_df['TIMESTAMP_START'] = ias_df[time].dt.strftime('%Y%m%d%H%M')
-	ias_df['TIMESTAMP_END'] = (ias_df[time] + pd.Timedelta(0.5, "H")).dt.strftime('%Y%m%d%H%M')
-	ias_df['DTime'] = np.round(ias_df[time].dt.dayofyear + 1./48*2*ias_df[time].dt.hour + 1./48*(ias_df[time].dt.minute//30), decimals=3)
+	time_end = ias_df[time] + pd.Timedelta(0.5, "H")
+	ias_df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
+	ias_df['DTime'] = np.round(time_end.dt.dayofyear +
+                               1. / 48 * 2 * time_end.dt.hour +
+                               1. / 48 * (time_end.dt.minute//30), decimals=3)
 
 	if 'h_strg' in ias_df.columns:
 		ias_df['SH_1_1_1'] = ias_df['h_strg']
@@ -1826,12 +1834,12 @@ if config_meteo['use_biomet']:
 		ias_df['SLE_1_1_1'] = ias_df['le_strg']
 		var_cols.append('SLE_1_1_1')
 
-    # TODO why not added to var_cols, why duplicate in col_match with other case?
+	# TODO why not added to var_cols, why duplicate in col_match with other case?
 	if 'SW_IN_1_1_1' in ias_df.columns:
 		ias_df['SW_IN_1_1_1'] = data['swin_1_1_1']
 
 	ias_year = ias_df[time].dt.year.min()
-	var_cols.sort()
+	sort_fix_underscore(var_cols)
 	col_list_ias = time_cols + var_cols + [time]
 	print(col_list_ias)
 	ias_df = ias_df[col_list_ias]

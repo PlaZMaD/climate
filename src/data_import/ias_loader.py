@@ -1,16 +1,18 @@
 import logging
+from copy import copy
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
 import bglabutils.basic as bg
-from helpers.py_helpers import invert_dict
+from src.helpers.py_helpers import invert_dict
 from src.data_import.ias_error_check import set_lang, draft_check_ias
-from src.helpers.pd_helpers import df_get_unique_cols, df_repair_cols_case
+from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
 
 # TODO fix ias export to match import
 # possibly extract to abstract time series converter class later?
 # possibly store in table file instead?
+# currently 4 column names variations are possible: IAS file, EddyPro file, notebook import, export (after all the processing)
 
 COLS_EDDYPRO_TO_IAS = {
 	# specifically about conversion of file formats,
@@ -36,23 +38,30 @@ COLS_EDDYPRO_TO_IAS = {
 	# TODO are they correct?
 	"u*": "USTAR_1_1_1",
 	"PPFD_1_1_1": "PPFD_IN_1_1_1",
-	# TODO test ! change back to "VPD_1_1_1": "VPD_1_1_1"
-	"Rh_1_1_1": "RH_1_1_1", "VPD": "VPD_1_1_1"
+	"Rh_1_1_1": "RH_1_1_1", "VPD_1_1_1": "VPD_1_1_1",
+
+	# Optional
+	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 }
 COLS_SCRIPT_TO_IAS = {
-	# unused yet, just to highlight overrides of COLS_EDDYPRO_TO_IAS
+	# only overrides of COLS_EDDYPRO_TO_IAS
 	"u_star": "USTAR_1_1_1", "vpd_1_1_1": "VPD_1_1_1"
 }
-COLS_EDDYPRO_TO_IAS_OPTIONAL = {
-	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1'
-}
+COLS_NS_IAS = [
+	# NS = Not Supported, i.e. cols ignored by script yet, but should be save-loaded
+	'ALB_1_1_1',
 
+	'FH2O_1_1_1', 'P_1_1_1',
+	'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1',
+	'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'VPD_PI_1_1_1', 'V_SIGMA_1_1_1', 'WD_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1'
+]
+COLS_NS_IAS_TO_SCRIPT = {k: k.lower() for k in COLS_NS_IAS}
 COLS_EDDYPROL_TO_IAS = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS.items()}
-COLS_EDDYPROL_TO_IAS_OPTIONAL = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_OPTIONAL.items()}
 
 # IAS optional rules are more complex and placed into IAS check tool
-COLS_IAS_TO_EDDYPRO = invert_dict(COLS_EDDYPROL_TO_IAS) | invert_dict(COLS_EDDYPROL_TO_IAS_OPTIONAL)
-COLS_IAS_TO_EDDYPRO_SPECIAL = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
+
+COLS_IAS_TO_SCRIPT = invert_dict(COLS_EDDYPROL_TO_IAS)
+COLS_IAS_TIME = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 
 
 def load_csv(fpath):
@@ -61,9 +70,12 @@ def load_csv(fpath):
 
 def load_xls(fpath):
 	data = pd.read_excel(fpath)
-	if len(data) > 1:
-		raise Exception(_("Several lists in data file!"))
-	data = next(iter(data.values()))
+	if isinstance(data, dict):
+		if len(data.values()) > 1:
+			logging.error(_("Several lists in data file!"))
+			assert False
+		else:
+			data = next(iter(data.values()))
 	return data
 
 
@@ -73,7 +85,7 @@ def load_ias_file_by_ext(fpath):
 	suffix = Path(fpath).suffix.lower()
 	if suffix == '.csv':
 		data = load_csv(fpath)
-	elif suffix == ['.xls', '.xlsx']:
+	elif suffix in ['.xls', '.xlsx']:
 		data = load_xls(fpath)
 	else:
 		raise Exception(_(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file."))
@@ -129,12 +141,40 @@ def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder)
 	last_timestamp: pd.Timestamp = df[time_col].iloc[-1]
 	next_timestamp = last_timestamp + time_step
 	if next_timestamp.year - last_timestamp.year == 1:
-		last_row: pd.Series = df.iloc[-1]
-		last_row[time_col] = next_timestamp
+		last_row: pd.Series = df.iloc[-1].copy()
+		last_row.loc[time_col] = next_timestamp
 		last_row.loc[df.columns != time_col] = na_placeholder
 
 		df.loc[next_timestamp] = last_row
 	return df
+
+
+def process_col_names(df: pd.DataFrame, time_col):
+	print("Переменные в IAS: \n", df.columns.to_list())
+
+	known_correct_ias_cols = (list(COLS_IAS_TO_SCRIPT.keys()) + COLS_IAS_TIME + [time_col] + COLS_NS_IAS)
+	df = df_ensure_cols_case(df, known_correct_ias_cols, ignore_missing=True)
+
+	unknown_cols = df.columns.difference(known_correct_ias_cols)
+	if len(unknown_cols) > 0:
+		msg = "Неизвестные ИАС переменные: \n",      str(unknown_cols)
+		logging.exception(msg)
+		raise NotImplementedError(msg)
+
+	unsupported_cols = df.columns.intersection(COLS_NS_IAS)
+	if len(unsupported_cols) > 0:
+		print("Колонки, поддержка которых в тетради пока отсутствует (присутствуют только в загрузке - сохранении): \n" +
+		      str(unsupported_cols))
+		logging.warning('Unsupported by notebook columns (only save loaded): \n' + str(unsupported_cols))
+
+	df = df.rename(columns=COLS_IAS_TO_SCRIPT)
+	print("Переменные после загрузки: \n", df.columns.to_list())
+
+	# TODO 'timestamp_1', 'datetime'?
+	expected_biomet_cols = np.strings.lower(['Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1',
+	                                         'Lwout_1_1_1', 'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'])
+	biomet_cols_index = df.columns.intersection(expected_biomet_cols)
+	return df, biomet_cols_index
 
 
 def load_ias(config, config_meteo):
@@ -214,19 +254,11 @@ def load_ias(config, config_meteo):
 
 
 	try:
-		check_with_bglabutils(fpath, df)
+		if config['debug']:
+			check_with_bglabutils(fpath, df)
 	except Exception as e:
 		logging.info('Unexpected check with bglabutils: ', e)
 
 
-	known_correct_cols = list(COLS_IAS_TO_EDDYPRO.keys()) + COLS_IAS_TO_EDDYPRO_SPECIAL
-	df = df_repair_cols_case(df, known_correct_cols, ignore_missing=True)
-	df = df.rename(columns=COLS_IAS_TO_EDDYPRO)
-	print("Колонки в IAS \n", df.columns.to_list())
-
-
-	# TODO 'timestamp_1', 'datetime'?
-	expected_biomet_cols = np.strings.lower(['Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1',
-	                                         'Lwout_1_1_1', 'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'])
-	biomet_cols_index = df.columns.intersection(expected_biomet_cols)
+	df, biomet_cols_index = process_col_names(df, time_col)
 	return df, time_col, biomet_cols_index, df.index.freq, config_meteo
