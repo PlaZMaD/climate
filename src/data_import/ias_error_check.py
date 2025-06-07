@@ -243,7 +243,7 @@ def load_ias(fpath):
         data = load_func(fpath, **l_config)
     except Exception as e:
         logging.error(e)
-        assert False
+        raise
 
     if ext == 'excel':
         if isinstance(data, dict):

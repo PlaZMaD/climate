@@ -87,32 +87,6 @@
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 
-# + id="Ywv5kp0rzanK"
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import matplotlib.pylab as plt
-import os
-from copy import deepcopy as copy
-
-# move to src.colab_routines?
-# from google.colab import output
-# output.enable_custom_widget_manager()
-
-from plotly.subplots import make_subplots
-import plotly.express as px
-import plotly_resampler
-
-import bglabutils.basic as bg
-import bglabutils.filters as bf
-
-import logging
-import re
-import sys
-
-# import bglabutils.boosting as bb
-# import textwrap
-
 # %load_ext autoreload
 # %autoreload 2
 
@@ -126,16 +100,41 @@ import sys
 # !git fetch --depth 1 origin main
 # !git -c advice.detachedHead=false checkout FETCH_HEAD
 
-from src.colab_routines import colab_no_scroll
-from src.helpers.env_helpers import setup_plotly
+# + id="Ywv5kp0rzanK"
+import os
+import logging
+import re
+import sys
+from copy import deepcopy as copy
+from pathlib import Path
+
+import pandas as pd
+import numpy as np
+import matplotlib.pylab as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.express as px
+import plotly_resampler
+
+import bglabutils.basic as bg
+import bglabutils.filters as bf
+
+# import bglabutils.boosting as bb
+# import textwrap
+
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager
+from src.ipynb_routines import setup_plotly
+
+# cur_dir = %pwd
+# assert cur_dir == '/content'
+out_dir = Path('output')
+out_dir.mkdir(exist_ok=True)
 
 colab_no_scroll()
-setup_plotly()
+colab_enable_custom_widget_manager()
+setup_plotly(out_dir)
 
-# !mkdir output
-
-# logging.basicConfig(level=logging.INFO, filename="/content/output/log.log", filemode="w", force=True)
-logging.basicConfig(level=logging.INFO, filename="output/log.log", filemode="w", force=True)
+logging.basicConfig(level=logging.INFO, filename=out_dir / 'log.log', filemode="w", force=True)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 logging.info("START")
 
@@ -976,8 +975,8 @@ config['time']['converter'] = my_datetime_converter
 #####################
 
 # Тип файлов для импорта: 'CSF_', 'IAS_2', 'EDDYPRO_1'
-config['mode'] = 'IAS_2'
-# config['mode'] = 'EDDYPRO_1'
+# config['mode'] = 'IAS_2'
+config['mode'] = 'EDDYPRO_1'
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
@@ -1792,7 +1791,7 @@ if config_meteo['use_biomet']:
 	ias_df[time] = ias_df.index
 
 	ias_df['TIMESTAMP_START'] = ias_df[time].dt.strftime('%Y%m%d%H%M')
-	time_end = ias_df[time] + pd.Timedelta(0.5, "H")
+	time_end = ias_df[time] + pd.Timedelta(0.5, "h")
 	ias_df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
 	ias_df['DTime'] = np.round(time_end.dt.dayofyear +
                                1. / 48 * 2 * time_end.dt.hour +
@@ -1989,19 +1988,10 @@ logging.info(f"New basic file saved to {os.path.join('output','output_summary.cs
 # Необходим и автоматически запускается, если детектируется окружение Google Colab.  
 # Загружает используемые в ячейках скрипты в директорию `src` и подготавливает R окружение.
 # + id="06859169"
-'''
-try:
-    import google.colab
-except ImportError:
-    class StopExecution(Exception):
-        def _render_traceback_(self):
-            return ['Colab env not detected. Current cell is only for Colab.']
-    raise StopExecution()
 
-# cur_dir = %pwd
-assert cur_dir == '/content'
-'''
 # %pip install pysolar
+from src.ipynb_routines import ipython_enable_word_wrap
+ipython_enable_word_wrap()
 
 # 1.3.2 vs 1.3.3 have slightly different last columns
 # alternative for windows
@@ -2020,19 +2010,11 @@ install_if_missing("REddyProc", "1.3.3", repos = 'http://cran.rstudio.com/')
 sink()
 """
 
-from pathlib import Path
-env_folder = os.path.dirname(sys.executable)
-r_folder = str(Path(env_folder) / "Lib/R")
-assert Path(r_folder).exists()
-os.environ['R_HOME'] = r_folder
-
+from src.helpers.env_helpers import setup_r
+setup_r()
 from rpy2 import robjects
-
 robjects.r(setup_colab_r_code)
-'''
-from src.ipynb_helpers import enable_word_wrap
-enable_word_wrap()
-'''
+
 # + [markdown] id="034b04a5"
 # ## Фильтрация и заполнение пропусков
 #

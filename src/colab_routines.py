@@ -7,40 +7,47 @@ from src.helpers.env_helpers import colab_only, ENV
 
 
 if ENV.COLAB:
-    from google.colab import output
-    from google.colab import files
-    from IPython.display import display
-    from IPython.core.display import Javascript
+	from google.colab import output
+	from google.colab import files
+	from IPython.display import display
+	from IPython.core.display import Javascript
 
 
 class _StopExecution(Exception):
-    def _render_traceback_(self):
-        return ['Colab env not detected. Current cell is only for Colab.']
+	def _render_traceback_(self):
+		return ['Colab env not detected. Current cell is only for Colab.']
 
 
 def colab_only_cell():
-    """
-    Works like return, but for local/colab cells. Allows to avoid if then indents in ipynb.
-    Reminder: cannot be imported and used before this file is downloaded.
-    """
-    try:
-        import google.colab
-    except ImportError:
-        raise _StopExecution()
+	"""
+	Works like return, but for local/colab cells. Allows to avoid if then indents in ipynb.
+	Reminder: cannot be imported and used before this file is downloaded.
+	"""
+	try:
+		import google.colab
+	except ImportError:
+		raise _StopExecution()
 
 
 @colab_only
 def colab_no_scroll():
-    """
-    Tries to resize cell to avoid the very need of scrolling.
-    But disables horizontal scroll on large images too.
-    Horizontal scroll can be fixed with HBox(widgets.Output()).
-    """
-    output.no_vertical_scroll()
+	"""
+	Tries to resize cell to avoid the very need of scrolling.
+	But disables horizontal scroll on large images too.
+	Horizontal scroll can be fixed with HBox(widgets.Output()).
+	"""
+	output.no_vertical_scroll()
+
+
+@colab_only
+def colab_enable_custom_widget_manager():
+	# move to here was useful to support both local and colab run without any code changes
+	output.enable_custom_widget_manager()
+
 
 
 def _move_progress_bar_to_top():
-    display(Javascript('''
+	display(Javascript('''
         let outputContainer = google.colab.output.getActiveOutputArea().parentNode.parentNode;
         let outputArea = outputContainer.querySelector('#output-area');
         outputArea.parentNode.append(outputArea);        
@@ -49,16 +56,16 @@ def _move_progress_bar_to_top():
 
 @colab_only
 def colab_add_download_button(fname, caption):
-    def clicked(arg):
-        files.download(fname)
-        _move_progress_bar_to_top()
-    import ipywidgets as widgets
+	def clicked(arg):
+		files.download(fname)
+		_move_progress_bar_to_top()
+	import ipywidgets as widgets
 
-    button_download = widgets.Button(description=caption)
-    button_download.on_click(clicked)
+	button_download = widgets.Button(description=caption)
+	button_download.on_click(clicked)
 
-    button_box = widgets.HBox([button_download], layout=widgets.Layout(justify_content='center'))
-    display(button_box)
+	button_box = widgets.HBox([button_download], layout=widgets.Layout(justify_content='center'))
+	display(button_box)
 
 
 """ unused:

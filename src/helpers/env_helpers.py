@@ -1,5 +1,7 @@
+import os
+import sys
+from pathlib import Path
 from IPython import get_ipython
-from plotly.io import renderers
 
 
 class _Env:
@@ -41,10 +43,13 @@ def colab_only(func):
 	return wrapper
 
 
-def setup_plotly():
-	if ENV.COLAB:
-		renderers.default = 'colab'
+def setup_r():
+	if ENV.LOCAL:
+		env_folder = os.path.dirname(sys.executable)
+		r_folder = str(Path(env_folder) / "Lib/R")
+		assert Path(r_folder).exists()
+		os.environ['R_HOME'] = r_folder
 	else:
-		renderers.default = 'svg'
-		print(f"Non-colab plotly renderer is set to: {renderers.default}")
-
+		# something different, but it works
+		# print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")
+		pass
