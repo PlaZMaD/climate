@@ -209,13 +209,13 @@ estUStarThresholdOrError <- function(eddyProcConfiguration, EProc, ...) {
     table_unit <- attr(processedEddyData[, baseNameVal], "units")
     dsum_unit = get_patched_daily_sum_unit(eddyProcConfiguration, baseNameVal, table_unit)
 
-    plot_sums <- {
+    plot_sums <- function() {
         EProc$sPlotDailySums(baseNameVal, VarUnc = baseNameSdVal, Dir = OUTPUT_DIR,
                              Format = eddyProcConfiguration$figureFormat, unit = dsum_unit)
     }
     with_patched_func(s4 = EProc, closure_name = '.sxSetTitle',
                       patched_closure = patch_daily_sums_plot_name,
-                      extra_args = baseNameVal, code = plot_sums)
+                      extra_args = baseNameVal, code = {plot_sums()})
 
     EProc$sPlotHHFluxes(baseNameVal, Dir = OUTPUT_DIR, Format = eddyProcConfiguration$figureFormat)
 }

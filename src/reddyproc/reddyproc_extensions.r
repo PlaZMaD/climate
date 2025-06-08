@@ -29,9 +29,15 @@ patch_daily_sums_plot_name <- function(orig_call, var_name, ...) {
 }
 
 
-with_patched_func <- function(s4, closure_name, patched_closure, extra_args, code){
-    # instead of original closure,
-    # patched_closure(original_closure, extra_args, ...) will be called
+with_patched_func <- function(s4, closure_name, patched_closure, extra_args, code = {}){
+    # patches s4.closure_name with patched_closure(original_closure, extra_args, ...),
+    # runs code,
+	# ensures patch is removed after tha call
+
+	code_str = substitute(code)
+	if (!is.call(code_str))
+		stop('with_patched_func code arg must be code block, not a bare function.',
+			 'Correct example: with_patched_func(... , code = {function_to_call(...)}, ...)')
 
     original_closure <- s4[[closure_name]]
     tryCatch(
