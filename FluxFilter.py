@@ -974,13 +974,14 @@ def my_datetime_converter(x):
 config['time']['converter'] = my_datetime_converter
 #####################
 
-# Тип файлов для импорта: 'CSF_', 'IAS_2', 'EDDYPRO_1'
+# Тип файлов для импорта: 'csf_', 'ias_2', 'eddypro_1', 'auto'
+# 'auto" - экспериментальный режим, поддерживает только один входной ИАС файл
 # config['mode'] = 'IAS_2'
-config['mode'] = 'EDDYPRO_1'
+config['mode'] = 'auto'
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
+config['path'] = 'auto'#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -1218,7 +1219,11 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 
 # + id="Xw5TapK10EhR"
 from src.data_import.eddypro_loader import load_eddypro_fulloutput
+from src.data_import.data_import import auto_detect_input_files
 from src.data_import.ias_loader import load_ias
+config, config_meteo, ias_output_prefix, ias_output_version = auto_detect_input_files(
+    config, config_meteo, ias_output_prefix, ias_output_version
+)
 
 
 mode_str = config['mode']

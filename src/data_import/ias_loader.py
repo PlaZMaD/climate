@@ -1,10 +1,9 @@
 import logging
-from copy import copy
-from pathlib import Path
 import numpy as np
 import pandas as pd
 
 import bglabutils.basic as bg
+from src.data_import.table_loader import load_table_from_file
 from src.helpers.py_helpers import invert_dict
 from src.data_import.ias_error_check import set_lang, draft_check_ias
 from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
@@ -58,44 +57,16 @@ COLS_NS_IAS = [
 COLS_NS_IAS_TO_SCRIPT = {k: k.lower() for k in COLS_NS_IAS}
 COLS_EDDYPROL_TO_IAS = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS.items()}
 
+IAS_HEADER_DETECTION_COLS = COLS_EDDYPRO_TO_IAS.values()
 # IAS optional rules are more complex and placed into IAS check tool
-
 COLS_IAS_TO_SCRIPT = invert_dict(COLS_EDDYPROL_TO_IAS)
 COLS_IAS_TIME = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
-
-
-def load_csv(fpath):
-	return pd.read_csv(fpath)
-
-
-def load_xls(fpath):
-	data = pd.read_excel(fpath)
-	if isinstance(data, dict):
-		if len(data.values()) > 1:
-			logging.error(_("Several lists in data file!"))
-			assert False
-		else:
-			data = next(iter(data.values()))
-	return data
-
-
-def load_ias_file_by_ext(fpath):
-	# probably extract to load table? can time repair be generalised operation on table?
-
-	suffix = Path(fpath).suffix.lower()
-	if suffix == '.csv':
-		data = load_csv(fpath)
-	elif suffix in ['.xls', '.xlsx']:
-		data = load_xls(fpath)
-	else:
-		raise Exception(_(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file."))
-	return data
 
 
 def load_ias_file_safe(fpath):
 	# with log_exception(...) instead
 	try:
-		data = load_ias_file_by_ext(fpath)
+		data = load_table_from_file(fpath)
 	except Exception as e:
 		logging.error(e)
 		raise
