@@ -412,7 +412,16 @@ processEddyData <- function(eddyProcConfiguration, dataFileName = INPUT_FILE,
     str(eddyProcConfiguration)
 
     inputData <- readInputData(dataFileName, eddyProcConfiguration$input_format)
+
+    # TODO 2 check if continuous or within year drops/incorrect with next sets:
+    # ustar_threshold_fallback=0.02, ustar_rg_source="", u_star_seasoning="WithinYear",
+    # inputData$NEE[(inputData$UStar < 5) & (is.na(inputData$Rg) | (inputData$Rg < 10)) ] <- NA
+    # inputData$NEE[(inputData$Ustar < 0.02 | is.na(inputData$Ustar)) & (is.na(inputData$Rg) | (inputData$Rg < 10))] <- NA
+    # inputData$NEE[(inputData$Ustar < 0.3840525 ) & (is.na(inputData$Rg) | (inputData$Rg < 10))] <- NA
+
     str(inputData)
+    # TODO seasons crash?
+    # inputData$NEE[is.na(inputData$NEE)] <- 1.0
     EddyDataWithPosix <- validateInputData(inputData)
 
     dataVariablesToFill <- getDataVariablesToFill(colnames(EddyDataWithPosix), eddyProcConfiguration)

@@ -23,12 +23,16 @@ rep_user_options <- list(
     # NA to disable or double
     ustar_threshold_fallback = 0.1,
     # TODO remove leftovers after python Rg guess implemented
+    # TODO RG_th_REP not in outputs
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # 'Rg_th_Py', 'Rg_th_REP' - estimate by theoretical algs,
     # 'Rg' - by real data, '' - ignore Rg and filter both days and nights
     ustar_rg_source = 'Rg',
 
 
+    # TODO when switching to user=1, amount of output cols must be same, and outputs must be same
+    # test: 2 years, continious all seasons = 1, years swap seasons = 1 ... 2
+    # TODO Ustar_Thres is only correct col name, something is broken uStar[..., 1] ?
     u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     u_star_method = factor("RTw", levels = "RTw"),
 

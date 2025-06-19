@@ -98,14 +98,25 @@ check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
         return()
     }
 
+	# 	TODO unknown if this fixes error, new cols with unexpected anmes in output
+	# 	s_opt <- eddyProcConfiguration$uStarSeasoning
+	# 	if (s_opt %in% c('Continuous', 'WithinYear'))
+	# 		ustar_col <- 'uStar'
+	# 	else if (s_opt == 'User')
+	# 		ustar_col <- colnames(EProc$sUSTAR_SCEN %>% select(starts_with('uStarTh')))
+	#
+	# 	stopifnot(ustar_col %in% colnames(EProc$sUSTAR_SCEN))
+	#
+	#     before <- EProc$sUSTAR_SCEN
+	#
+	#     EProc$sUSTAR_SCEN[ustar_col][is.na(EProc$sUSTAR_SCEN[ustar_col])] <-
+	#     	eddyProcConfiguration$ustar_threshold_fallback
+
     before <- EProc$sUSTAR_SCEN
     EProc$sUSTAR_SCEN$uStar[is.na(EProc$sUSTAR_SCEN$uStar)] <- eddyProcConfiguration$ustar_threshold_fallback
 
-    printed_df <- function(df)
-        paste(capture.output(df), collapse = '\n')
-
     message(RE, RU, 'Fallback value from the user options will be used.\n',
-			'Before:\n', printed_df(before), '\nAfter: \n', printed_df(EProc$sUSTAR_SCEN))
+			'Before:\n', df_to_text(before), '\nAfter: \n', df_to_text(EProc$sUSTAR_SCEN))
 }
 
 
