@@ -178,3 +178,7 @@ fmt_hm <- function(fp_hour){
     # 6.5 -> 06:30
     return(sprintf("%02i:%02i", trunc(fp_hour), trunc(fp_hour %% 1 * 60)))
 }
+    # for example, to see cols with the same name in df:
+    # df[all_duplicated(colnames(df))]
+    # df[all_duplicated(colnames(df))]
+

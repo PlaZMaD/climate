@@ -74,6 +74,15 @@ check_ustar_daytime_arg <- function(real_rg_missing, eddyProcConfiguration) {
 }
 
 
+check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
+	seasons_in_data <- 'season' %in% colnames(EddyDataWithPosix)
+	user_seasons <- eddyProcConfiguration$uStarSeasoning == 'User'
+	if (seasons_in_data != user_seasons)
+		stop(RE, '"season" column in the input data does not match option uStarSeasoning == "User" \n',
+			 'rename column or change the uStarSeasoning option')
+}
+
+
 .ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
     can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_threshold_fallback)
