@@ -1,5 +1,5 @@
 '''
-Draft far away from being finished
+Unused draft for ias reading far away from being finished
 '''
 
 import numpy as np
@@ -70,7 +70,7 @@ def rapair_ias():
 def test_import():
     # config_meteo['path'] = 'tv_fy4_2022_v01.xlsx'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
     # draft: load same data from eddypro and ias and compare that mathing
-    # TODO remove, extract to test
+    # TODO 3 remove, extract to test
     data = data.rename(columns={'vpd_1_1_1': 'vpd'}).drop('ppfd_1_1_1', axis='columns')
     from helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
     config['mode'] = 'EDDYPRO_1'

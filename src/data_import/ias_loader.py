@@ -8,7 +8,7 @@ from src.helpers.py_helpers import invert_dict
 from src.data_import.ias_error_check import set_lang, draft_check_ias
 from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
 
-# TODO fix ias export to match import
+# TODO 1 fix ias export to match import
 # possibly extract to abstract time series converter class later?
 # possibly store in table file instead?
 # currently 4 column names variations are possible: IAS file, EddyPro file, notebook import, export (after all the processing)
@@ -22,7 +22,7 @@ COLS_EDDYPRO_TO_IAS = {
 	"Tau": "TAU_1_1_1", "qc_Tau": "TAU_SSITC_TEST_1_1_1",
 	"co2_strg": "SC_1_1_1", "co2_mole_fraction": "CO2_1_1_1",
 	"h2o_mole_fraction": "H2O_1_1_1", "sonic_temperature": "T_SONIC_1_1_1",
-	"Ta_1_1_1": "TA_1_1_1", "Pa_1_1_1": "PA_1_1_1",
+	"Pa_1_1_1": "PA_1_1_1",
 	"Swin_1_1_1": "SW_IN_1_1_1", "Swout_1_1_1": "SW_OUT_1_1_1",
 	"Lwin_1_1_1": "LW_IN_1_1_1", "Lwout_1_1_1": "LW_OUT_1_1_1",
 	"Rn_1_1_1": "NETRAD_1_1_1", "MWS_1_1_1": "WS_1_1_1",
@@ -33,8 +33,9 @@ COLS_EDDYPRO_TO_IAS = {
 	"x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1", "x_90%": "FETCH_90_1_1_1",
 	"ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction": "CH4_1_1_1",
 	"ch4_strg": "SCH4_1_1_1", "ch4_signal_strength": "CH4_RSSI_1_1_1", "co2_signal_strength": "CO2_STR_1_1_1",
-
-	# TODO are they correct?
+	# TODO 1 add fixes from the tool
+	# TODO 1 are they correct, i.e. if conversion/rename happens as expected in the notebook?
+	"Ta_1_1_1": "TA_1_1_1",
 	"u*": "USTAR_1_1_1",
 	"PPFD_1_1_1": "PPFD_IN_1_1_1",
 	"Rh_1_1_1": "RH_1_1_1", "VPD_1_1_1": "VPD_1_1_1",
@@ -49,7 +50,9 @@ COLS_SCRIPT_TO_IAS = {
 COLS_NS_IAS = [
 	# NS = Not Supported by script yet, but should be kept during save-load
 	'ALB_1_1_1',
-	# TODO P_1_1_1, P_RAIN are supported
+	# TODO 1 P_1_1_1, P_RAIN are supported
+	# TODO 1 problem: previously p_1_1_1 was not droppoing to outputs because it may be generated during script col
+	# currently, it will because all these cols are included; what to do?
 	'FH2O_1_1_1', 'P_1_1_1',
 	'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1',
 	'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'VPD_PI_1_1_1', 'V_SIGMA_1_1_1', 'WD_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1'
@@ -105,7 +108,7 @@ def check_with_bglabutils(fpath, data):
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder):
-	# TODO remove and fix export instead?
+	# TODO 1 remove and fix export instead?
 	# add extra row, because main script expects currently for 2020 year extra row at the start of 2021
 	# specifically, ias export currently requires 2 years, not 1
 	# it does not look right, but not changing export yet
@@ -142,7 +145,7 @@ def process_col_names(df: pd.DataFrame, time_col):
 	df = df.rename(columns=COLS_IAS_TO_SCRIPT)
 	print("Переменные после загрузки: \n", df.columns.to_list())
 
-	# TODO 'timestamp_1', 'datetime'?
+	# TODO 1 'timestamp_1', 'datetime'?
 	expected_biomet_cols = np.strings.lower(['Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1',
 	                                         'Lwout_1_1_1', 'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'])
 	biomet_cols_index = df.columns.intersection(expected_biomet_cols)
@@ -150,14 +153,14 @@ def process_col_names(df: pd.DataFrame, time_col):
 
 
 def load_ias(config, config_meteo):
-	# TODO move to ipynb?
+	# TODO 1 move to ipynb?
 	set_lang('ru')
 
-	# TODO merge with config, pack biomet into load routines only?
+	# TODO 2 merge with config, pack biomet into load routines only?
 	assert config_meteo['use_biomet']
 
 
-	# TODO merge
+	# TODO 2 merge
 	if len(config['path']) != 1:
 		raise Exception('Combining multiple IAS files is not supported yet')
 	fpath = config['path'][0]
@@ -189,13 +192,13 @@ def load_ias(config, config_meteo):
 	df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis="columns")
 	time_col = 'datetime'
 	df.index = df['datetime']
-	# TODO improve
+	# TODO 1 improve
 	df.index.freq = df.index[2] - df.index[1]
 	assert df.index.freq == df.index[-1] - df.index[-2]
 	print("Диапазон времени IAS (START): ", df.index[[0, -1]])
 	logging.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 	df = ias_table_extend_year(df, df.index.freq, time_col, -9999)
-	# TODO improve
+	# TODO 1 improve
 	df.index.freq = df.index[2] - df.index[1]
 	''' from eddypro to ias
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']

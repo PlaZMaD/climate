@@ -8,7 +8,7 @@ debugSource('test/reddyproc/helpers/init_test_env.r')
 # devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
 
 debugSource('test/reddyproc/helpers/io.r')
-debugSource('src/reddyproc/postprocess_calc_averages.r')
+debugSource('src/reddyproc/postprocess_calc_means.r')
 debugSource('src/reddyproc/web_tool_sources_adapted.r')
 debugSource('src/reddyproc/reddyproc_wrapper.r')
 debugSource('src/reddyproc/reddyproc_extensions.r')
@@ -22,17 +22,18 @@ rep_user_options <- list(
     is_to_apply_u_star_filtering = TRUE,
     # NA to disable or double
     ustar_threshold_fallback = 0.1,
-    # TODO remove leftovers after python Rg guess implemented
-    # TODO RG_th_REP not in outputs
+    # TODO 2 remove leftovers after one of two theoretical Rg options are removed?
+    # TODO 2 check if RG_th_REP placed to the output files and it is intended
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # 'Rg_th_Py', 'Rg_th_REP' - estimate by theoretical algs,
     # 'Rg' - by real data, '' - ignore Rg and filter both days and nights
     ustar_rg_source = 'Rg',
 
 
-    # TODO when switching to user=1, amount of output cols must be same, and outputs must be same
+    # TODO 2 User and col season = [1, 1, ...], ensure outputs are same as if Continuous or WithinYear expect 1-2 cols
+    # this is correct and verified on the original REP
     # test: 2 years, continious all seasons = 1, years swap seasons = 1 ... 2
-    # TODO Ustar_Thres is only correct col name, something is broken uStar[..., 1] ?
+    # TODO 2 Ustar_Thres is only correct col name, but broken uStar[..., 1] columns emerges under some tests, check todo's
     u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     u_star_method = factor("RTw", levels = "RTw"),
 

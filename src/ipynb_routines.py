@@ -30,7 +30,7 @@ def display_image_row(paths):
 		except:
 			continue
 		imgs += [img]
-	# TODO check paths exist where?
+	# TODO 4 check paths exist where?
 	if len(imgs) < 1:
 		return
 
@@ -87,8 +87,12 @@ def _plotly_show_override(self: go.Figure, out_dir: Path, **args):
 		display(SVG(svg_text))
 	if ENV.LOCAL:
 		print('Reminder: local screen resolution for plotly render can be adjusted.')
+
+		dir = out_dir / 'local' / 'plots'
+		dir.mkdir(parents=True, exist_ok=True)
+
 		fname = args['config']['toImageButtonOptions']['filename']
-		fpath = out_dir / (fname + '.png')
+		fpath = dir / (fname + '.png')
 		self.write_image(format='png', width=1920, file=fpath)
 
 

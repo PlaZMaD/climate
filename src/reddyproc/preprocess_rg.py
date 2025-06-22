@@ -5,7 +5,8 @@ from pysolar import solar
 from pysolar import radiation
 
 
-# TODO move call earlier to REP file preparation, but will requre user to set lat long away from here
+# TODO 2 move call earlier to REP file preparation to remove double read of file,
+#  but will requre user to set lat long earlier in the config
 def prepare_rg(rep_options: SimpleNamespace):
     # generate theoretical solar radiation using specifically pysolar
 
