@@ -23,13 +23,17 @@ rep_user_options <- list(
     # NA to disable or double
     ustar_threshold_fallback = 0.1,
     # TODO remove leftovers after python Rg guess implemented
+    # TODO RG_th_REP not in outputs
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # 'Rg_th_Py', 'Rg_th_REP' - estimate by theoretical algs,
-    # "Rg" - by real data, '' - ignore Rg and filter both days and nights
-    ustar_rg_source = '',
+    # 'Rg' - by real data, '' - ignore Rg and filter both days and nights
+    ustar_rg_source = 'Rg',
 
 
-    u_star_seasoning =  factor("User", levels = c("Continuous", "WithinYear", "User")),
+    # TODO when switching to user=1, amount of output cols must be same, and outputs must be same
+    # test: 2 years, continious all seasons = 1, years swap seasons = 1 ... 2
+    # TODO Ustar_Thres is only correct col name, something is broken uStar[..., 1] ?
+    u_star_seasoning =  factor("Continuous", levels = c("Continuous", "WithinYear", "User")),
     u_star_method = factor("RTw", levels = "RTw"),
 
     is_bootstrap_u_star = FALSE,
@@ -56,6 +60,8 @@ run_rep <- function(options, input_file = NULL) {
 
     if (is.not.null(input_file)) {
         input_finfo <- find_rep_file(input_file)
+        if (basename(input_finfo$fname) != basename(input_file))
+            message('Using input file: ', input_finfo$fname)
         options$input_file <- input_finfo$fname
         options$site_id <- input_finfo$site_id
     }
@@ -63,8 +69,9 @@ run_rep <- function(options, input_file = NULL) {
 
     # stopifnot(...)
     if (is.not.null(input_file)) {
-        message('Test dir is: ', test_dir)
-        utils::browseURL(test_dir)
+        unexpected_out_dir = dirname(input_file) != dirname(options$output_dir)
+        if (unexpected_out_dir)
+            utils::browseURL(dirname(options$input_file))
     }
 }
 

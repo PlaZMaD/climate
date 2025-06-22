@@ -29,9 +29,15 @@ patch_daily_sums_plot_name <- function(orig_call, var_name, ...) {
 }
 
 
-with_patched_func <- function(s4, closure_name, patched_closure, extra_args, code){
-    # instead of original closure,
-    # patched_closure(original_closure, extra_args, ...) will be called
+with_patched_func <- function(s4, closure_name, patched_closure, extra_args, code = {}){
+    # patches s4.closure_name with patched_closure(original_closure, extra_args, ...),
+    # runs code,
+	# ensures patch is removed after tha call
+
+	code_str = substitute(code)
+	if (!is.call(code_str))
+		stop('with_patched_func code arg must be code block, not a bare function.',
+			 'Correct example: with_patched_func(... , code = {function_to_call(...)}, ...)')
 
     original_closure <- s4[[closure_name]]
     tryCatch(
@@ -68,6 +74,15 @@ check_ustar_daytime_arg <- function(real_rg_missing, eddyProcConfiguration) {
 }
 
 
+check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
+	seasons_in_data <- 'season' %in% colnames(EddyDataWithPosix)
+	user_seasons <- eddyProcConfiguration$uStarSeasoning == 'User'
+	if (seasons_in_data != user_seasons)
+		stop(RE, '"season" column in the input data does not match option uStarSeasoning == "User" \n',
+			 'rename column or change the uStarSeasoning option')
+}
+
+
 .ustar_threshold_fallback <- function(eddyProcConfiguration, EProc) {
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
     can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_threshold_fallback)
@@ -83,14 +98,25 @@ check_ustar_daytime_arg <- function(real_rg_missing, eddyProcConfiguration) {
         return()
     }
 
+	# 	TODO unknown if this fixes error, new cols with unexpected anmes in output
+	# 	s_opt <- eddyProcConfiguration$uStarSeasoning
+	# 	if (s_opt %in% c('Continuous', 'WithinYear'))
+	# 		ustar_col <- 'uStar'
+	# 	else if (s_opt == 'User')
+	# 		ustar_col <- colnames(EProc$sUSTAR_SCEN %>% select(starts_with('uStarTh')))
+	#
+	# 	stopifnot(ustar_col %in% colnames(EProc$sUSTAR_SCEN))
+	#
+	#     before <- EProc$sUSTAR_SCEN
+	#
+	#     EProc$sUSTAR_SCEN[ustar_col][is.na(EProc$sUSTAR_SCEN[ustar_col])] <-
+	#     	eddyProcConfiguration$ustar_threshold_fallback
+
     before <- EProc$sUSTAR_SCEN
     EProc$sUSTAR_SCEN$uStar[is.na(EProc$sUSTAR_SCEN$uStar)] <- eddyProcConfiguration$ustar_threshold_fallback
 
-    printed_df <- function(df)
-        paste(capture.output(df), collapse = '\n')
-
     message(RE, RU, 'Fallback value from the user options will be used.\n',
-			'Before:\n', printed_df(before), '\nAfter: \n', printed_df(EProc$sUSTAR_SCEN))
+			'Before:\n', df_to_text(before), '\nAfter: \n', df_to_text(EProc$sUSTAR_SCEN))
 }
 
 
