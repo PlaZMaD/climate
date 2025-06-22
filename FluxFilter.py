@@ -124,6 +124,8 @@ import bglabutils.filters as bf
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager
 from src.ipynb_routines import setup_plotly
+from src.helpers.py_helpers import init_logging
+from src.data_import.data_import import auto_detect_input_files, ImportMode
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
@@ -134,10 +136,7 @@ colab_no_scroll()
 colab_enable_custom_widget_manager()
 setup_plotly(out_dir)
 
-logging.basicConfig(level=logging.INFO, filename=out_dir / 'log.log', filemode="w", force=True)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-logging.info("START")
-
+init_logging(level=logging.INFO, fpath=out_dir / 'log.log', to_stdout=True)
 
 # + [markdown] id="c_5uwjkzfk45"
 # ## Функции для отрисовки
@@ -974,10 +973,9 @@ def my_datetime_converter(x):
 config['time']['converter'] = my_datetime_converter
 #####################
 
-# Тип файлов для импорта: 'csf_', 'ias_2', 'eddypro_1', 'auto'
-# 'auto" - экспериментальный режим, поддерживает только один входной ИАС файл
-# config['mode'] = 'IAS_2'
-config['mode'] = 'auto'
+# Тип файлов для загрузки: ImportMode.CSF_, ImportMode.EDDYPRO1, ImportMode.EDDYPRO1_AND_BIOMET, ImportMode.IAS2
+# ImportMode.AUTO - экспериментальный режим с попыткой определить файлы
+config['mode'] = ImportMode.AUTO
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
@@ -1002,7 +1000,7 @@ config['path'] = 'auto'#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-2
 
 # + id="H7E5LGx1DVsA"
 config_meteo = {}
-config_meteo['use_biomet'] = True
+config_meteo['use_biomet'] = 'auto'
 config_meteo['debug'] = False  # True загрузит небольшой кусок файла, а не целый
 config_meteo['-9999_to_nan'] = True #заменяем -9999  на np.nan
 config_meteo['repair_time'] = True #генерируем новые временные метки в случае ошибок
@@ -1019,7 +1017,7 @@ config_meteo['time']['converter'] = my_datetime_converter
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-config_meteo['path'] = 'BiometFy4_2023.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
+config_meteo['path'] = 'auto'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -1056,8 +1054,8 @@ window_size = 10
 calc_nee = True
 
 # Индекс станции для названий выходных файлов, рисунков
-ias_output_prefix = 'tv_fy4'
-ias_output_version = 'v01'
+ias_output_prefix = 'auto'
+ias_output_version = 'auto'
 
 # + [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные с значением флага больше порога будут исключены.
@@ -1219,20 +1217,18 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 
 # + id="Xw5TapK10EhR"
 from src.data_import.eddypro_loader import load_eddypro_fulloutput
-from src.data_import.data_import import auto_detect_input_files
 from src.data_import.ias_loader import load_ias
 config, config_meteo, ias_output_prefix, ias_output_version = auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )
 
 
-mode_str = config['mode']
-if mode_str == 'EDDYPRO_1':
+if config['mode'] in [ImportMode.EDDYPRO1, ImportMode.EDDYPRO1_AND_BIOMET]:
     res = load_eddypro_fulloutput(config, config_meteo)
-elif mode_str == 'IAS_2':
-    # TODO biomet_columns
+elif config['mode'] == ImportMode.IAS2:
+    # TODO 2 generalise biomet_columns and biomet congif?
     res = load_ias(config, config_meteo)
-elif mode_str == 'CSF_':
+elif config['mode'] == ImportMode.CSF_:
     raise NotImplementedError
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
@@ -1758,7 +1754,7 @@ logging.info(f"REddyProc file saved to {os.path.join('output', reddyproc_filenam
 
 # + id="yaLoIQmtzaYd"
 from src.data_import.ias_loader import COLS_NS_IAS_TO_SCRIPT
-from src.helpers.py_helpers import invert_dict, sort_fix_underscore
+from src.helpers.py_helpers import invert_dict, sort_fix_underscore, init_logging
 
 if config_meteo['use_biomet']:
 	# may be move to src and add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
