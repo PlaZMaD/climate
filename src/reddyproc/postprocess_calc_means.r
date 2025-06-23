@@ -3,7 +3,6 @@ library(lubridate)
 library(tibble)
 
 source('src/reddyproc/r_helpers.r')
-# TODO rename to postprocess_means
 
 
 .aggregate_df <- function(data, by_col, FUN) {
@@ -60,8 +59,8 @@ source('src/reddyproc/r_helpers.r')
 .restore_unit_attributes <- function(df_h, df_d, df_m, df_y,
                                      unique_cols_h, unique_cols_d, unique_cols_m, unique_cols_y,
                                      df_full) {
-    # most of the ops will drop attrs, unit attrs must be restored back
-    # TODO or save them to list instead? but REddyProc stores in attrs
+    # most of the df ops will drop attrs, unit attrs must be restored back
+    # or save them to list instead? but REddyProc stores in attrs
     df_h <- .copy_attributes(df_h, df_full, 'units')
     df_d <- .copy_attributes(df_d, df_full, 'units')
     df_m <- .copy_attributes(df_m, df_full, 'units')
@@ -94,7 +93,7 @@ source('src/reddyproc/r_helpers.r')
     expected_cols_in <- sub("_f$", "", setdiff(cols_f, known_unpaired_out))
     cols_in = intersect(expected_cols_in, colnames(df))
 
-    # TODO Bootstrap  -> NEE, GPP and Reco all into outputs
+    # TODO 2 ensure Bootstrap -> NEE cols are sorted correctly
     missing_in = setdiff(expected_cols_in, cols_in)
     if (length(missing_in) > 0)
         stop(msg = paste('Expected columns are missing: \n', missing_in, '\n'))

@@ -106,7 +106,7 @@ getAdditionalDataVariablesToKeep <- function(allDataVariables, keepDataVariables
         # #untrace(usEstUstarThreshold) trace(REddyProc:::usGetValidUstarIndices, recover);
         # untrace(usGetValidUstarIndices)
 
-	    # TODO RgColName in other calls?
+	    # TODO 2 if RgColName must also be chenged in the other REP routines?
         EProc$sEstUstarThold(seasonFactor = seasonFactor, RgColName = eddyProcConfiguration$ustar_rg_source)
     }
 
@@ -413,14 +413,14 @@ processEddyData <- function(eddyProcConfiguration, dataFileName = INPUT_FILE,
 
     inputData <- readInputData(dataFileName, eddyProcConfiguration$input_format)
 
-    # TODO 2 check if continuous or within year drops/incorrect with next sets:
+    # TODO 2 check if continuous or within year drops/incorrect with next experiments:
     # ustar_threshold_fallback=0.02, ustar_rg_source="", u_star_seasoning="WithinYear",
     # inputData$NEE[(inputData$UStar < 5) & (is.na(inputData$Rg) | (inputData$Rg < 10)) ] <- NA
     # inputData$NEE[(inputData$Ustar < 0.02 | is.na(inputData$Ustar)) & (is.na(inputData$Rg) | (inputData$Rg < 10))] <- NA
     # inputData$NEE[(inputData$Ustar < 0.3840525 ) & (is.na(inputData$Rg) | (inputData$Rg < 10))] <- NA
 
     str(inputData)
-    # TODO seasons crash?
+    # TODO 2 seasons crash with this (possibly only with user seasons)?
     # inputData$NEE[is.na(inputData$NEE)] <- 1.0
     EddyDataWithPosix <- validateInputData(inputData)
 
@@ -467,7 +467,7 @@ processEddyData <- function(eddyProcConfiguration, dataFileName = INPUT_FILE,
     }
 
 
-    # TODO incorrect way to put Rg_th_REP into outputs, there must be standard
+    # TODO 2 not intended way to put Rg_th_REP into outputs, there must be better option
     if (rg_source %in% colnames(EProc$sDATA))
         inputData[[rg_source]] <- EProc$sDATA[[rg_source]]
 

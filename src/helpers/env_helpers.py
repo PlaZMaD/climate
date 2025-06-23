@@ -6,7 +6,7 @@ from IPython import get_ipython
 
 class _Env:
 	def __init__(self):
-		# TODO COLAB | LOCAL, IPYNB | PY ?
+		# TODO 3 COLAB | LOCAL, IPYNB | PY ?
 		try:
 			import google.colab
 		except ImportError:

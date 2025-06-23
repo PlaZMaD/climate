@@ -1,5 +1,5 @@
-# TODO report bugfix to REP:
-# daily sums plots should be named daily means for:
+# TODO 4 consider reporting bugfixes to REP, like
+# 1) some daily sums plots should be named daily means
 DAILY_SUMS_PLOT_TITLE_RENAMES = c('Tair_f', 'rH_f', 'Rg_f', 'H_f', 'LE_f', 'VPD_f')
 
 
@@ -55,7 +55,7 @@ with_patched_func <- function(s4, closure_name, patched_closure, extra_args, cod
 
 
 is_error_ustar_need_rg <- function(err) {
-	# TODO exact column name?
+	# TODO 3 exact column name? Name is changed at least by theoretical Rg option, may be other cases
 	grepl('EProc$sEstUstarThold', err$call, fixed = TRUE) %>% any &&
 		err$message == 'Missing columns in dataset: '
 }
@@ -87,7 +87,7 @@ check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
     can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_threshold_fallback)
 
-    # TODO uncertanity?
+    # TODO 2 does uncertanity interfere with this? compare uncertanity on/off
     if (all_thresgolds_ok)
         return()
 	message('\n', RE, RU, 'Thresholds not for all seasons were calculated automatically.')
@@ -98,7 +98,7 @@ check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
         return()
     }
 
-	# 	TODO unknown if this fixes error, new cols with unexpected anmes in output
+	# 	TODO 1 wip unexpected names in output when ustar fallback fired, possible bug
 	# 	s_opt <- eddyProcConfiguration$uStarSeasoning
 	# 	if (s_opt %in% c('Continuous', 'WithinYear'))
 	# 		ustar_col <- 'uStar'
@@ -147,7 +147,7 @@ check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
 	ep_cfg <- eddyProcConfiguration
 
 	if (ep_cfg$ustar_rg_source == 'Rg_th_REP') {
-		# TODO why 15, 45 mins when input file is 0, 30?
+		# TODO 2 why timestamps are 15, 45 mins when input file is 0, 30?
 		hour_dec <- hour(EProc$sDATA$sDateTime) + minute(EProc$sDATA$sDateTime) / 60
 		doy <- yday(EProc$sDATA$sDateTime)
 		EProc$sDATA[[ep_cfg$ustar_rg_source]] <-

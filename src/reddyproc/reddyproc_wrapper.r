@@ -3,7 +3,7 @@ library(REddyProc)
 cat('REddyProc version: ', paste(packageVersion('REddyProc')), '\n')
 
 source('src/reddyproc/web_tool_sources_adapted.r')
-source('src/reddyproc/postprocess_calc_averages.r')
+source('src/reddyproc/postprocess_calc_means.r')
 source('src/reddyproc/r_helpers.r')
 
 
@@ -131,8 +131,8 @@ OUTPUT_DIR <- NULL
 
     do_fallback <- FALSE
 
-    # if REddypoc in ignore errors mode, stop will happend not on ustar failure, but later
-    # TODO switch to more specified check not before the next release
+    # if REddypoc in ignore errors mode, error stop will happend not on ustar failure, but later
+    # TODO 3 try to find to more specified check not before the next release
     # res$err$message == 'must provide finite uStarThresholds', ..., ?
     if (grepl('sMDSGapFillAfterUstar', res$err$call, fixed = TRUE) %>% any)
         do_fallback <- TRUE

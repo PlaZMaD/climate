@@ -2,7 +2,7 @@
 
 setwd(dirname(dirname(dirname(rstudioapi::getSourceEditorContext()$path))))
 debugSource('test/reddyproc/helpers/init_test_env.r')
-debugSource('src/reddyproc/postprocess_calc_averages.r')
+debugSource('src/reddyproc/postprocess_calc_means.r')
 debugSource('src/reddyproc/r_helpers.r')
 
 
@@ -202,6 +202,6 @@ test_real_year <- function(){
 	cat('Test test_real_year ok \n\n')
 }
 
-# TODO not coverred by any tests: output csv will contain not numbers, but strings in some cases
+# TODO 3 not coverred yet by any tests: output csv will contain not numbers, but strings in some cases
 test_real_year()
 test_model_3_month()

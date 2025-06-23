@@ -15,7 +15,7 @@ def df_intersect_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
 	return df1[equal_cols]
 
 
-# TODO move into class methods
+# TODO 3 move into DataFrame.* methods
 def df_get_unique_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
 	# removes same cols in both dfs, na == na
 
