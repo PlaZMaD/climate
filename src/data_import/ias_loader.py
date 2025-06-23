@@ -10,9 +10,11 @@ from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
 
 # TODO 1 fix ias export to match import
 # possibly extract to abstract time series converter class later?
-# possibly store in table file instead?
 # currently 4 column names variations are possible: IAS file, EddyPro file, notebook import, export (after all the processing)
 
+# TODO Q store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
+#  specifically mark cols used in the script and unused?
+# TODO 1 add missing from ias_error_check.known_columns
 COLS_EDDYPRO_TO_IAS = {
 	# specifically about conversion of file formats,
 	# SCRIPT_TO_IAS != EDDYPRO_TO_IAS because script renames some of them during run
@@ -33,7 +35,7 @@ COLS_EDDYPRO_TO_IAS = {
 	"x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1", "x_90%": "FETCH_90_1_1_1",
 	"ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction": "CH4_1_1_1",
 	"ch4_strg": "SCH4_1_1_1", "ch4_signal_strength": "CH4_RSSI_1_1_1", "co2_signal_strength": "CO2_STR_1_1_1",
-	# TODO 1 add fixes from the tool
+
 	# TODO 1 are they correct, i.e. if conversion/rename happens as expected in the notebook?
 	"Ta_1_1_1": "TA_1_1_1",
 	"u*": "USTAR_1_1_1",

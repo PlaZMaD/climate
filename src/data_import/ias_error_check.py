@@ -27,6 +27,8 @@ def set_lang(language):
 
 
 # TODO 1 Q  specification has only H20_STR, not H2O_STR - must be error instead of known?
+# TODO Q store in table file instead? 3+ duplicates now, also case changed:
+#  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
 known_columns = ["ALB", "APAR", "CH4", "CO2", "CO2C13", "D_SNOW", "DBH", "EVI", "FC", "FC_CMB", "FC_SSITC_TEST", "FCH4",
                  "FCH4_CMB", "FCH4_PI", "FETCH_70", "FETCH_80", "FETCH_90", "FETCH_FILTER", "FETCH_MAX", "FH2O", "FN2O",
                  "FN2O_CMB", "FNO", "FNO_CMB", "FNO2", "FNO2_CMB", "FO3", "FO3_SSITC_ TEST", "G", "GPP_PI", "H", "H_PI",
