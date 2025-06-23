@@ -38,7 +38,7 @@ COLS_EDDYPRO_TO_IAS = {
 	"Ta_1_1_1": "TA_1_1_1",
 	"u*": "USTAR_1_1_1",
 	"PPFD_1_1_1": "PPFD_IN_1_1_1",
-	"Rh_1_1_1": "RH_1_1_1", "VPD_1_1_1": "VPD_1_1_1",
+	"Rh_1_1_1": "RH_1_1_1", "VPD_1_1_1": "VPD_1_1_1", "H2O_STR": "H2O_STR",
 
 	# Optional
 	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
