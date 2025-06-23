@@ -90,7 +90,7 @@
 # %load_ext autoreload
 # %autoreload 2
 
-# TODO support of testing cells separately can be added using import * and mocking global space vars gs.*
+# TODO 3 support of testing cells separately can be added using import * and mocking global space vars gs.*
 # py -> ipynb conversion is great to keep only .py in git, can this be used?
 
 # !git -c init.defaultBranch=main init
@@ -125,12 +125,15 @@ import bglabutils.filters as bf
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager
 from src.ipynb_routines import setup_plotly
 from src.helpers.py_helpers import init_logging
-from src.data_import.data_import import auto_detect_input_files, ImportMode
+from src.data_import.data_import import try_auto_detect_input_files, ImportMode
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
 out_dir = Path('output')
-out_dir.mkdir(exist_ok=True)
+# TODO Q 1) is it ok to cleanup dir? 2) format 4 spaces or tabs?
+from src.helpers.io_helpers import ensure_empty_dir
+ensure_empty_dir(out_dir)
+# out_dir.mkdir(exist_ok=True)
 
 colab_no_scroll()
 colab_enable_custom_widget_manager()
@@ -973,14 +976,14 @@ def my_datetime_converter(x):
 config['time']['converter'] = my_datetime_converter
 #####################
 
-# Тип файлов для загрузки: ImportMode.CSF_, ImportMode.EDDYPRO1, ImportMode.EDDYPRO1_AND_BIOMET, ImportMode.IAS2
-# ImportMode.AUTO - экспериментальный режим с попыткой определить файлы
-config['mode'] = ImportMode.AUTO
-
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
 config['path'] = 'auto'#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = '/content/DT_Full output.xlsx'
+
+# Тип файлов для загрузки: ImportMode.CSF_, ImportMode.EDDYPRO1, ImportMode.EDDYPRO1_AND_BIOMET, ImportMode.IAS2
+# ImportMode.AUTO - экспериментальное автоматическое определение
+config['mode'] = ImportMode.AUTO
 
 # + [markdown] id="S2Qc-fltJLaF"
 # ## Параметры загрузки файла biomet
@@ -1000,6 +1003,7 @@ config['path'] = 'auto'#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-2
 
 # + id="H7E5LGx1DVsA"
 config_meteo = {}
+# TODO Q is this nessesary as a part of public config? can be derived from path? private config / flag?
 config_meteo['use_biomet'] = 'auto'
 config_meteo['debug'] = False  # True загрузит небольшой кусок файла, а не целый
 config_meteo['-9999_to_nan'] = True #заменяем -9999  на np.nan
@@ -1218,17 +1222,17 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # + id="Xw5TapK10EhR"
 from src.data_import.eddypro_loader import load_eddypro_fulloutput
 from src.data_import.ias_loader import load_ias
-config, config_meteo, ias_output_prefix, ias_output_version = auto_detect_input_files(
+config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )
 
 
-if config['mode'] in [ImportMode.EDDYPRO1, ImportMode.EDDYPRO1_AND_BIOMET]:
+if config['mode'] in [ImportMode.EDDYPRO_L1, ImportMode.EDDYPRO_L1_AND_BIOMET]:
     res = load_eddypro_fulloutput(config, config_meteo)
-elif config['mode'] == ImportMode.IAS2:
-    # TODO 2 generalise biomet_columns and biomet congif?
+elif config['mode'] == ImportMode.IAS_L2:
+    # TODO Q generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
     res = load_ias(config, config_meteo)
-elif config['mode'] == ImportMode.CSF_:
+elif config['mode'] == ImportMode.CSF_L:
     raise NotImplementedError
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
@@ -1237,7 +1241,7 @@ else:
 data, time, biomet_columns, data_freq, config_meteo = res
 
 
-points_per_day = int(pd.Timedelta('24H')/data_freq)
+points_per_day = int(pd.Timedelta('24h')/data_freq)
 
 # + id="C8lLDYOWzH2d"
 data.columns = data.columns.str.lower()
@@ -1721,6 +1725,7 @@ if config_meteo ['use_biomet']:
   eddy_df['rH'] = eddy_df['rh_1_1_1'].fillna(-9999)
   eddy_df['VPD'] = eddy_df['vpd_1_1_1'].fillna(-9999)
 else:
+  # TODO 1 when Ta_1_1_1 is used, it will not drop to rep file then. Is this intended?
   eddy_df['Tair'] = (eddy_df['air_temperature'] - 273.15).fillna(-9999)
   eddy_df['rH'] = eddy_df['rh'].fillna(-9999)
   eddy_df['VPD'] = eddy_df['vpd'].fillna(-9999)
@@ -1784,13 +1789,15 @@ if config_meteo['use_biomet']:
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in ias_df.columns]
 
-    # TODO still not correct at some lines
+    # TODO 2 still not correct at some lines
 	# year.min() == year.max() if full 1 year
 	new_time = pd.DataFrame(index=pd.date_range(start=f"01.01.{ias_df[time].dt.year.min()}", end=f"01.01.{ias_df[time].dt.year.max()}",
 												freq=ias_df.index.freq, inclusive='left'))
 	ias_df = new_time.join(ias_df, how='left')
 	ias_df[time] = ias_df.index
 
+    # TODO 1 incorrect DTime at the end, test myltiyear
+    # TODO 1 ias load multyear
 	ias_df['TIMESTAMP_START'] = ias_df[time].dt.strftime('%Y%m%d%H%M')
 	time_end = ias_df[time] + pd.Timedelta(0.5, "h")
 	ias_df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
@@ -1805,7 +1812,7 @@ if config_meteo['use_biomet']:
 		ias_df['SLE_1_1_1'] = ias_df['le_strg']
 		var_cols.append('SLE_1_1_1')
 
-	# TODO why not added to var_cols, why duplicate in col_match with other case?
+	# TODO Q why not added to var_cols, why duplicate in col_match with other case?
 	if 'SW_IN_1_1_1' in ias_df.columns:
 		ias_df['SW_IN_1_1_1'] = data['swin_1_1_1']
 

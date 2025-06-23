@@ -99,6 +99,7 @@ def check_with_bglabutils(fpath, data):
 	data_cmpr = data[1:-1]
 	df1, df2 = df_get_unique_cols(data_cmpr, data_bgl)
 
+
 	if df1.columns.size + df2.columns.size > 0:
 		raise Exception(f'bglabutils.load_df loads different ias table. df1: {df1.columns} df2: {df2.columns}')
 
@@ -158,7 +159,7 @@ def load_ias(config, config_meteo):
 
 	# TODO merge
 	if len(config['path']) != 1:
-		raise Exception('Multiple IAS files are not supported yet')
+		raise Exception('Combining multiple IAS files is not supported yet')
 	fpath = config['path'][0]
 	draft_check_ias(fpath)
 	df = load_ias_file_safe(fpath)

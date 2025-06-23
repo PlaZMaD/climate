@@ -365,4 +365,4 @@ def draft_check_ias(fpath):
     if errors > 0:
         msg = f"Input file {fpath} cannot be used yet. Please fix errors."
         logging.error(msg)
-        raise Exception(msg)
+        raise SystemExit(msg)
