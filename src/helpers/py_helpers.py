@@ -1,5 +1,7 @@
 import contextlib
+import logging
 import sys
+from pathlib import Path
 
 
 @contextlib.contextmanager
@@ -16,6 +18,11 @@ def catch(on_exception=None, err_types=Exception):
 
 
 def invert_dict(dict):
+	vals = dict.values()
+	vals_set = set(vals)
+	if len(vals) != len(vals_set):
+		raise Exception('Cannot invert dictionary with duplicate values')
+
 	return {v: k for k, v in dict.items()}
 
 
@@ -31,6 +38,7 @@ def fix_strs_case(strs: list[str], correct_case: list[str]):
 
 
 def debug_stdout_to_log(debug_log_fpath):
+	# stdout->log was required for something, but for what?
 	# duplicates all prints to file
 
 	class Logger(object):
@@ -49,6 +57,20 @@ def debug_stdout_to_log(debug_log_fpath):
 			pass
 
 	sys.stdout = Logger()
+
+
+def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
+	# this function is also required during tests, so placing not in ipynb is optimal
+
+	if fpath:
+		logging.basicConfig(level=level, filename=fpath, filemode="w", force=True)
+		if to_stdout:
+			logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+	else:
+		# when no file is specified, writes to stderr
+		logging.basicConfig(level=level, force=True)
+
+	logging.info("START")
 
 
 def sort_fix_underscore(ls: list[str]):

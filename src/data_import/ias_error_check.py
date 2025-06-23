@@ -257,7 +257,7 @@ def load_ias(fpath):
     return data
 
 
-def check_file(path_to_file):
+def check_ias_file(path_to_file):
     data = load_ias(path_to_file)
 
     total_errors = 0
@@ -360,9 +360,9 @@ def draft_check_ias(fpath):
         datefmt="%H:%M:%S",
     )
 
-    errors = check_file(fpath)
+    errors = check_ias_file(fpath)
 
     if errors > 0:
         msg = f"Input file {fpath} cannot be used yet. Please fix errors."
         logging.error(msg)
-        raise Exception(msg)
+        raise SystemExit(msg)

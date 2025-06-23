@@ -1,7 +1,7 @@
 import src.helpers.os_helpers  # noqa: F401
 
-from src.ias.error_check import check_file_proto
-from src.ias.file_loader import load_ias
+from src.data_import.ias_error_check import check_ias_file
+from src.data_import.ias_loader import load_ias
 
 
 def test_ias_to_csv():
