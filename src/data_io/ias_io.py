@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 
 import bglabutils.basic as bg
-from src.data_import.table_loader import load_table_from_file
+from src.data_io.table_loader import load_table_from_file
 from src.helpers.py_helpers import invert_dict, sort_fixed
-from src.data_import.ias_error_check import set_lang, draft_check_ias
+from src.data_io.ias_error_check import set_lang, draft_check_ias
 from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
 
 # TODO 1 fix ias export to match import
@@ -251,7 +251,6 @@ def load_ias(config, config_meteo):
 	return df, time_col, biomet_cols_index, df.index.freq, config_meteo
 
 
-# TODO 2 rename as separate commit: something like data_import -> data_io, ias_loader - ias_processing ?, etc
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
 	# TODO 3 explicitly name new columns created as a result of processing in one of the args
 	#  instead of hardcoding them in this function?
@@ -262,7 +261,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
 	df = df.fillna(-9999)
 
-	# duplicated in ias src.data_import.ias_loader
+	# duplicated in ias src.data_io.ias_loader
 	col_match = {"co2_flux": "FC_1_1_1", "qc_co2_flux": "FC_SSITC_TEST_1_1_1", "LE": "LE_1_1_1",
 	             "qc_LE": "LE_SSITC_TEST_1_1_1", "H": "H_1_1_1", "qc_H": "H_SSITC_TEST_1_1_1", "Tau": "TAU_1_1_1",
 	             "qc_Tau": "TAU_SSITC_TEST_1_1_1", "co2_strg": "SC_1_1_1", "co2_mole_fraction": "CO2_1_1_1",

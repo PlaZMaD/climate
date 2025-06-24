@@ -228,7 +228,7 @@ def final_time_check(data, time_in):
 
 
 def load_ias(fpath: Path):
-    # TODO 2 try to merge into src.data_import.table_loader -> load_table_from_file
+    # TODO 2 try to merge into src.data_io.table_loader -> load_table_from_file
     ext_l = fpath.suffix.lower()
 
     if '.csv' in ext_l:

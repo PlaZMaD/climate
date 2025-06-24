@@ -2,10 +2,10 @@ import logging
 from enum import Enum
 from pathlib import Path
 
-from src.data_import.eddypro_loader import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
-from src.data_import.ias_loader import IAS_HEADER_DETECTION_COLS
-from src.data_import.parse_fnames import try_parse_ias_fname, try_parse_eddypro_fname
-from src.data_import.table_loader import load_table_from_file
+from src.data_io.eddypro_loader import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
+from src.data_io.ias_io import IAS_HEADER_DETECTION_COLS
+from src.data_io.parse_fnames import try_parse_ias_fname, try_parse_eddypro_fname
+from src.data_io.table_loader import load_table_from_file
 from src.helpers.io_helpers import ensure_path
 from src.helpers.py_helpers import ensure_list
 

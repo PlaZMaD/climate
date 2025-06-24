@@ -125,7 +125,7 @@ import bglabutils.filters as bf
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager
 from src.ipynb_routines import setup_plotly
 from src.helpers.py_helpers import init_logging
-from src.data_import.data_import import try_auto_detect_input_files, ImportMode
+from src.data_io.data_import import try_auto_detect_input_files, ImportMode
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
@@ -1220,8 +1220,8 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-from src.data_import.eddypro_loader import load_eddypro_fulloutput
-from src.data_import.ias_loader import load_ias, export_ias
+from src.data_io.eddypro_loader import load_eddypro_fulloutput
+from src.data_io.ias_io import load_ias, export_ias
 config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )

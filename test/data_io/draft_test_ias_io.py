@@ -88,7 +88,7 @@ def test_conversion():
 
 
 def test_tmp_cols_mathcing():
-    from src.data_import.ias_loader import *
+    from src.data_io.ias_io import *
     COLS_EDDYPRO_TO_IAS
     COLS_SCRIPT_TO_IAS
     COLS_UNUSED_IAS
