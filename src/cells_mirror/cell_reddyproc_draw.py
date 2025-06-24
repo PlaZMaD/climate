@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Union
 
 import src.ipynb_globals as ig
+from src.colab_routines import colab_add_download_button
 from src.helpers.io_helpers import create_archive
 from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
-from src.colab_routines import colab_add_download_button
 
 rep_out_dir = Path(ig.rep.options.output_dir)
 tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_options=ig.rep, img_ext='.png')

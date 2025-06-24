@@ -1,11 +1,12 @@
 '''
 Unused draft for ias reading far away from being finished
 '''
+import re
 
-import numpy as np
 import pandas as pd
 
-from src.helpers.py_helpers import invert_dict
+import src.helpers.os_helpers  # noqa: F401
+from src.helpers.io_helpers import find_in_files
 
 
 
@@ -16,24 +17,8 @@ def repair_ias():
     cols = ['ch4_flux', 'co2_flux', 'H', 'LE', 'co2_strg', 'u*', 'VPD']
     cols_bio = ['RH_1_1_1', 'Ta_1_1_1']
 
-    map = {"co2_flux": "FC_1_1_1", "qc_co2_flux": "FC_SSITC_TEST_1_1_1",
-        "LE": "LE_1_1_1", "qc_LE": "LE_SSITC_TEST_1_1_1",
-        "H": "H_1_1_1", "qc_H": "H_SSITC_TEST_1_1_1",
-        "Tau": "TAU_1_1_1", "qc_Tau": "TAU_SSITC_TEST_1_1_1",
-        "co2_strg": "SC_1_1_1", "co2_mole_fraction": "CO2_1_1_1",
-        "h2o_mole_fraction": "H2O_1_1_1", "sonic_temperature": "T_SONIC_1_1_1",
-        "Ta_1_1_1": "TA_1_1_1", "Pa_1_1_1": "PA_1_1_1",
-        "Swin_1_1_1": "SW_IN_1_1_1", "Swout_1_1_1": "SW_OUT_1_1_1",
-        "Lwin_1_1_1": "LW_IN_1_1_1", "Lwout_1_1_1": "LW_OUT_1_1_1",
-        "Rn_1_1_1": "NETRAD_1_1_1", "MWS_1_1_1": "WS_1_1_1",
-        "Ts_1_1_1": "TS_1_1_1", "Ts_2_1_1": "TS_2_1_1", "Ts_3_1_1": "TS_3_1_1",
-        "Pswc_1_1_1": "SWC_1_1_1", "Pswc_2_1_1": "SWC_2_1_1", "Pswc_3_1_1": "SWC_3_1_1",
-        "SHF_1_1_1": "G_1_1_1", "SHF_2_1_1": "G_2_1_1", "SHF_3_1_1": "G_3_1_1", "L": "MO_LENGTH_1_1_1",
-        "(z-d)/L": "ZL_1_1_1",
-        "x_peak": "FETCH_MAX_1_1_1", "x_70%": "FETCH_70_1_1_1", "x_90%": "FETCH_90_1_1_1",
-        "ch4_flux": "FCH4_1_1_1", "qc_ch4_flux": "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction": "CH4_1_1_1",
 
-        "u*": "USTAR_1_1_1", "PPFD_1_1_1": "PPFD_IN_1_1_1", "Rh_1_1_1": "RH_1_1_1", "VPD": "VPD_1_1_1",
+	map_fo_to_ias = {'u*': 'USTAR_1_1_1', 'PPFD_1_1_1': 'PPFD_IN_1_1_1', 'Rh_1_1_1': 'RH_1_1_1', 'VPD': 'VPD_1_1_1'}
     }
 
     mapl = {k.lower(): v for k, v in  map.items()}
@@ -71,7 +56,7 @@ def test_import():
     # config_meteo['path'] = 'tv_fy4_2022_v01.xlsx'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
     # draft: load same data from eddypro and ias and compare that mathing
     data = data.rename(columns={'vpd_1_1_1': 'vpd'}).drop('ppfd_1_1_1', axis='columns')
-    from src.helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
+    from src.helpers.pd_helpers import df_get_unique_cols
     config['mode'] = 'EDDYPRO_1'
     config['path'] = ['IAS_only_Ckd_FO_2015.csv']
     data1, time1, biomet_columns1, data_freq1, config_meteo1 = load_eddypro_fulloutput(config, config_meteo)
@@ -88,8 +73,17 @@ def test_conversion():
 
 
 def test_tmp_cols_mathcing():
-    from src.data_io.ias_io import *
-    COLS_EDDYPRO_TO_IAS
-    COLS_SCRIPT_TO_IAS
-    COLS_UNUSED_IAS
+    from src.data_io.ias_io import COLS_IAS_TO_SCRIPT, COLS_IAS_TIME, COLS_UNUSED_IAS
+    ias_import_cols = list(COLS_IAS_TO_SCRIPT.keys()) + COLS_IAS_TIME + COLS_UNUSED_IAS
+    from src.data_io.ias_error_check import known_columns
+
+    def first(s:str):
+        m = re.match('(.*)_\d_\d_\d', s)
+
+        return m[0]
+    ias_import_col_placeholders = [first(c) for c in ias_import_cols]
+
+    unpoc_col_placeholders = set(known_columns) - set(ias_import_col_placeholders)
+    unpoc_cols = [c + '_' for c in unpoc_col_placeholders]
+
     pass

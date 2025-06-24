@@ -5,15 +5,14 @@ from warnings import warn
 
 from IPython.core.display import Markdown
 from IPython.display import display
-
 from PIL import Image
 
 import src.helpers.os_helpers  # noqa: F401
-from src.helpers.py_helpers import catch
-from src.ipynb_routines import display_image_row
-from src.helpers.io_helpers import tag_to_fpath
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
+from src.helpers.io_helpers import tag_to_fpath
+from src.helpers.py_helpers import catch
+from src.ipynb_routines import display_image_row
 
 PostProcSuffixes = SimpleNamespace(HMAPS='hmaps', COMPACT='c')
 EddyPrefixes = SimpleNamespace(HEAT_MAP='FP', FLUX='Flux', DIURNAL='DC', DAILY_SUM='DSum', DAILY_SUMU='DSumU')

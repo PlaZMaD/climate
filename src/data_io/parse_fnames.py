@@ -1,6 +1,5 @@
 import logging
 import re
-from pathlib import Path
 
 
 def try_parse_ias_fname(fname: str):

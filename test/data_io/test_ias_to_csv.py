@@ -1,6 +1,5 @@
 import src.helpers.os_helpers  # noqa: F401
 
-from src.data_io.ias_error_check import check_ias_file
 from src.data_io.ias_io import load_ias
 
 

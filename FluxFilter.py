@@ -101,31 +101,29 @@
 # !git -c advice.detachedHead=false checkout FETCH_HEAD
 
 # + id="Ywv5kp0rzanK"
-import os
 import logging
+import os
 import re
-import sys
 from copy import deepcopy as copy
 from pathlib import Path
 
-import pandas as pd
-import numpy as np
 import matplotlib.pylab as plt
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import numpy as np
+import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly_resampler
+from plotly.subplots import make_subplots
 
 import bglabutils.basic as bg
 import bglabutils.filters as bf
 
 # import bglabutils.boosting as bb
 # import textwrap
-
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager
-from src.ipynb_routines import setup_plotly
-from src.helpers.py_helpers import init_logging
 from src.data_io.data_import import try_auto_detect_input_files, ImportMode
+from src.helpers.py_helpers import init_logging
+from src.ipynb_routines import setup_plotly
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'

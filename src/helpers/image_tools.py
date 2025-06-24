@@ -1,12 +1,10 @@
 import itertools
-from copy import copy
 from enum import Enum, auto
-from itertools import product
 from warnings import warn
 
 import PIL
 import numpy as np
-from PIL import Image, ImageChops, ImageColor
+from PIL import Image, ImageChops
 
 
 class Direction(Enum):
