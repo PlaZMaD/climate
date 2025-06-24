@@ -5,11 +5,11 @@ Unused draft for ias reading far away from being finished
 import numpy as np
 import pandas as pd
 
-from helpers.py_helpers import invert_dict
+from src.helpers.py_helpers import invert_dict
 
 
 
-def rapair_ias():
+def repair_ias():
     # draft to fix ias_2 output of script to be same as ias_2 input
     # disabling all filters in the script should perform similary to this function
 
@@ -70,9 +70,8 @@ def rapair_ias():
 def test_import():
     # config_meteo['path'] = 'tv_fy4_2022_v01.xlsx'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
     # draft: load same data from eddypro and ias and compare that mathing
-    # TODO 3 remove, extract to test
     data = data.rename(columns={'vpd_1_1_1': 'vpd'}).drop('ppfd_1_1_1', axis='columns')
-    from helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
+    from src.helpers.pd_helpers import df_get_unique_cols, df_intersect_cols
     config['mode'] = 'EDDYPRO_1'
     config['path'] = ['IAS_only_Ckd_FO_2015.csv']
     data1, time1, biomet_columns1, data_freq1, config_meteo1 = load_eddypro_fulloutput(config, config_meteo)
@@ -85,4 +84,12 @@ def test_import():
 
 def test_conversion():
     # draft: load ias, convert to eddypro, convert to ias, save ias, check no damage happened
+    pass
+
+
+def test_tmp_cols_mathcing():
+    from src.data_import.ias_loader import *
+    COLS_EDDYPRO_TO_IAS
+    COLS_SCRIPT_TO_IAS
+    COLS_UNUSED_IAS
     pass

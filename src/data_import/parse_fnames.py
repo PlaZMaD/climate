@@ -1,8 +1,9 @@
 import logging
 import re
+from pathlib import Path
 
 
-def try_parse_ias_fname(fname):
+def try_parse_ias_fname(fname: str):
 	examples = 'tv_fy4_2023_v01.xlsx -> tv_fy4'
 	match1 = re.match(r"(.*)_\d{2,4}_(v\d{1,3})", fname)
 
@@ -18,7 +19,7 @@ def try_parse_ias_fname(fname):
 	return ias_output_prefix, ias_output_version
 
 
-def try_parse_eddypro_fname(fname):
+def try_parse_eddypro_fname(fname: str):
 	examples = 'Iga_FO_23.csv -> Iga, eddy_pro SSB 2023.csv -> SSB'
 	match1 = re.match(r"(.*)_FO_.*\d{2,4}", fname, flags=re.IGNORECASE)
 	match2 = re.match(r"eddy.?pro_(.*)_\d{2,4}", fname, flags=re.IGNORECASE)

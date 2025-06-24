@@ -13,18 +13,17 @@ do not declare variables here, only describe
 """
 from pathlib import Path
 from types import SimpleNamespace
-from typing import List
 
 # only site name like 'tv_fy4_22.14'
 # ias_output_prefix: str = 'tv_fy4_22-14'
 ias_output_prefix: str
 
 # all settings related to reddyproc integration
-eddyproc: SimpleNamespace
+rep: SimpleNamespace
 
 # site name with years like 'tv_fy4_22.14_2024' or 'tv_fy4_22.14_23-25'
 # must be provided by REddyProc internal naming routines
 # eddyproc.eddy_out_prefix: str = 'tv_fy4_22-14_2023'
 
 
-arc_exclude_files: List[Path]
+arc_exclude_files: list[Path]

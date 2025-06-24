@@ -22,7 +22,7 @@ from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
 
 
-def display_image_row(paths):
+def display_image_row(paths: list[Path]):
 	imgs = []
 	for path in paths:
 		try:

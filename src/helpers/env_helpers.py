@@ -45,10 +45,10 @@ def colab_only(func):
 
 def setup_r():
 	if ENV.LOCAL:
-		env_folder = os.path.dirname(sys.executable)
-		r_folder = str(Path(env_folder) / "Lib/R")
-		assert Path(r_folder).exists()
-		os.environ['R_HOME'] = r_folder
+		env_folder = Path(sys.executable).parent
+		r_folder = env_folder / 'Lib/R'
+		assert r_folder.exists()
+		os.environ['R_HOME'] = str(r_folder)
 	else:
 		# something different, but it works
 		# print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")

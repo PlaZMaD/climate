@@ -1,32 +1,34 @@
 # -*- coding: utf-8 -*-
 # pyinstaller.exe --onefile --hidden-import openpyxl.cell._writer --windowed --add-data "locale;locale" --add-data "regulation.ico;."
 #<a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
-
-
 import pandas as pd
 import numpy as np
 import os
 import logging
 import re
 import sys
+from pathlib import Path
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 from copy import deepcopy as copy
 import gettext
+import __main__
 
 # np.set_printoptions(threshold=sys.maxsize)
 
 
 def set_lang(language):
+    # TODO 2 replaced to Path, verify bundle still works
     # get the bundle dir if bundled or simply the __file__ dir if not bundled
-    bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(
-        os.path.dirname(__file__)))
+    bundle_dir = getattr(sys, '_MEIPASS', Path(__main__.__file__).parent.absolute())
 
-    locales_dir = os.path.abspath(os.path.join(bundle_dir, 'locale'))
+    locales_dir = bundle_dir / 'locale'
     lang = gettext.translation('messages', locales_dir, fallback=True, languages=[language])
     lang.install()
 
 
-# TODO 1 Q  specification has only H20_STR, not H2O_STR - must be error instead of known?
+# other questions not about this ias
+# TODO Q git del leftover branches? will possibly del git activity too
+
 # TODO Q store in table file instead? 3+ duplicates now, also case changed:
 #  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
 known_columns = ["ALB", "APAR", "CH4", "CO2", "CO2C13", "D_SNOW", "DBH", "EVI", "FC", "FC_CMB", "FC_SSITC_TEST", "FCH4",
@@ -40,8 +42,10 @@ known_columns = ["ALB", "APAR", "CH4", "CO2", "CO2C13", "D_SNOW", "DBH", "EVI", 
                  "SPEC_PRI_TGT_IN", "SPEC_PRI_TGT_OUT", "SPEC_RED_ IN", "SPEC_RED_ OUT", "SR", "STEMFLOW", "SW_BC_IN",
                  "SW_DIF", "SW_IN", "SW_OUT", "SWC", "T_BOLE", "T_CANOPY", "T_DP", "T_SONIC", "T_SONIC_SIGMA", "TA",
                  "TAU", "TAU_SSITC_TEST", "TCARI", "THROUGHFALL", "TS", "U_SIGMA", "USTAR", "V_SIGMA", "VPD_PI",
-                 "W_SIGMA", "WD", "WD_SIGMA", "WS", "WS_MAX", "WTD", "ZL", "CO2_STR", "H20_STR", "CH4_RSSI",
-                 "FCH4_SSITC_TEST", "H2O_STR"]
+                 "W_SIGMA", "WD", "WD_SIGMA", "WS", "WS_MAX", "WTD", "ZL", "CO2_STR", "CH4_RSSI",
+                 "FCH4_SSITC_TEST",
+                 # TODO 1 Q  specification has only H20_STR, not H2O_STR - must be error instead of known?
+                 "H20_STR", "H2O_STR"]
 
 
 def get_freq(df, time):
@@ -223,20 +227,25 @@ def final_time_check(data, time_in):
     return outflag
 
 
-def load_ias(fpath):
-    something, file_extension = os.path.splitext(fpath)
+def load_ias(fpath: Path):
+    # TODO 2 try to merge into src.data_import.table_loader -> load_table_from_file
+    ext_l = fpath.suffix.lower()
 
-    ext = 'csv' if '.csv' in file_extension.lower() else None
-    ext = 'excel' if file_extension.lower() in ['.xls', '.xlsx'] else ext
+    if '.csv' in ext_l:
+        ftype = 'csv'
+    elif ext_l in ['.xls', '.xlsx']:
+        ftype = 'excel'
+    else:
+        raise Exception('Unknown extension.')
 
     load_func = None
     l_config = {}
 
-    if ext == 'csv':
+    if ftype == 'csv':
         load_func = pd.read_csv
         # l_config['sep'] = sep
 
-    elif ext == 'excel':
+    elif ftype == 'excel':
         load_func = pd.read_excel
         l_config['sheet_name'] = None
 
@@ -250,7 +259,7 @@ def load_ias(fpath):
         logging.error(e)
         raise
 
-    if ext == 'excel':
+    if ftype == 'excel':
         if isinstance(data, dict):
             if len(data.values()) > 1:
                 logging.error(_("Several lists in data file!"))
@@ -262,8 +271,8 @@ def load_ias(fpath):
     return data
 
 
-def check_ias_file(path_to_file):
-    data = load_ias(path_to_file)
+def check_ias_file(fpath):
+    data = load_ias(fpath)
 
     total_errors = 0
     columns = list(copy(data.columns))
@@ -347,7 +356,8 @@ class ErrorFlagHandler(logging.Handler):
 
 
 def draft_check_ias(fpath):
-    # TODO 1 not working yet
+    # TODO 2 move to the script start?
+    # will it be the selected method for derived tools?
     set_lang('ru')
 
     logging.info("Checking IAS file...")
@@ -363,9 +373,7 @@ def draft_check_ias(fpath):
 
     logger.addHandler(stream_handler)
 
-    logger.critical(
-        "Process init"
-    )
+    logger.critical("Process init")
 
     formatter = logging.Formatter(
         "[%(levelname)s] %(message)s",

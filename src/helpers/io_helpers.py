@@ -1,46 +1,52 @@
 import zipfile
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 from zipfile import ZipFile
 
+from src.helpers.py_helpers import ensure_list
+# TODO 3 type hints: A | B instead of Union - smth is wrong in pycharm 2024.1 and py 3-11
 
-def tag_to_fname(dir: Path, prefix, tag, ext, must_exist):
-    # meaning of tag here is unique file name ending
-    # Test_site_2024_Hd_f.png -> tag is Hd_f
-
-    fname = dir / (prefix + '_' + tag + ext)
-    if must_exist and not fname.exists():
-        return None
-    else:
-        return fname
+def ensure_path(arg: Union[Path, str]) -> Path:
+	return arg if isinstance(arg, Path) else Path(arg)
 
 
-def replace_fname_end(path: Path, tag: str, new_tag: str):
-    return path.parent / path.name.replace(tag + '.', new_tag + '.')
+def tag_to_fpath(folder: Path, prefix, tag, ext, must_exist):
+	# meaning of tag here is unique file name ending
+	# Test_site_2024_Hd_f.png -> tag is Hd_f
+
+	fpath = folder / (prefix + '_' + tag + ext)
+	if must_exist and not fpath.exists():
+		return None
+	else:
+		return fpath
+
+
+def replace_fname_end(fpath: Path, tag: str, new_tag: str):
+	return fpath.parent / fpath.name.replace(tag + '.', new_tag + '.')
 
 
 def ensure_empty_dir(folder: Union[str, Path]):
-    if type(folder) is str:
-        folder = Path(folder)
+	folder = ensure_path(folder)
 
-    folder.mkdir(parents=True, exist_ok=True)
-    for path in folder.iterdir():
-        if path.is_file():
-            path.unlink()
+	folder.mkdir(parents=True, exist_ok=True)
+	for path in folder.iterdir():
+		if path.is_file():
+			path.unlink()
 
 
-def create_archive(arc_path, folders: Union[List[str], str], top_folder, include_fmasks, exclude_files: List[Path]):
-    if type(folders) is str:
-        folders = [folders]
+def create_archive(arc_path: Union[Path, str], folders: Union[list[Union[Path, str]], Union[Path, str]],
+                   top_folder: Union[Path, str], include_fmasks, exclude_files: list[Union[Path, str]]):
 
-    folders = [Path(dir) for dir in folders]
-    files = []
-    for folder in folders:
-        for mask in include_fmasks:
-            files += list(folder.glob(mask))
-    files = set(files) - set(exclude_files)
+	folders = ensure_list(folders, transform_func=ensure_path)
+	exclude_files = ensure_list(exclude_files, transform_func=ensure_path)
 
-    with ZipFile(arc_path, 'w', zipfile.ZIP_DEFLATED) as myzip:
-        for file in files:
-            relative_path = file.relative_to(top_folder)
-            myzip.write(file, relative_path)
+	files = []
+	for folder in folders:
+		for mask in include_fmasks:
+			files += list(folder.glob(mask))
+	files = set(files) - set(exclude_files)
+
+	with ZipFile(arc_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+		for file in files:
+			relative_path = file.relative_to(top_folder)
+			zf.write(file, relative_path)

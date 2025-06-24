@@ -1221,7 +1221,7 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 
 # + id="Xw5TapK10EhR"
 from src.data_import.eddypro_loader import load_eddypro_fulloutput
-from src.data_import.ias_loader import load_ias
+from src.data_import.ias_loader import load_ias, export_ias
 config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )
@@ -1697,59 +1697,60 @@ for col in ['nee', 'le', 'h']: #Подставить нужное: co2_flux, le,
 # Создадим шаблон шапки для файла REddyProc и сохраним требуемые переменные, не забыв учесть фильтрацию. Выходной файл - уровня 3.
 
 # + id="YVu2UrCzLqb4"
-reddyproc_filename = f"REddyProc_{ias_output_prefix}_{int(plot_data[time].dt.year.median())}.txt"
+rep_fname = f"REddyProc_{ias_output_prefix}_{int(plot_data[time].dt.year.median())}.txt"
 output_template = {'Year': ['-'],	'DoY': ['-'],	'Hour': ['-'],	'NEE': ['umol_m-2_s-1'],	'LE': ['Wm-2'],	'H': ['Wm-2'],	'Rg': ['Wm-2'],	'Tair': ['degC'], 	'Tsoil': ['degC'],	'rH': ['%'], 	'VPD': ['hPa'], 	'Ustar': ['ms-1'],	'CH4flux': ['umol_m-2_s-1']}
 
 # + id="GFulh7FtNWtM"
-eddy_df = plot_data.copy()
+rep_df = plot_data.copy()
 
 for column, filter in filters_db.items():
-  filter = get_column_filter(eddy_df, filters_db, column)
-  eddy_df.loc[~filter.astype(bool), column] = np.nan
+  filter = get_column_filter(rep_df, filters_db, column)
+  rep_df.loc[~filter.astype(bool), column] = np.nan
 
 
-eddy_df['Year'] = eddy_df[time].dt.year
-eddy_df['DoY'] = eddy_df[time].dt.dayofyear
-eddy_df['Hour'] = eddy_df[time].dt.hour + eddy_df[time].dt.minute/60
+rep_df['Year'] = rep_df[time].dt.year
+rep_df['DoY'] = rep_df[time].dt.dayofyear
+rep_df['Hour'] = rep_df[time].dt.hour + rep_df[time].dt.minute / 60
 
-eddy_df['NEE'] = eddy_df['nee'].fillna(-9999)
-eddy_df['LE'] = eddy_df['le'].fillna(-9999)
-eddy_df['H'] = eddy_df['h'].fillna(-9999)
-if 'swin_1_1_1' in eddy_df.columns:
-  eddy_df['Rg'] = eddy_df['swin_1_1_1'].fillna(-9999)
+rep_df['NEE'] = rep_df['nee'].fillna(-9999)
+rep_df['LE'] = rep_df['le'].fillna(-9999)
+rep_df['H'] = rep_df['h'].fillna(-9999)
+if 'swin_1_1_1' in rep_df.columns:
+  rep_df['Rg'] = rep_df['swin_1_1_1'].fillna(-9999)
 else:
   print("WARNING! No swin_1_1_1!")
 
 if config_meteo ['use_biomet']:
-  eddy_df['Tair'] = eddy_df['ta_1_1_1'].fillna(-9999)
-  eddy_df['rH'] = eddy_df['rh_1_1_1'].fillna(-9999)
-  eddy_df['VPD'] = eddy_df['vpd_1_1_1'].fillna(-9999)
+  rep_df['Tair'] = rep_df['ta_1_1_1'].fillna(-9999)
+  rep_df['rH'] = rep_df['rh_1_1_1'].fillna(-9999)
+  rep_df['VPD'] = rep_df['vpd_1_1_1'].fillna(-9999)
 else:
   # TODO 1 when Ta_1_1_1 is used, it will not drop to rep file then. Is this intended?
-  eddy_df['Tair'] = (eddy_df['air_temperature'] - 273.15).fillna(-9999)
-  eddy_df['rH'] = eddy_df['rh'].fillna(-9999)
-  eddy_df['VPD'] = eddy_df['vpd'].fillna(-9999)
+  rep_df['Tair'] = (rep_df['air_temperature'] - 273.15).fillna(-9999)
+  rep_df['rH'] = rep_df['rh'].fillna(-9999)
+  rep_df['VPD'] = rep_df['vpd'].fillna(-9999)
 
-if 'ts_1_1_1' in eddy_df.columns:
-  eddy_df['Tsoil'] = eddy_df['ts_1_1_1'].fillna(-9999)
+if 'ts_1_1_1' in rep_df.columns:
+  rep_df['Tsoil'] = rep_df['ts_1_1_1'].fillna(-9999)
 
-eddy_df['Ustar'] = eddy_df['u_star'].fillna(-9999)
+rep_df['Ustar'] = rep_df['u_star'].fillna(-9999)
 
-if 'ch4_flux' in eddy_df.columns:
-  eddy_df['CH4flux'] = eddy_df['ch4_flux'].fillna(-9999)
+if 'ch4_flux' in rep_df.columns:
+  rep_df['CH4flux'] = rep_df['ch4_flux'].fillna(-9999)
 
 i=0
-while eddy_df.iloc[i]['Hour'] != 0.5:
+while rep_df.iloc[i]['Hour'] != 0.5:
   i += 1
-eddy_df = eddy_df.iloc[i:]
+rep_df = rep_df.iloc[i:]
 
-if len(eddy_df.index) < 90 * points_per_day:
+if len(rep_df.index) < 90 * points_per_day:
   print("WARNING!  < 90 days in reddyproc file!")
 
-pd.DataFrame({key: item for key, item in output_template.items() if key in eddy_df.columns}).to_csv(os.path.join('output', reddyproc_filename), index=False, sep=' ')
-eddy_df.to_csv(os.path.join('output', reddyproc_filename),  index=False, header=False, columns = [i for i in output_template.keys()  if i in eddy_df.columns], mode='a', sep=' ')
-del eddy_df
-logging.info(f"REddyProc file saved to {os.path.join('output', reddyproc_filename)}")
+rep_input_fpath = out_dir / rep_fname
+pd.DataFrame({key: item for key, item in output_template.items() if key in rep_df.columns}).to_csv(rep_input_fpath, index=False, sep=' ')
+rep_df.to_csv(rep_input_fpath, index=False, header=False, columns = [i for i in output_template.keys() if i in rep_df.columns], mode='a', sep=' ')
+del rep_df
+logging.info(f"REddyProc file saved to {rep_input_fpath}")
 
 # + [markdown] id="62o5-p8ZzR5T"
 # ## Файл для ИАС
@@ -1758,89 +1759,12 @@ logging.info(f"REddyProc file saved to {os.path.join('output', reddyproc_filenam
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
 # + id="yaLoIQmtzaYd"
-from src.data_import.ias_loader import COLS_NS_IAS_TO_SCRIPT
-from src.helpers.py_helpers import invert_dict, sort_fix_underscore, init_logging
-
 if config_meteo['use_biomet']:
-	# may be move to src and add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
-	ias_df: pd.DataFrame = plot_data.copy()
-	for column, filter in filters_db.items():
-		filter = get_column_filter(ias_df, filters_db, column)
-		ias_df.loc[~filter.astype(bool), column] = np.nan
-	ias_df = ias_df.fillna(-9999)
-
-	# duplicated in ias src.data_import.ias_loader
-	col_match =  {"co2_flux" : "FC_1_1_1", "qc_co2_flux" : "FC_SSITC_TEST_1_1_1", "LE" : "LE_1_1_1",
-		"qc_LE" : "LE_SSITC_TEST_1_1_1", "H" : "H_1_1_1", "qc_H" : "H_SSITC_TEST_1_1_1", "Tau" : "TAU_1_1_1",
-		"qc_Tau" : "TAU_SSITC_TEST_1_1_1", "co2_strg" : "SC_1_1_1", "co2_mole_fraction" : "CO2_1_1_1",
-		"h2o_mole_fraction" : "H2O_1_1_1", "sonic_temperature" : "T_SONIC_1_1_1", "u_star" : "USTAR_1_1_1",
-		"Ta_1_1_1" : "TA_1_1_1", "Pa_1_1_1" : "PA_1_1_1", "Swin_1_1_1" : "SW_IN_1_1_1", "Swout_1_1_1" : "SW_OUT_1_1_1",
-		"Lwin_1_1_1" : "LW_IN_1_1_1", "Lwout_1_1_1" : "LW_OUT_1_1_1", "PPFD_1_1_1" : "PPFD_IN_1_1_1",
-		"Rn_1_1_1" : "NETRAD_1_1_1", "MWS_1_1_1" : "WS_1_1_1", "Ts_1_1_1" : "TS_1_1_1", "Ts_2_1_1" : "TS_2_1_1",
-		"Ts_3_1_1" : "TS_3_1_1", "Pswc_1_1_1" : "SWC_1_1_1", "Pswc_2_1_1" : "SWC_2_1_1", "Pswc_3_1_1" : "SWC_3_1_1",
-		"SHF_1_1_1" : "G_1_1_1", "SHF_2_1_1" : "G_2_1_1", "SHF_3_1_1" : "G_3_1_1", "L" : "MO_LENGTH_1_1_1",
-		"(z-d)/L" : "ZL_1_1_1", "x_peak" : "FETCH_MAX_1_1_1", "x_70%" : "FETCH_70_1_1_1", "x_90%" : "FETCH_90_1_1_1",
-		"ch4_flux" : "FCH4_1_1_1", "qc_ch4_flux" : "FCH4_SSITC_TEST_1_1_1", "ch4_mole_fraction" : "CH4_1_1_1", "ch4_strg" : "SCH4_1_1_1",
-		"ch4_signal_strength" : "CH4_RSSI_1_1_1", "co2_signal_strength" : "CO2_STR_1_1_1", "rh_1_1_1": "RH_1_1_1", "vpd_1_1_1": "VPD_1_1_1"}
-	col_match = {key.lower(): item for key, item in col_match.items()}
-	col_match |= invert_dict(COLS_NS_IAS_TO_SCRIPT)
-
-	ias_df = ias_df.rename(columns=col_match)
-	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
-	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in ias_df.columns]
-
-    # TODO 2 still not correct at some lines
-	# year.min() == year.max() if full 1 year
-	new_time = pd.DataFrame(index=pd.date_range(start=f"01.01.{ias_df[time].dt.year.min()}", end=f"01.01.{ias_df[time].dt.year.max()}",
-												freq=ias_df.index.freq, inclusive='left'))
-	ias_df = new_time.join(ias_df, how='left')
-	ias_df[time] = ias_df.index
-
-    # TODO 1 incorrect DTime at the end, test myltiyear
-    # TODO 1 ias load multyear
-	ias_df['TIMESTAMP_START'] = ias_df[time].dt.strftime('%Y%m%d%H%M')
-	time_end = ias_df[time] + pd.Timedelta(0.5, "h")
-	ias_df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
-	ias_df['DTime'] = np.round(time_end.dt.dayofyear +
-                               1. / 48 * 2 * time_end.dt.hour +
-                               1. / 48 * (time_end.dt.minute//30), decimals=3)
-
-	if 'h_strg' in ias_df.columns:
-		ias_df['SH_1_1_1'] = ias_df['h_strg']
-		var_cols.append('SH_1_1_1')
-	if 'le_strg' in ias_df.columns:
-		ias_df['SLE_1_1_1'] = ias_df['le_strg']
-		var_cols.append('SLE_1_1_1')
-
-	# TODO Q why not added to var_cols, why duplicate in col_match with other case?
-	if 'SW_IN_1_1_1' in ias_df.columns:
-		ias_df['SW_IN_1_1_1'] = data['swin_1_1_1']
-
-	ias_year = ias_df[time].dt.year.min()
-	sort_fix_underscore(var_cols)
-	col_list_ias = time_cols + var_cols + [time]
-	print(col_list_ias)
-	ias_df = ias_df[col_list_ias]
-
-	for year in ias_df.index.year.unique():
-		ias_filename = f"{ias_output_prefix}_{year}_{ias_output_version}.csv"
-		save_data = ias_df.loc[ias_df[time].dt.year==year]
-		save_data = save_data.drop(time, axis=1)
-		save_data = save_data.fillna(-9999)
-		if len(save_data.index) >= 5:
-			save_data.to_csv(os.path.join('output',ias_filename), index=False)
-			logging.info(f"IAS file saved to {os.path.join('output',ias_filename)}")
-		else:
-			try:
-				os.remove(os.path.join('output',ias_filename))
-			except Exception as e:
-				print(e)
-
-			print(f"not enough data for {year}")
-			logging.info(f"{year} not saved, not enough data!")
-	# ias_filename = f"{ias_output_prefix}_{ias_year}_{ias_output_version}.csv"
-	# ias_df.to_csv(os.path.join('output',ias_filename), index=False)
-	# logging.info(f"IAS file saved to {os.path.join('output',ias_filename)}.csv")
+    ias_df: pd.DataFrame = plot_data.copy()
+    for column, filter in filters_db.items():
+        filter = get_column_filter(ias_df, filters_db, column)
+        ias_df.loc[~filter.astype(bool), column] = np.nan
+    export_ias(out_dir, ias_output_prefix, ias_output_version,  ias_df, time_col=time, data_swin_1_1_1=data['swin_1_1_1'])
 
 # + [markdown] id="Pm8hiMrb_wRW"
 # ## Файл для FAT
@@ -1887,20 +1811,21 @@ if config_meteo ['use_biomet']:
 
   for year in fat_df.index.year.unique():
     fat_filename = f"FAT_{ias_output_prefix}_{year}.csv"
-    pd.DataFrame(fat_output_template).to_csv(os.path.join('output',fat_filename), index=False)
+    fat_fpath = out_dir / fat_filename
+    pd.DataFrame(fat_output_template).to_csv(fat_fpath, index=False)
     save_data = fat_df.loc[fat_df[time].dt.year==year]
     if len(save_data.index) >= 5:
-      save_data.to_csv(os.path.join('output',fat_filename),  index=False, header=False, columns = [i for i in fat_output_template.keys()], mode='a')#, sep=' ')
+      save_data.to_csv(fat_fpath,  index=False, header=False, columns = [i for i in fat_output_template.keys()], mode='a')#, sep=' ')
     else:
       try:
-        os.remove(os.path.join('output',fat_filename))
+        os.remove(fat_fpath)
       except Exception as e:
         print(e)
 
       print(f"not enough data for {year}")
       logging.info(f"{year} not saved, not enough data!")
   del fat_df
-  logging.info(f"FAT file saved to {fat_filename}")
+  logging.info(f"FAT file saved to {fat_fpath}")
 
 # + [markdown] id="GQ1bpermu8eq"
 # ## Полный файл результатов фильтрации
@@ -1913,8 +1838,10 @@ if 'date' in plot_data.columns:
   plot_data.loc[plot_data['date'].isna(), 'date'] = plot_data[time].dt.date
 if 'time' in plot_data.columns:
   plot_data.loc[plot_data['time'].isna(), 'time'] = plot_data[time].dt.time
-plot_data.fillna(-9999).to_csv(os.path.join('output','output_all.csv'), index=None, columns=full_column_list)
-logging.info(f"Basic file saved to {os.path.join('output','output_all.csv')}")
+
+all_fpath = out_dir / 'output_all.csv'
+plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
+logging.info(f"Basic file saved to {all_fpath}")
 
 # + [markdown] id="-MSrgUD0-19l"
 # ## Файл-резюме результатов фильтрации
@@ -1986,8 +1913,10 @@ for col in ['h', 'le', 'nee', 'rg', 'ppfd', 'ta', 'rh', 'vpd', 'ch4_flux']:
 
 basic_df = basic_df[[col for col in columns_to_save if col in basic_df.columns]]
 basic_df = basic_df.fillna(-9999)
-basic_df.to_csv(os.path.join('output','output_summary.csv'), index=None)
-logging.info(f"New basic file saved to {os.path.join('output','output_summary.csv')}")
+
+summary_fpath = out_dir / 'output_summary.csv'
+basic_df.to_csv(summary_fpath, index=None)
+logging.info(f"New basic file saved to {summary_fpath}")
 # + [markdown] id="775a473e"
 # # Обработка инструментом REddyProc
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
@@ -2075,9 +2004,9 @@ robjects.r(setup_colab_r_code)
 # Название станции, которое будет продублировано в названиях выходных файлов:    
 # `site_id=ias_output_prefix`  
 # Файл, из которого загружаются временные ряды:  
-# `input_file="REddyProc.txt"`  
+# `input_file=str(rep_input_fpath)`
 # Директория, в которую инструмент пишет контрольные изображения, базовую статистику по пропускам, заполненные ряды:  
-# `output_dir="output/reddyproc"`
+# `output_dir=str(out_dir / 'reddyproc')`
 # + id="278caec5"
 from src.ipynb_globals import *
 from types import SimpleNamespace
@@ -2086,8 +2015,8 @@ import src.ipynb_globals as ig
 from src.helpers.io_helpers import ensure_empty_dir
 from src.reddyproc.preprocess_rg import prepare_rg
 
-ig.eddyproc = SimpleNamespace()
-ig.eddyproc.options = SimpleNamespace(
+ig.rep = SimpleNamespace()
+ig.rep.options = SimpleNamespace(
     site_id=ias_output_prefix,
 
     is_to_apply_u_star_filtering=True,
@@ -2116,14 +2045,14 @@ ig.eddyproc.options = SimpleNamespace(
     # do not change
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
-    input_file=f"output/{reddyproc_filename}",
-    output_dir="output/reddyproc",
+    input_file=str(rep_input_fpath),
+    output_dir=str(out_dir / 'reddyproc'),
     log_fname_end='_log.txt'
 )
 
-prepare_rg(ig.eddyproc.options)
-ensure_empty_dir(ig.eddyproc.options.output_dir)
-ig.eddyproc.out_info, ig.eddyproc.options = reddyproc_and_postprocess(ig.eddyproc.options)
+prepare_rg(ig.rep.options)
+ensure_empty_dir(ig.rep.options.output_dir)
+ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)
 
 # + [markdown] id="0bed439c"
 # ## Контрольные графики
@@ -2136,18 +2065,18 @@ ig.eddyproc.out_info, ig.eddyproc.options = reddyproc_and_postprocess(ig.eddypro
 # Тэги именно для этого варианта тетради будут видны после запуска ячейки по вызову `display_tag_info`.
 
 # + id="e66a94ab"
-from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Union
 
 import src.ipynb_globals as ig
 from src.helpers.io_helpers import create_archive
-from src.reddyproc.postprocess_graphs import EProcOutputHandler, EProcImgTagHandler, EProcOutputGen
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
 from src.colab_routines import colab_add_download_button
 
-tag_handler = EProcImgTagHandler(main_path='output/reddyproc', eproc_options=ig.eddyproc, img_ext='.png')
-eog = EProcOutputGen(tag_handler)
+rep_out_dir = Path(ig.rep.options.output_dir)
+tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_options=ig.rep, img_ext='.png')
+eog = RepOutputGen(tag_handler)
 
-output_sequence: Tuple[Union[List[str], str], ...] = (
+output_sequence: tuple[Union[list[str], str], ...] = (
     "## Тепловые карты",
     eog.hmap_compare_row('NEE_*'),
     eog.hmap_compare_row('LE_f'),
@@ -2162,12 +2091,12 @@ output_sequence: Tuple[Union[List[str], str], ...] = (
     eog.flux_compare_row('H_f')
 )
 
-eio = EProcOutputHandler(output_sequence=output_sequence, tag_handler=tag_handler, out_info=ig.eddyproc.out_info)
+eio = RepOutputHandler(output_sequence=output_sequence, tag_handler=tag_handler, out_info=ig.rep.out_info)
 eio.prepare_images_safe()
 ig.arc_exclude_files = eio.img_proc.raw_img_duplicates
 
-eproc_arc_path = Path('output/reddyproc') / Path(ig.eddyproc.out_info.fnames_prefix + '.zip')
-create_archive(arc_path=eproc_arc_path, folders='output/reddyproc', top_folder='output/reddyproc',
+eproc_arc_path = rep_out_dir / (ig.rep.out_info.fnames_prefix + '.zip')
+create_archive(arc_path=eproc_arc_path, folders=rep_out_dir, top_folder=rep_out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=eio.img_proc.raw_img_duplicates)
 
 colab_add_download_button(eproc_arc_path, 'Download eddyproc outputs')
@@ -2185,10 +2114,9 @@ tag_handler.display_tag_info(eio.extended_tags())
 
 # + id="E4rv4ucOX8Yz"
 from src.helpers.io_helpers import create_archive
-from pathlib import Path
 import src.ipynb_globals as ig
 
-arc_path=Path('output') / 'FluxFilter_output.zip'
-create_archive(arc_path=arc_path, folders=['output', 'output/reddyproc'], top_folder='output',
+arc_path = out_dir / 'FluxFilter_output.zip'
+create_archive(arc_path=arc_path, folders=[out_dir, ig.rep.options.output_dir], top_folder=out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt', '*.log'], exclude_files=ig.arc_exclude_files)
 colab_add_download_button(arc_path, 'Download outputs')

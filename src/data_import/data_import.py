@@ -6,6 +6,8 @@ from src.data_import.eddypro_loader import BIOMET_HEADER_DETECTION_COLS, EDDYPRO
 from src.data_import.ias_loader import IAS_HEADER_DETECTION_COLS
 from src.data_import.parse_fnames import try_parse_ias_fname, try_parse_eddypro_fname
 from src.data_import.table_loader import load_table_from_file
+from src.helpers.io_helpers import ensure_path
+from src.helpers.py_helpers import ensure_list
 
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
@@ -62,7 +64,7 @@ def detect_file_type(fpath: Path, header_rows=4) -> InputFileType:
 		return InputFileType.UNKNOWN
 
 
-def detect_known_files(input_dir='.', from_list: list[str] = None) -> dict[Path, InputFileType]:
+def detect_known_files(input_dir='.', from_list: list[Path] = None) -> dict[Path, InputFileType]:
 	if not from_list:
 		root_files = list(Path(input_dir).glob('*.*'))
 		input_files = [f for f in root_files if f.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER]
@@ -128,7 +130,7 @@ def auto_config_ias_input(input_file_types: dict[Path, InputFileType], config_me
 		                f"will be ignored due to ias_2 input mode (ias file includes biomet)")
 	config_meteo_path = None
 
-	ias_output_prefix, ias_output_version = try_parse_ias_fname(str(config_path[0]))
+	ias_output_prefix, ias_output_version = try_parse_ias_fname(Path(config_path[0]).name)
 	return config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
 
 
@@ -146,7 +148,7 @@ def auto_config_eddypro_input(input_file_types: dict[Path, InputFileType], confi
 		config_meteo_use_biomet = False
 		config_meteo_path = None
 
-	ias_output_prefix, ias_output_version = try_parse_eddypro_fname(str(config_path[0]))
+	ias_output_prefix, ias_output_version = try_parse_eddypro_fname(Path(config_path[0]).name)
 	return config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
 
 
@@ -157,7 +159,7 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 		logging.info("Detecting input files due to config['path'] = 'auto' ")
 		input_file_types = detect_known_files()
 	else:
-		user_files = config['path'] if isinstance(config['path'], list) else [config['path']]
+		user_files = ensure_list(config['path'], transform_func=ensure_path)
 		input_file_types = detect_known_files(user_files)
 
 	# noinspection PyPep8Naming

@@ -1,6 +1,7 @@
 import logging
 from copy import copy
 import bglabutils.basic as bg
+from src.helpers.py_helpers import ensure_list
 
 BIOMET_HEADER_DETECTION_COLS = ['TIMESTAMP_1', 'Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1', 'Lwout_1_1_1',
                                 'Swin_1_1_1', 'Swout_1_1_1',
@@ -54,8 +55,11 @@ def load_eddypro_fulloutput(config, config_meteo):
 	data = data[next(iter(data))]  # т.к. изначально у нас словарь
 	data_freq = data.index.freq
 
+	# TODO 2 always use list after loading config?
+	paths = ensure_list(config['path'], transform_func=str)
+	logging.info(f"Data loaded from {paths}")
+
 	print("Диапазон времени full_output: ", data.index[[0, -1]])
-	logging.info(f"Data loaded from {config['path']}")
 	logging.info("Time range for full_output: " + " - ".join(data.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
 	if config_meteo['use_biomet']:
