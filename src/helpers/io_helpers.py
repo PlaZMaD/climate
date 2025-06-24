@@ -53,3 +53,14 @@ def create_archive(arc_path: Union[Path, str], folders: Union[list[Union[Path, s
 		for file in files:
 			relative_path = file.relative_to(top_folder)
 			zf.write(file, relative_path)
+
+
+def find_in_files(root_dir: Union[Path, str], fname_regex='.*', find_regex: str = None):
+	# fname_regex multiple extensions example '.*\.(py|R|r)$'
+	# to exclude, add at the start: ^(?!.*ias_error_check)
+	root_dir = ensure_path(root_dir)
+
+	all_fpaths = list(root_dir.glob('**/*'))
+	fpaths = [f for f in all_fpaths if re.match(pattern=fname_regex, string=str(f))]
+	files_with_matches = [f for f in fpaths if open(f, 'r').read().find(find_regex) != -1]
+	return files_with_matches
