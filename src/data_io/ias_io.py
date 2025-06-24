@@ -11,11 +11,12 @@ from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
 from src.helpers.py_helpers import invert_dict, sort_fixed
 
 # TODO 1 fix ias export to match import
-# possibly extract to abstract time series converter class later?
+
+# TODO 2 Q possibly extract to abstract time series converter class later?
+# TODO Q 2 store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
+# specifically mark cols used in the script and unused?
 # currently 4 column names variations are possible: IAS file, EddyPro file, notebook import, export (after all the processing)
 
-# TODO Q store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
-# specifically mark cols used in the script and unused?
 # TODO 1 add missing from ias_error_check.known_columns
 COLS_EDDYPRO_TO_IAS = {
 	# specifically about conversion of file formats,
@@ -119,7 +120,7 @@ def check_with_bglabutils(fpath, data):
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder):
-	# TODO Q 1 remove and fix export instead? IAS has only 1 year after import,
+	# TODO Q 2 remove and fix export instead? IAS has only 1 year after import,
 	#  export will not fire without timstamp on the next year
 
 	# add extra row, because main script expects currently for 2020 year extra row at the start of 2021
@@ -166,14 +167,13 @@ def process_col_names(df: pd.DataFrame, time_col):
 
 
 def load_ias(config, config_meteo):
-	# TODO 1 move to ipynb?
+	# TODO 2 move to ipynb?
 	set_lang('ru')
 
 	# TODO 2 merge with config, pack biomet into load routines only?
 	assert config_meteo['use_biomet']
 
-
-	# TODO 2 merge
+	# TODO 2 implement merge for iases if nessesary
 	if len(config['path']) != 1:
 		raise Exception('Combining multiple IAS files is not supported yet')
 	fpath = config['path'][0]
@@ -258,7 +258,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
 	# think about abstraction, i.e. how much script-aware should be ias import and export?
 	# may be even merge each import and export routine?
-	# TODO 3 may be add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
+	# TODO 2 may be add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
 
 	df = df.fillna(-9999)
 
@@ -287,7 +287,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in df.columns]
 
-	# TODO 2 still not correct at some lines
+	# TODO 1 still not correct at some lines
 	# year.min() == year.max() if full 1 year
 	new_time = pd.DataFrame(
 		index=pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}', end=f'01.01.{df[time_col].dt.year.max()}',
@@ -311,7 +311,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 		df['SLE_1_1_1'] = df['le_strg']
 		var_cols.append('SLE_1_1_1')
 
-	# TODO Q why not added to var_cols, why duplicate in col_match with other case?
+	# TODO Q 1 why not added to var_cols, why duplicate in col_match with other case?
 	# what is going on, move from arg to ipynb aware preps before export
 	if 'SW_IN_1_1_1' in df.columns:
 		df['SW_IN_1_1_1'] = data_swin_1_1_1
@@ -333,7 +333,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 			save_data.to_csv(fpath, index=False)
 			logging.info(f'IAS file saved to {fpath}')
 		else:
-			# TODO Q this seems should not be caught ?
+			# TODO Q 2 this seems should not be caught ?
 			try:
 				fpath.unlink(missing_ok=True)
 			except Exception as e:

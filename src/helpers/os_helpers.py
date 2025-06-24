@@ -39,7 +39,7 @@ def ch_project_root_dir():
 
 
 def set_simple_user_warnings():
-    # TODO 2 possibly unused; to logging instead?
+    # TODO 3 possibly unused; to logging instead?
 
     default_show_warning = warnings.showwarning
     # logging.captureWarnings(True)
