@@ -32,15 +32,17 @@ def set_lang(language):
 
 # TODO Q store in table file instead? 3+ duplicates now, also case changed:
 #  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
+# TODO Q fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST',
+# 'SPEC_NIR_ OUT' 'SPEC_PRI_REF_ IN', 'SPEC_RED_ OUT', 'SPEC_PRI_ REF_OUT', 'SPEC_RED_ IN'
 known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 'FC', 'FC_CMB', 'FC_SSITC_TEST', 'FCH4',
                  'FCH4_CMB', 'FCH4_PI', 'FETCH_70', 'FETCH_80', 'FETCH_90', 'FETCH_FILTER', 'FETCH_MAX', 'FH2O', 'FN2O',
-                 'FN2O_CMB', 'FNO', 'FNO_CMB', 'FNO2', 'FNO2_CMB', 'FO3', 'FO3_SSITC_ TEST', 'G', 'GPP_PI', 'H', 'H_PI',
+                 'FN2O_CMB', 'FNO', 'FNO_CMB', 'FNO2', 'FNO2_CMB', 'FO3', 'FO3_SSITC_TEST', 'G', 'GPP_PI', 'H', 'H_PI',
                  'H_SSITC_TEST', 'H2O', 'LE', 'LE_PI', 'LE_SSITC_TEST', 'LEAF_WET', 'LW_IN', 'LW_OUT', 'MCRI',
                  'MO_LENGTH', 'MTCI', 'N2O', 'NDVI', 'NEE_PI', 'NETRAD', 'NIRV', 'NO', 'NO2', 'O3', 'P', 'P_RAIN',
                  'P_SNOW', 'PA', 'PBLH', 'PPFD_BC_IN', 'PPFD_DIF', 'PPFD_DIR', 'PPFD_IN', 'PPFD_OUT', 'PRI', 'R_UVA',
                  'R_UVB', 'RECO_PI', 'REDCl', 'REP', 'RH', 'RUNOFF', 'SAP_DT', 'SAP_FLOW', 'SB', 'SC', 'SCH4', 'SG',
-                 'SH', 'SLE', 'SPEC_NIR_IN', 'SPEC_NIR_ OUT', 'SPEC_PRI_ REF_IN', 'SPEC_PRI_ REF_OUT',
-                 'SPEC_PRI_TGT_IN', 'SPEC_PRI_TGT_OUT', 'SPEC_RED_ IN', 'SPEC_RED_ OUT', 'SR', 'STEMFLOW', 'SW_BC_IN',
+                 'SH', 'SLE', 'SPEC_NIR_IN', 'SPEC_NIR_OUT', 'SPEC_PRI_REF_IN', 'SPEC_PRI_REF_OUT',
+                 'SPEC_PRI_TGT_IN', 'SPEC_PRI_TGT_OUT', 'SPEC_RED_IN', 'SPEC_RED_OUT', 'SR', 'STEMFLOW', 'SW_BC_IN',
                  'SW_DIF', 'SW_IN', 'SW_OUT', 'SWC', 'T_BOLE', 'T_CANOPY', 'T_DP', 'T_SONIC', 'T_SONIC_SIGMA', 'TA',
                  'TAU', 'TAU_SSITC_TEST', 'TCARI', 'THROUGHFALL', 'TS', 'U_SIGMA', 'USTAR', 'V_SIGMA', 'VPD_PI',
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
