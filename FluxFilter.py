@@ -87,9 +87,6 @@
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 
-# %load_ext autoreload
-# %autoreload 2
-
 # TODO 3 support of testing cells separately can be added using import * and mocking global space vars gs.*
 # py -> ipynb conversion is great to keep only .py in git, can this be used?
 
@@ -114,6 +111,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly_resampler
 from plotly.subplots import make_subplots
+
+# %load_ext autoreload
+# %autoreload 2
 
 import bglabutils.basic as bg
 import bglabutils.filters as bf
