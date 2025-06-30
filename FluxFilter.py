@@ -1251,7 +1251,9 @@ if not config_meteo ['use_biomet']:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
-cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength', 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1', 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
+cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
+                'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
+                'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
                 'ch4_signal_strength_7500_mean', 'ch4SS'.lower(), 'ch4_signal_strength',
                 'p_1_1_1', 'ta_1_1_1', 'co2_strg', 'le', 'h']
 
@@ -1365,10 +1367,11 @@ else:
     logE = 23.5518-(2937.4/temp_k)-4.9283*np.log10(temp_k)
     ehpa = np.power(10, logE)
     if not have_vpd_flag:
-      print("calculating vpd_1_1_1 from rh")
+      print("calculating vpd_1_1_1 from rh_1_1_1 and air temperature")
       data['vpd_1_1_1'] = ehpa - (ehpa*data['rh_1_1_1']/100)
     if not have_rh_flag:
-      print("calculating rh_1_1_1 from vpd")
+      # TODO 1 it's from temperature only?
+      print("calculating rh_1_1_1 from vpd_1_1_1 and air temperature")
       data['rh_1_1_1'] = ehpa
 
 
@@ -1718,6 +1721,8 @@ if 'swin_1_1_1' in rep_df.columns:
 else:
   print("WARNING! No swin_1_1_1!")
 
+# TODO Q 2 if biomet, 'ta_1_1_1' already contains derivation from 'air_temperature'?
+#  is this to avoid numeric conversions?
 if config_meteo ['use_biomet']:
   rep_df['Tair'] = rep_df['ta_1_1_1'].fillna(-9999)
   rep_df['rH'] = rep_df['rh_1_1_1'].fillna(-9999)

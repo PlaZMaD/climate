@@ -24,7 +24,7 @@ def load_xls(fpath, **pd_read_kwargs):
 	return data
 
 
-def load_table_from_file(fpath, nrows=None, header = 'infer') -> pd.DataFrame:
+def load_table_from_file(fpath, nrows=None, header='infer') -> pd.DataFrame:
 	# probably extract to load table? can all repairs be generalised operations on tables?
 
 	pd_read_kwargs = {'nrows': nrows, 'header': header}
@@ -37,3 +37,15 @@ def load_table_from_file(fpath, nrows=None, header = 'infer') -> pd.DataFrame:
 	else:
 		raise Exception(_(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file."))
 	return df
+
+
+def load_table_logged(fpath):
+	# with log_exception(...) instead
+	try:
+		data = load_table_from_file(fpath)
+	except Exception as e:
+		logging.error(e)
+		raise
+
+	logging.info(f'File {fpath} loaded.\n')
+	return data

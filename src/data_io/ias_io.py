@@ -4,31 +4,19 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import bglabutils.basic as bg
-from src.data_io.ias_cols import COLS_UNUSED_IAS_TO_SCRIPT, COLS_EDDYPRO_TO_IAS_DUPE, COLS_IAS_TO_SCRIPT, \
-	COLS_UNUSED_IAS, COLS_IAS_TIME
+from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
+from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
+	COLS_IAS_KNOWN, COLS_IAS_UNUSED_NORENAME_IMPORT
 from src.data_io.ias_error_check import set_lang, draft_check_ias
-from src.data_io.table_loader import load_table_from_file
+from src.data_io.table_loader import load_table_logged
 from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
 from src.helpers.py_helpers import invert_dict, sort_fixed
 
 # TODO 1 fix ias export to match import
 
-# TODO 2 Q possibly extract to abstract time series converter class later?
-
-def load_ias_file_safe(fpath):
-	# with log_exception(...) instead
-	try:
-		data = load_table_from_file(fpath)
-	except Exception as e:
-		logging.error(e)
-		raise
-
-	logging.info(f'File {fpath} loaded.\n')
-	return data
-
 
 def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder):
+	# TODO 2 Q possibly extract to abstract time series converter class later?
 	# TODO Q 2 remove and fix export instead? IAS has only 1 year after import,
 	#  export will not fire without timstamp on the next year
 
@@ -50,27 +38,26 @@ def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder)
 def process_col_names(df: pd.DataFrame, time_col):
 	print('Переменные в IAS: \n', df.columns.to_list())
 
-	known_correct_ias_cols = list(COLS_IAS_TO_SCRIPT.keys()) + COLS_IAS_TIME + [time_col] + COLS_UNUSED_IAS
-	df = df_ensure_cols_case(df, known_correct_ias_cols, ignore_missing=True)
+	known_ias_cols = COLS_IAS_KNOWN + [time_col]
+	df = df_ensure_cols_case(df, known_ias_cols, ignore_missing=True)
 
-	unknown_cols = df.columns.difference(known_correct_ias_cols)
+	unknown_cols = df.columns.difference(known_ias_cols)
 	if len(unknown_cols) > 0:
 		msg = 'Неизвестные ИАС переменные: \n',      str(unknown_cols)
 		logging.exception(msg)
 		raise NotImplementedError(msg)
 
-	unsupported_cols = df.columns.intersection(COLS_UNUSED_IAS)
+	unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
 	if len(unsupported_cols) > 0:
 		print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
 		      unsupported_cols.to_list())
 		logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
 
-	df = df.rename(columns=COLS_IAS_TO_SCRIPT)
+	df = df.rename(columns=COLS_IAS_IMPORT_MAP)
 	print('Переменные после загрузки: \n', df.columns.to_list())
 
-	# TODO 1 'timestamp_1', 'datetime'?
-	expected_biomet_cols = np.strings.lower(['Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1',
-	                                         'Lwout_1_1_1', 'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'])
+	# TODO 2 'timestamp_1', 'datetime'? prob remove whole biomet_cols_index
+	expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
 	biomet_cols_index = df.columns.intersection(expected_biomet_cols)
 	return df, biomet_cols_index
 
@@ -87,7 +74,7 @@ def load_ias(config, config_meteo):
 		raise Exception('Combining multiple IAS files is not supported yet')
 	fpath = config['path'][0]
 	draft_check_ias(fpath)
-	df = load_ias_file_safe(fpath)
+	df = load_table_logged(fpath)
 	''' from eddypro to ias
 	for year in ias_df.index.year.unique():
 		ias_filename = f'{ias_output_prefix}_{year}_{ias_output_version}.csv'
@@ -164,12 +151,9 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
 	df = df.fillna(-9999)
 
-	col_match = {key.lower(): item for key, item in COLS_EDDYPRO_TO_IAS_DUPE.items()}
-	col_match |= invert_dict(COLS_UNUSED_IAS_TO_SCRIPT)
-
-	df = df.rename(columns=col_match)
+	df = df.rename(columns=COLS_IAS_EXPORT_MAP)
 	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
-	var_cols = [col_match[col] for col in col_match.keys() if col_match[col] in df.columns]
+	var_cols = [COLS_IAS_EXPORT_MAP[col] for col in COLS_IAS_EXPORT_MAP.keys() if COLS_IAS_EXPORT_MAP[col] in df.columns]
 
 	# TODO 1 still not correct at some lines
 	# year.min() == year.max() if full 1 year
@@ -188,7 +172,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 	                           1. / 48 * 2 * time_end.dt.hour +
 	                           1. / 48 * (time_end.dt.minute // 30), decimals=3)
 
-	# TODO 1 investigate where they belong: script aware of export aware
+	# TODO 1 investigate where they belong: script aware or export aware or _separate colnames table_?
 	if 'h_strg' in df.columns:
 		df['SH_1_1_1'] = df['h_strg']
 		var_cols.append('SH_1_1_1')
@@ -196,7 +180,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 		df['SLE_1_1_1'] = df['le_strg']
 		var_cols.append('SLE_1_1_1')
 
-	# TODO Q 1 why not added to var_cols, why duplicate in col_match with other case?
+	# TODO Q 1 why not added to var_cols, why duplicate in COLS_IAS_EXPORT with other case?
 	# what is going on, move from arg to ipynb aware preps before export
 	if 'SW_IN_1_1_1' in df.columns:
 		df['SW_IN_1_1_1'] = data_swin_1_1_1

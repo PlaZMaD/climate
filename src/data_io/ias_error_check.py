@@ -48,7 +48,8 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
                  # TODO 1 Q  specification has only H20_STR, not H2O_STR - must be error instead of known?
-                 'H20_STR', 'H2O_STR']
+                 'H20_STR', 'H2O_STR'
+                 ]
 
 
 def get_freq(df, time):
@@ -360,7 +361,7 @@ class ErrorFlagHandler(logging.Handler):
 
 def draft_check_ias(fpath):
     # TODO 2 move to the script start?
-    # will it be the selected method for derived tools?
+    # will it be translation method for all the tools?
     set_lang('ru')
 
     logging.info("Checking IAS file...")
