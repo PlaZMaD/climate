@@ -17,10 +17,7 @@ from src.helpers.py_helpers import invert_dict, sort_fixed
 # specifically mark cols used in the script and unused?
 # currently 4 column names variations are possible: IAS file, EddyPro file, notebook import, export (after all the processing)
 
-# TODO 1 add missing from ias_error_check.known_columns
 COLS_EDDYPRO_TO_IAS = {
-	# specifically about conversion of file formats,
-	# SCRIPT_TO_IAS != EDDYPRO_TO_IAS because script renames some of them during run
 	'co2_flux': 'FC_1_1_1', 'qc_co2_flux': 'FC_SSITC_TEST_1_1_1',
 	'LE': 'LE_1_1_1', 'qc_LE': 'LE_SSITC_TEST_1_1_1',
 	'H': 'H_1_1_1', 'qc_H': 'H_SSITC_TEST_1_1_1',
@@ -47,6 +44,43 @@ COLS_EDDYPRO_TO_IAS = {
 	# Optional
 	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 }
+# TODO 1 add missing from ias_error_check.known_columns
+# TODO 1 compare to COLS_EDDYPRO_TO_IAS, find optimal way
+COLS_EDDYPRO_TO_IAS_DUPE = {
+	# specifically about conversion of file formats,
+	# SCRIPT_TO_IAS != EDDYPRO_TO_IAS because script renames some of them during run
+	# was duplicated previously, used in export
+	# also check export:
+	# 		df['SH_1_1_1'] = df['h_strg']
+	# 	if 'le_strg' in df.columns:
+	# 		df['SLE_1_1_1'] = df['le_strg']
+	'co2_flux': 'FC_1_1_1', 'qc_co2_flux': 'FC_SSITC_TEST_1_1_1',
+	'LE': 'LE_1_1_1', 'qc_LE': 'LE_SSITC_TEST_1_1_1',
+	'H': 'H_1_1_1', 'qc_H': 'H_SSITC_TEST_1_1_1',
+	'Tau': 'TAU_1_1_1',	'qc_Tau': 'TAU_SSITC_TEST_1_1_1',
+	'co2_strg': 'SC_1_1_1', 'co2_mole_fraction': 'CO2_1_1_1',
+	'h2o_mole_fraction': 'H2O_1_1_1', 'sonic_temperature': 'T_SONIC_1_1_1',
+	'Ta_1_1_1': 'TA_1_1_1',
+	'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
+	'Lwin_1_1_1': 'LW_IN_1_1_1', 'Lwout_1_1_1': 'LW_OUT_1_1_1',
+	'PPFD_1_1_1': 'PPFD_IN_1_1_1',
+	'Rn_1_1_1': 'NETRAD_1_1_1', 'MWS_1_1_1': 'WS_1_1_1',
+	'Ts_1_1_1': 'TS_1_1_1',
+	'Pswc_1_1_1': 'SWC_1_1_1', 'Pswc_2_1_1': 'SWC_2_1_1', 'Pswc_3_1_1': 'SWC_3_1_1',
+	'SHF_1_1_1': 'G_1_1_1', 'SHF_2_1_1': 'G_2_1_1', 'SHF_3_1_1': 'G_3_1_1', 'L': 'MO_LENGTH_1_1_1',
+	'(z-d)/L': 'ZL_1_1_1',
+	'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1',	'x_90%': 'FETCH_90_1_1_1',
+	'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
+	'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
+	'rh_1_1_1': 'RH_1_1_1',
+
+	# TODO 1 duplicates COLS_UNUSED_IAS, comment out and include dynamically?
+	'Pa_1_1_1': 'PA_1_1_1',
+	'Ts_2_1_1': 'TS_2_1_1', 'Ts_3_1_1': 'TS_3_1_1',
+	# TODO 1 COLS_SCRIPT_TO_IAS2
+	'u_star': 'USTAR_1_1_1', 'vpd_1_1_1': 'VPD_1_1_1',
+}
+
 COLS_EDDYPROL_TO_IAS = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS.items()}
 # IAS optional rules are more complex and placed into IAS check tool
 COLS_IAS_TO_SCRIPT = invert_dict(COLS_EDDYPROL_TO_IAS)
@@ -67,10 +101,6 @@ COLS_UNUSED_IAS = [
 	# TODO 1 used in fluxfilter
 	'PA_1_1_1',
 
-	# Special cases:
-	# albedo is calculated in the script instead of using this column
-	'ALB_1_1_1',
-
 	# TODO 1 P_1_1_1, P_RAIN are supported
 	# TODO 1 problem: previously p_1_1_1 was not droppoing to outputs because it may be generated during script col
 	# currently, it will because all these cols are included; what to do?
@@ -88,6 +118,10 @@ COLS_UNUSED_IAS = [
 	'RUNOFF_1_1_1', 'SW_DIF_1_1_1', 'FCH4_PI_1_1_1', 'LEAF_WET_1_1_1', 'N2O_1_1_1', 'R_UVA_1_1_1', 'PPFD_BC_IN_1_1_1',
 	'D_SNOW_1_1_1', 'SPEC_RED_OUT_1_1_1', 'NIRV_1_1_1', 'FC_CMB_1_1_1', 'FNO_CMB_1_1_1', 'CO2C13_1_1_1', 'PPFD_OUT_1_1_1',
 	'DBH_1_1_1', 'GPP_PI_1_1_1',  'FNO2_CMB_1_1_1'
+
+	# Special mentions:
+	# albedo is calculated in the script instead of using this column
+	'ALB_1_1_1',
 ]
 
 
@@ -106,40 +140,6 @@ COLS_UNUSED_IAS = [
 '''
 
 
-# TODO 1 compare to COLS_EDDYPRO_TO_IAS, find optimal way
-COLS_SCRIPT_TO_IAS = {
-	# was duplicated previously, used in export
-	# also check export:
-	# 		df['SH_1_1_1'] = df['h_strg']
-	# 	if 'le_strg' in df.columns:
-	# 		df['SLE_1_1_1'] = df['le_strg']
-	'co2_flux': 'FC_1_1_1', 'qc_co2_flux': 'FC_SSITC_TEST_1_1_1', 'LE': 'LE_1_1_1',
-	'qc_LE': 'LE_SSITC_TEST_1_1_1', 'H': 'H_1_1_1', 'qc_H': 'H_SSITC_TEST_1_1_1', 'Tau': 'TAU_1_1_1',
-	'qc_Tau': 'TAU_SSITC_TEST_1_1_1', 'co2_strg': 'SC_1_1_1', 'co2_mole_fraction': 'CO2_1_1_1',
-	'h2o_mole_fraction': 'H2O_1_1_1', 'sonic_temperature': 'T_SONIC_1_1_1',
-	'Ta_1_1_1': 'TA_1_1_1', 'Swin_1_1_1': 'SW_IN_1_1_1',
-	'Swout_1_1_1': 'SW_OUT_1_1_1',
-	'Lwin_1_1_1': 'LW_IN_1_1_1', 'Lwout_1_1_1': 'LW_OUT_1_1_1', 'PPFD_1_1_1': 'PPFD_IN_1_1_1',
-	'Rn_1_1_1': 'NETRAD_1_1_1', 'MWS_1_1_1': 'WS_1_1_1', 'Ts_1_1_1': 'TS_1_1_1',
-	'Pswc_1_1_1': 'SWC_1_1_1', 'Pswc_2_1_1': 'SWC_2_1_1',
-	'Pswc_3_1_1': 'SWC_3_1_1',
-	'SHF_1_1_1': 'G_1_1_1', 'SHF_2_1_1': 'G_2_1_1', 'SHF_3_1_1': 'G_3_1_1', 'L': 'MO_LENGTH_1_1_1',
-	'(z-d)/L': 'ZL_1_1_1', 'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1',
-	'x_90%': 'FETCH_90_1_1_1',
-	'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1',
-	'ch4_mole_fraction': 'CH4_1_1_1',
-	'ch4_strg': 'SCH4_1_1_1',
-	'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
-	'rh_1_1_1': 'RH_1_1_1',
-
-	# TODO 1 duplicates COLS_UNUSED_IAS, comment out and include dynamically?
-	'Pa_1_1_1': 'PA_1_1_1',
-	'Ts_2_1_1': 'TS_2_1_1', 'Ts_3_1_1': 'TS_3_1_1',
-	# TODO 1 COLS_SCRIPT_TO_IAS2
-	'u_star': 'USTAR_1_1_1', 'vpd_1_1_1': 'VPD_1_1_1',
-}
-
-
 COLS_UNUSED_IAS_TO_SCRIPT = {k: k.lower() for k in COLS_UNUSED_IAS}
 
 IAS_HEADER_DETECTION_COLS = COLS_EDDYPRO_TO_IAS.values()
@@ -156,35 +156,6 @@ def load_ias_file_safe(fpath):
 
 	logging.info(f'File {fpath} loaded.\n')
 	return data
-
-
-def load_via_bglabutils(fpath):
-	def my_datetime_converter(x):
-		return pd.to_datetime(x['TIMESTAMP_START'], format='%Y%m%d%H%M')
-
-	config = {
-		'debug': False,
-		'-9999_to_nan': True,
-		'repair_time': False,
-		'time': {
-			'column_name': 'datetime',
-			'converter': my_datetime_converter
-		},
-		'path': [fpath]
-	}
-
-	data, time = bg.load_df(config)
-	return data[next(iter(data))]
-
-
-def check_with_bglabutils(fpath, data):
-	data_bgl = load_via_bglabutils(fpath).drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
-	data_cmpr = data[1:-1]
-	df1, df2 = df_get_unique_cols(data_cmpr, data_bgl)
-
-
-	if df1.columns.size + df2.columns.size > 0:
-		raise Exception(f'bglabutils.load_df loads different ias table. df1: {df1.columns} df2: {df2.columns}')
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_step, time_col, na_placeholder):
@@ -309,13 +280,6 @@ def load_ias(config, config_meteo):
 	'''
 
 
-	try:
-		if config['debug']:
-			check_with_bglabutils(fpath, df)
-	except Exception as e:
-		logging.info('Unexpected check with bglabutils: ', e)
-
-
 	df, biomet_cols_index = process_col_names(df, time_col)
 	return df, time_col, biomet_cols_index, df.index.freq, config_meteo
 
@@ -330,7 +294,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
 	df = df.fillna(-9999)
 
-	col_match = {key.lower(): item for key, item in COLS_SCRIPT_TO_IAS.items()}
+	col_match = {key.lower(): item for key, item in COLS_EDDYPRO_TO_IAS_DUPE.items()}
 	col_match |= invert_dict(COLS_UNUSED_IAS_TO_SCRIPT)
 
 	df = df.rename(columns=col_match)
