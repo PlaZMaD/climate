@@ -288,8 +288,8 @@ def plot_albedo (plot_data, filters_db):
     plot_bgcolor='rgba(0,0,0,0)'
     )
 
-
   if ('swin_1_1_1' not in pl_data.columns) or ('swout_1_1_1' not in pl_data.columns):
+    # TODO 2 use ALB_1_1_1 from ias?
     print("No swin_1_1_1/sout_1_1_1")
     return 0
   pl_data['albedo'] = pl_data['swout_1_1_1'].div(pl_data['swin_1_1_1'])
@@ -1026,22 +1026,23 @@ config_meteo['path'] = 'auto'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + id="nLnivFTtg9cu"
 #Соберем обзорную информацию о нужных величинах:
-cols_to_investigate = []
-cols_to_investigate.append("co2_flux")
-cols_to_investigate.append("ch4_flux")
-cols_to_investigate.append("LE")
-cols_to_investigate.append("H")
-cols_to_investigate.append("co2_strg")
-cols_to_investigate.append("Ta_1_1_1")
-cols_to_investigate.append("RH_1_1_1")
-cols_to_investigate.append("VPD_1_1_1")
-cols_to_investigate.append("P_1_1_1")
-cols_to_investigate.append("SWIN_1_1_1")
-cols_to_investigate.append("PPFD_1_1_1")
-# cols_to_investigate.append("co2_signal_strength")
-# cols_to_investigate.append("ch4_signal_strength")
+cols_to_investigate = [
+    'co2_flux',
+    'ch4_flux',
+    'LE',
+    'H',
+    'co2_strg',
+    'Ta_1_1_1',
+    'RH_1_1_1',
+    'VPD_1_1_1',
+    'P_1_1_1',
+    'SWIN_1_1_1',
+    'PPFD_1_1_1',
+    # 'co2_signal_strength',
+    # 'ch4_signal_strength',
+]
 
-cols_to_investigate =  [k.lower()for k in cols_to_investigate]
+cols_to_investigate = [k.lower()for k in cols_to_investigate]
 
 # + [markdown] id="wVpYvr9_fKBU"
 # ## Настройка параметров анализа данных
@@ -1288,6 +1289,9 @@ have_pr_flag = False
 have_ppfd_flag = False
 
 for col_name in data.columns:
+  # TODO 2 move renames to eddypro load or cols table? 
+  # if moved, check ias import-export handling
+  # or to generalised preprocess check?
   if 'u*' in col_name:
     print(f"renaming {col_name} to u_star")
     data = data.rename(columns={col_name: 'u_star'})

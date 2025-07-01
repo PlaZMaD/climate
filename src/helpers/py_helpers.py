@@ -17,13 +17,23 @@ def catch(on_exception=None, err_types=Exception):
 			on_exception(e)
 
 
-def invert_dict(dict):
-	vals = dict.values()
+def invert_dict(d: dict):
+	vals = d.values()
 	vals_set = set(vals)
 	if len(vals) != len(vals_set):
 		raise Exception('Cannot invert dictionary with duplicate values')
 
-	return {v: k for k, v in dict.items()}
+	return {v: k for k, v in d.items()}
+
+
+def replace_in_dict_by_values(d: dict, replacements: dict):
+	assert set(replacements.values()).issubset(d.values())
+
+	rd = invert_dict(d)
+	rv = invert_dict(replacements)
+	for k, v in rv.items():
+		rd[k] = v
+	return invert_dict(rd)
 
 
 def fix_strs_case(strs: list[str], correct_case: list[str]):

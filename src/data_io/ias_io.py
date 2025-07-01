@@ -172,18 +172,21 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 	                           1. / 48 * 2 * time_end.dt.hour +
 	                           1. / 48 * (time_end.dt.minute // 30), decimals=3)
 
-	# TODO 1 investigate where they belong: script aware or export aware or _separate colnames table_?
+	# TODO Q why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
+	'''
 	if 'h_strg' in df.columns:
 		df['SH_1_1_1'] = df['h_strg']
 		var_cols.append('SH_1_1_1')
 	if 'le_strg' in df.columns:
 		df['SLE_1_1_1'] = df['le_strg']
 		var_cols.append('SLE_1_1_1')
+	'''
 
-	# TODO Q 1 why not added to var_cols, why duplicate in COLS_IAS_EXPORT with other case?
-	# what is going on, move from arg to ipynb aware preps before export
+	# TODO Q 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
 	if 'SW_IN_1_1_1' in df.columns:
+		# assert df['SW_IN_1_1_1'] == data_swin_1_1_1
 		df['SW_IN_1_1_1'] = data_swin_1_1_1
+
 
 	ias_year = df[time_col].dt.year.min()
 	sort_fixed(var_cols, fix_underscore=True)
