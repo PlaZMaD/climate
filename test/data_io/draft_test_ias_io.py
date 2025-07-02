@@ -121,7 +121,7 @@ def test_tmp_cols_mathcing():
 	bugs = [c for c in known_columns if ' ' in c]
 	assert len(bugs) == 0
 
-	unpoc_col_placeholders = set(known_columns) - set(ias_import_col_placeholders)
+	unpoc_col_placeholders = {known_columns} - {ias_import_col_placeholders}
 	# unpoc_cols = [c + '_' for c in unpoc_col_placeholders]
 
 	# matches_ = {uc: find_in_files('.', '^(?!.*ias_error_check).*\.(py|R|r)$', uc) for uc in unpoc_cols}

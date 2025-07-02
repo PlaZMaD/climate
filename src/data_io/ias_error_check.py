@@ -18,7 +18,7 @@ from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
 
 def set_lang(language):
-    # TODO 2 replaced to Path, verify bundle still works
+    # TODO QE 3 replaced to Path, verify bundle still works
     # get the bundle dir if bundled or simply the __file__ dir if not bundled
     bundle_dir = getattr(sys, '_MEIPASS', Path(__main__.__file__).parent.absolute())
 
@@ -28,11 +28,11 @@ def set_lang(language):
 
 
 # other questions not about this ias
-# TODO Q git del leftover branches? will possibly del git activity too
+# TODO QE 2 git del leftover branches? will possibly del git activity too
 
-# TODO Q store in table file instead? 3+ duplicates now, also case changed:
+# TODO QE 1 store in table file instead? 3+ duplicates now, also case changed:
 #  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
-# TODO Q fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST',
+# TODO QE 1 fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST',
 # 'SPEC_NIR_ OUT' 'SPEC_PRI_REF_ IN', 'SPEC_RED_ OUT', 'SPEC_PRI_ REF_OUT', 'SPEC_RED_ IN'
 known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 'FC', 'FC_CMB', 'FC_SSITC_TEST', 'FCH4',
                  'FCH4_CMB', 'FCH4_PI', 'FETCH_70', 'FETCH_80', 'FETCH_90', 'FETCH_FILTER', 'FETCH_MAX', 'FH2O', 'FN2O',
@@ -47,7 +47,7 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'TAU', 'TAU_SSITC_TEST', 'TCARI', 'THROUGHFALL', 'TS', 'U_SIGMA', 'USTAR', 'V_SIGMA', 'VPD_PI',
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
-                 # TODO 1 Q  specification has only H20_STR, not H2O_STR - must be error instead of known?
+                 # TODO 1 QE  specification has only H20_STR, not H2O_STR - must be error instead of known?
                  'H20_STR', 'H2O_STR'
                  ]
 
@@ -360,7 +360,9 @@ class ErrorFlagHandler(logging.Handler):
 
 
 def draft_check_ias(fpath):
-    # TODO 2 move to the script start?
+    # TODO 1 QE storing ias checks as shared code: what are the options? same repo?
+
+    # TODO 2 QE move to the script start?
     # will it be translation method for all the tools?
     set_lang('ru')
 

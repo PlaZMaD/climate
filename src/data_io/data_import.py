@@ -35,7 +35,7 @@ class AutoImportException(Exception):
 
 
 def detect_file_type(fpath: Path, header_rows=4) -> InputFileType:
-	df = load_table_from_file(fpath, nrows=header_rows, header=None)
+	df = load_table_from_file(fpath, nrows=header_rows, no_header=True)
 
 	# may be also consider exact header row place
 	ias_cols = (set(IAS_HEADER_DETECTION_COLS), InputFileType.IAS)
@@ -153,7 +153,7 @@ def auto_config_eddypro_input(input_file_types: dict[Path, InputFileType], confi
 
 
 def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix: str, ias_output_version: str):
-	# TODO Q why 2 configs intead of one? merge options?
+	# TODO QE 2 why 2 configs instead of one? merge options?
 
 	if config['path'] == 'auto':
 		logging.info("Detecting input files due to config['path'] = 'auto' ")
@@ -172,6 +172,7 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 		logging.warning(f"Detected mode: {detected_mode} is different from config['mode']: {config['mode']}. "
 		                "Consider changing config['mode'] to .AUTO")
 
+	# TODO 1 test on colab 'auto' switches work independently
 	# TODO 3 update messages to match exact config naming after updating config options
 	if config['mode'] == IM.IAS_L2:
 		res = auto_config_ias_input(input_file_types, config_meteo)
@@ -188,7 +189,7 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 	                                            skip_msg="config_meteo['use_biomet'] option is not 'auto'. Auto detection skipped.")
 	config_meteo['path'] = change_if_auto(config_meteo['path'], new_option=config_meteo_path,
 	                                      skip_msg="config_meteo['path'] option is not 'auto'. Auto detection skipped.")
-	# TODO Q why ias_output_prefix is not part of config?
+	# TODO QE 2 why ias_output_prefix is not part of config?
 	ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_d)
 	ias_output_version = change_if_auto(ias_output_version, ias_output_version_d)
 

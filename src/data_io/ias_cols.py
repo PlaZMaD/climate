@@ -1,4 +1,4 @@
-# TODO Q 2 store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
+# TODO QE 2 store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
 '''
 current renames EDDYPRO? -> SCRIPT to consider
 'u*' -> u_star"
@@ -21,12 +21,14 @@ COLS_IAS_USED_NORENAME_IMPORT = [
 	# Script uses cols without renames (but lowercases on import)
 	'TS_1_1_1',
 
-	# TODO 3 all new generated cols will still be exported to ias, is this desired?
+	# TODO QE QV QOA 1 all new generated cols will still be exported to ias, is this desired?
+	#  for example, P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
 	'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
 	'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
 	'VPD_1_1_1',  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
 	'P_1_1_1',  # 'P_1_1_1' <- 'P_1_1_1' or 'P_RAIN_1_1_1'
 	'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
+	'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
 ]
 COLS_IAS_UNUSED_NORENAME_IMPORT = [
 	# Script does not use, but may requre on export or import, for example:
@@ -50,10 +52,6 @@ COLS_IAS_UNUSED_NORENAME_IMPORT = [
 	'DBH_1_1_1', 'GPP_PI_1_1_1', 'FNO2_CMB_1_1_1',
 	'SR_1_1_1', 'O3_1_1_1', 'REP_1_1_1',
 	'PA_1_1_1', 'SG_1_1_1', 'SB_1_1_1',
-
-	# Special mentions:
-	# albedo is calculated in the script instead of using this column
-	'ALB_1_1_1',
 ]
 COLS_IAS_NORENAME_IMPORT = COLS_IAS_UNUSED_NORENAME_IMPORT + COLS_IAS_USED_NORENAME_IMPORT
 COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
@@ -99,9 +97,9 @@ COLS_EDDYPRO_TO_IAS_RENAMES = {
 
 COLS_EDDYPRO_L_TO_IAS_RENAMES = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_RENAMES.items()}
 COLS_SCRIPT_TO_IAS_RENAMES = replace_in_dict_by_values(COLS_EDDYPRO_L_TO_IAS_RENAMES, {
-	# TODO Q only column which is renamed when loading EDDYPRO?
+	# TODO QE 1 only column which is renamed when loading EDDYPRO?
 
-	# TODO 2 skipping this is possible, but bad idea:
+	# TODO 1 skipping this is possible, but bad idea:
 	# 'u*': 'USTAR_1_1_1' was working previously because EDDY -> SCRIPT conversions are hardcoded after load
 	# i.e. it was IAS -> EDDYPRO -> SCRIPT
 	# EDDYPRO -> SCRIPT fixes  either:

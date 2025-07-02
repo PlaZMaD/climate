@@ -27,7 +27,7 @@ def invert_dict(d: dict):
 
 
 def replace_in_dict_by_values(d: dict, replacements: dict):
-	assert set(replacements.values()).issubset(d.values())
+	assert set(replacements.values()) <= set(d.values())
 
 	rd = invert_dict(d)
 	rv = invert_dict(replacements)

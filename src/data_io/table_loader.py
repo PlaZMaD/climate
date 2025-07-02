@@ -24,10 +24,13 @@ def load_xls(fpath, **pd_read_kwargs):
 	return data
 
 
-def load_table_from_file(fpath, nrows=None, header='infer') -> pd.DataFrame:
+def load_table_from_file(fpath, nrows=None, header_row=None, no_header=False) -> pd.DataFrame:
+	"""	:param nrows: read only first n rows """
 	# probably extract to load table? can all repairs be generalised operations on tables?
 
-	pd_read_kwargs = {'nrows': nrows, 'header': header}
+	pd_read_kwargs = {'nrows': nrows}
+	if no_header:
+		pd_read_kwargs |= {'header': None}
 
 	suffix = Path(fpath).suffix.lower()
 	if suffix == '.csv':

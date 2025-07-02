@@ -128,7 +128,7 @@ from src.ipynb_routines import setup_plotly
 # cur_dir = %pwd
 # assert cur_dir == '/content'
 out_dir = Path('output')
-# TODO Q 1) is it ok to cleanup dir? 2) format 4 spaces or tabs?
+# TODO QE 1 1) is it ok to cleanup out dir? 2) format all file 4 spaces or tabs?
 from src.helpers.io_helpers import ensure_empty_dir
 ensure_empty_dir(out_dir)
 # out_dir.mkdir(exist_ok=True)
@@ -281,25 +281,41 @@ def make_filtered_plot(data_pl, col, filters_db):
 
 
 def plot_albedo (plot_data, filters_db):
-  pl_data = plot_data.copy()
+  pl_data: pd.DataFrame = plot_data.copy()
 
   layout = go.Layout(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)'
     )
 
-  if ('swin_1_1_1' not in pl_data.columns) or ('swout_1_1_1' not in pl_data.columns):
-    # TODO 2 use ALB_1_1_1 from ias?
-    print("No swin_1_1_1/sout_1_1_1")
-    return 0
-  pl_data['albedo'] = pl_data['swout_1_1_1'].div(pl_data['swin_1_1_1'])
-  pl_data.loc[pl_data['swin_1_1_1']<=20., 'albedo'] = np.nan
-  pl_data.loc[pl_data['swout_1_1_1']<=0, 'albedo'] = np.nan
+  # TODO 3 QE may be change cols to pl_data.ALB,  pl_data[ALB] ? what is modern pandas recommended?
+  # this may solve: usage search + navigation, different case
 
-  pl_ind  = pl_data[pl_data['albedo']<pl_data['albedo'].quantile(0.95)].index
+  # TODO QOA 1 ALB_1_1_1 will be used now, ok?
+  # priority use of ALB_1_1_1 from ias was not approved by V
+
+  # basic.py: def add_albedo(dataT, out_sw, in_sw)
+
+  can_calc = {'swin_1_1_1', 'swout_1_1_1'} <= set(pl_data.columns)
+  can_use = 'alb_1_1_1' in pl_data.columns
+
+  if can_calc:
+    pl_data['albedo'] = pl_data['swout_1_1_1'].div(pl_data['swin_1_1_1'])
+    if can_use:
+        print("alb_1_1_1 is available, but will be calculated instead")
+  elif can_use:
+    pl_data['albedo'] = pl_data['alb_1_1_1'] / 100.0
+  else:
+    print("No swin_1_1_1/sout_1_1_1, nor alb_1_1_1")
+    return 0
+
+  pl_data.loc[pl_data['swin_1_1_1'] <= 20., 'albedo'] = np.nan
+  pl_data.loc[pl_data['swout_1_1_1'] <= 0, 'albedo'] = np.nan
+
+  pl_ind = pl_data[pl_data['albedo'] < pl_data['albedo'].quantile(0.95)].index
   fig = go.Figure(layout=layout)
   fig.add_trace(go.Scattergl(x=pl_data.loc[pl_ind].index, y=pl_data.loc[pl_ind, 'albedo'], name="Albedo"))
-  fig.update_layout(title = 'Albedo')
+  fig.update_layout(title='Albedo')
   fig_config = {'toImageButtonOptions': {'filename': 'albedo',}}
   fig.show(config=fig_config)
 
@@ -1001,7 +1017,7 @@ config['mode'] = ImportMode.AUTO
 
 # + id="H7E5LGx1DVsA"
 config_meteo = {}
-# TODO Q is this nessesary as a part of public config? can be derived from path? private config / flag?
+# TODO QE 2 is this nessesary as a part of public config? can be derived from path? private config / flag?
 config_meteo['use_biomet'] = 'auto'
 config_meteo['debug'] = False  # True загрузит небольшой кусок файла, а не целый
 config_meteo['-9999_to_nan'] = True #заменяем -9999  на np.nan
@@ -1220,7 +1236,7 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 
 # + id="Xw5TapK10EhR"
 from src.data_io.eddypro_loader import load_eddypro_fulloutput
-from src.data_io.ias_io import load_ias, export_ias
+from src.data_io.ias_io import import_ias, export_ias
 config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )
@@ -1229,8 +1245,8 @@ config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_in
 if config['mode'] in [ImportMode.EDDYPRO_L1, ImportMode.EDDYPRO_L1_AND_BIOMET]:
     res = load_eddypro_fulloutput(config, config_meteo)
 elif config['mode'] == ImportMode.IAS_L2:
-    # TODO Q generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
-    res = load_ias(config, config_meteo)
+    # TODO QE 2 generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
+    res = import_ias(config, config_meteo)
 elif config['mode'] == ImportMode.CSF_L:
     raise NotImplementedError
 else:
@@ -1279,6 +1295,8 @@ if data_type_error_flag:
 #
 
 # + id="mAdYXJFdSRbJ"
+# TODO QE 3 dictionary + optional transform lambda instead? useful to view cols flow,
+#  flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
 have_rh_flag = False
 have_vpd_flag = False
 have_par_flag = False
@@ -1289,7 +1307,7 @@ have_pr_flag = False
 have_ppfd_flag = False
 
 for col_name in data.columns:
-  # TODO 2 move renames to eddypro load or cols table? 
+  # TODO 2 move renames to eddypro load or cols table?
   # if moved, check ias import-export handling
   # or to generalised preprocess check?
   if 'u*' in col_name:
@@ -1354,7 +1372,6 @@ if not (have_p_flag or have_pr_flag):
   print("NO P and P_RAIN")
 else:
   print("Checking P <-> P_rain pair")
-  # TODO 1 P_RAIN -> P_ on export, but not P_ -> P_RAIN, update COLS_NS_IAS ... somehow?
   if not have_p_flag:
     data['p_1_1_1'] = data['p_rain_1_1_1']
   if not have_pr_flag:
@@ -1374,7 +1391,7 @@ else:
       print("calculating vpd_1_1_1 from rh_1_1_1 and air temperature")
       data['vpd_1_1_1'] = ehpa - (ehpa*data['rh_1_1_1']/100)
     if not have_rh_flag:
-      # TODO 1 it's from temperature only?
+      # TODO QE 2 it's from temperature only?
       print("calculating rh_1_1_1 from vpd_1_1_1 and air temperature")
       data['rh_1_1_1'] = ehpa
 
@@ -1725,14 +1742,14 @@ if 'swin_1_1_1' in rep_df.columns:
 else:
   print("WARNING! No swin_1_1_1!")
 
-# TODO Q 2 if biomet, 'ta_1_1_1' already contains derivation from 'air_temperature'?
-#  is this to avoid numeric conversions?
+# TODO QE 2 if biomet, 'air_temperature' contains derivation from 'ta_1_1_1'?
+# is this to avoid numeric conversions?
+# lack of single standard col for temps feels like unfriendly to work with
 if config_meteo ['use_biomet']:
   rep_df['Tair'] = rep_df['ta_1_1_1'].fillna(-9999)
   rep_df['rH'] = rep_df['rh_1_1_1'].fillna(-9999)
   rep_df['VPD'] = rep_df['vpd_1_1_1'].fillna(-9999)
 else:
-  # TODO 1 when Ta_1_1_1 is used, it will not drop to rep file then. Is this intended?
   rep_df['Tair'] = (rep_df['air_temperature'] - 273.15).fillna(-9999)
   rep_df['rH'] = rep_df['rh'].fillna(-9999)
   rep_df['VPD'] = rep_df['vpd'].fillna(-9999)
