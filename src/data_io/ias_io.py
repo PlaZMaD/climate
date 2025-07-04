@@ -6,15 +6,15 @@ import pandas as pd
 
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
-	COLS_IAS_KNOWN, COLS_IAS_UNUSED_NORENAME_IMPORT
+	COLS_IAS_KNOWN,COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT
 from src.data_io.ias_error_check import set_lang, draft_check_ias
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
-from src.helpers.pd_helpers import df_get_unique_cols, df_ensure_cols_case
-from src.helpers.py_helpers import invert_dict, sort_fixed
+from src.helpers.pd_helpers import df_ensure_cols_case
+from src.helpers.py_helpers import sort_fixed, intersect_list
 
 
-# TODO 1 fix ias export to match import
+# TODO 1 test ias export to match import
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
@@ -72,7 +72,7 @@ def import_ias(config, config_meteo):
 	# TODO 2 merge with config, pack biomet into load routines only?
 	assert config_meteo['use_biomet']
 
-	# TODO QV 1 implement merge for iases if nessesary
+	# TODO QV 1 implement merge for iases if necessary
 	if len(config['path']) != 1:
 		raise NotImplemented(
 			'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
@@ -106,7 +106,7 @@ def import_ias(config, config_meteo):
 	df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
 	df = df_init_time_draft(df, time_col)
 
-	# TODO 1 logging = print?
+	# TODO 1 test colab logging = print?
 	print('Диапазон времени IAS (START): ', df.index[[0, -1]])
 	logging.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 	df = ias_table_extend_year(df, time_col, -9999)
@@ -129,9 +129,8 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 	df = df.fillna(-9999)
 
 	df = df.rename(columns=COLS_IAS_EXPORT_MAP)
-	time_cols = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
-	var_cols = [COLS_IAS_EXPORT_MAP[col] for col in COLS_IAS_EXPORT_MAP.keys() if
-	            COLS_IAS_EXPORT_MAP[col] in df.columns]
+	var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values())
+	sort_fixed(var_cols, fix_underscore=True)
 
 	# year.min() == year.max() if full 1 year
 	new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
@@ -165,13 +164,13 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 	'''
 
 	# TODO QE 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
+	#  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
 	if 'SW_IN_1_1_1' in df.columns:
 		# assert df['SW_IN_1_1_1'] == data_swin_1_1_1
 		df['SW_IN_1_1_1'] = data_swin_1_1_1
 
 	ias_year = df[time_col].dt.year.min()
-	sort_fixed(var_cols, fix_underscore=True)
-	col_list_ias = time_cols + var_cols + [time_col]
+	col_list_ias = COLS_IAS_TIME + var_cols + [time_col]
 	print(col_list_ias)
 	df = df[col_list_ias]
 

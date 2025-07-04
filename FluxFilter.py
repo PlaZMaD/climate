@@ -1268,6 +1268,7 @@ if not config_meteo ['use_biomet']:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
+# TODO QE 1 ppfd_in_1_1_1 is name before import repairs?
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
                 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
@@ -1310,18 +1311,28 @@ for col_name in data.columns:
   # TODO 2 move renames to eddypro load or cols table?
   # if moved, check ias import-export handling
   # or to generalised preprocess check?
+  # Eddypro renames
   if 'u*' in col_name:
     print(f"renaming {col_name} to u_star")
     data = data.rename(columns={col_name: 'u_star'})
+  if 'co2_signal_strength' in col_name:
+    print(f"renaming {col_name} to co2_signal_strength")
+    data = data.rename(columns={col_name: 'co2_signal_strength'})
+  if col_name in ['co2_signal_strength_7500_mean', 'CO2SS'.lower()] or 'co2_signal_strength' in col_name:
+    print(f"renaming {col_name} to co2_signal_strength")
+    data = data.rename(columns={col_name: 'co2_signal_strength'})
+  if col_name in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()] or 'ch4_signal_strength' in col_name:
+    print(f"renaming {col_name} to ch4_signal_strength")
+    data = data.rename(columns={col_name: 'ch4_signal_strength'})
+
+  # Bomet renames
   if 'ppfd_in_1_1_1' in col_name:
     print(f"renaming {col_name} to ppfd_1_1_1")
     data = data.rename(columns={col_name: 'ppfd_1_1_1'})
   if 'sw_in_1_1_1' in col_name:
     print(f"renaming {col_name} to swin_1_1_1")
     data = data.rename(columns={col_name: 'swin_1_1_1'})
-  if 'co2_signal_strength' in col_name:
-    print(f"renaming {col_name} to co2_signal_strength")
-    data = data.rename(columns={col_name: 'co2_signal_strength'})
+
   if "rh_1_1_1" in col_name:
     have_rh_flag =True
   if "vpd_1_1_1" in col_name:
@@ -1338,12 +1349,6 @@ for col_name in data.columns:
     have_pr_flag = True
   if 'ppfd_1_1_1' in col_name:
     have_ppfd_flag = True
-  if col_name in ['co2_signal_strength_7500_mean', 'CO2SS'.lower()] or 'co2_signal_strength' in col_name:
-    print(f"renaming {col_name} to co2_signal_strength")
-    data = data.rename(columns={col_name: 'co2_signal_strength'})
-  if col_name in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()] or 'ch4_signal_strength' in col_name:
-    print(f"renaming {col_name} to ch4_signal_strength")
-    data = data.rename(columns={col_name: 'ch4_signal_strength'})
 
 
 if not (have_ppfd_flag or have_swin_flag):

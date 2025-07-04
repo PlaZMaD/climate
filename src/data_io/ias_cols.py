@@ -60,11 +60,22 @@ COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
 COLS_IAS_NORENAME_EXPORT_DICT = {k.lower(): k for k in COLS_IAS_NORENAME_EXPORT}
 
 
-COLS_EDDYPRO_TO_IAS_RENAMES = {
+COLS_SCRIPT_E_TO_IAS_RENAMES = {
 	# originates from conversion of file formats,
 
 	# closely matches to columns which are renamed in the script on IAS export
 	# only columns which are renamed in the script, not including ones with just changed case
+
+	# TODO 1 test for no import renames
+	# Reminder: instead of
+	# IAS -> (lower) -> SCRIPT,
+	# some cols here may be yet silently fixed
+	# IAS -> EDDYPRO -> (auto fix/repair after load) -> SCRIPT
+	# EDDYPRO -> (auto fix/repair after load) fixes either should be:
+	# - extracted to eddypro load
+	# - generalised columns repair step
+	# - simplified to a table with multiple + regex to one
+	# check COLS_EDDYPRO_TO_IAS_RENAMES which is derived from this dict
 
 	'co2_flux': 'FC_1_1_1', 'qc_co2_flux': 'FC_SSITC_TEST_1_1_1',
 	'LE': 'LE_1_1_1', 'qc_LE': 'LE_SSITC_TEST_1_1_1',
@@ -79,15 +90,14 @@ COLS_EDDYPRO_TO_IAS_RENAMES = {
 	'(z-d)/L': 'ZL_1_1_1',
 	'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
 	'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
+	# TODO QE 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
 	'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
 	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 
-	# possibly cols which can be generated if missing
+	# possibly cols which are generated if missing
 	'PPFD_1_1_1': 'PPFD_IN_1_1_1',
 	'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
-
-	# special case: SCRIPT is different from EDDYPRO here
-	'u*': 'USTAR_1_1_1'
+	'u_star': 'USTAR_1_1_1'
 
 	# only case changed, moved to COLS_IAS_NORENAME
 	# 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1', 'VPD_1_1_1': 'VPD_1_1_1',
@@ -95,22 +105,7 @@ COLS_EDDYPRO_TO_IAS_RENAMES = {
 	# 'Ts_2_1_1': 'TS_2_1_1', 'Ts_3_1_1': 'TS_3_1_1',
 }
 
-COLS_EDDYPRO_L_TO_IAS_RENAMES = {k.lower(): v for k, v in COLS_EDDYPRO_TO_IAS_RENAMES.items()}
-COLS_SCRIPT_TO_IAS_RENAMES = replace_in_dict_by_values(COLS_EDDYPRO_L_TO_IAS_RENAMES, {
-	# TODO QE 1 only column which is renamed when loading EDDYPRO?
-
-	# TODO 1 skipping this is possible, but bad idea:
-	# 'u*': 'USTAR_1_1_1' was working previously because EDDY -> SCRIPT conversions are hardcoded after load
-	# i.e. it was IAS -> EDDYPRO -> SCRIPT
-	# EDDYPRO -> SCRIPT fixes  either:
-	# - should be extracted to eddypro load
-	# - should be generalised columns repair step
-	# - should be simplified to a table with multiple + regex to one
-	'u_star': 'USTAR_1_1_1'
-})
-
-
-
+COLS_SCRIPT_TO_IAS_RENAMES = {k.lower(): v for k, v in COLS_SCRIPT_E_TO_IAS_RENAMES.items()}
 COLS_IAS_EXPORT_MAP = COLS_SCRIPT_TO_IAS_RENAMES | COLS_IAS_NORENAME_EXPORT_DICT
 COLS_IAS_IMPORT_MAP = invert_dict(COLS_IAS_EXPORT_MAP)
 

@@ -83,21 +83,26 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
 	logging.info("START")
 
 
-def sort_fixed(ls: list[str], fix_underscore: bool):
+def sort_fixed(list_: list[str], fix_underscore: bool):
 	# sort: ['NETRAD_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1', 'P_1_1_1']
 	# sort_without_underscore: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
 	def key(s):
 		return s.replace('_', ' ') if fix_underscore else s
-	ls.sort(key=key)
+	list_.sort(key=key)
 
 
-def ensure_list(arg, transform_func=None) -> list:
-	if not isinstance(arg, list):
-		ret = [arg]
+def ensure_list(list_, transform_func=None) -> list:
+	if not isinstance(list_, list):
+		ret = [list_]
 	else:
-		ret = arg
+		ret = list_
 
 	if transform_func:
 		return [transform_func(el) for el in ret]
 	else:
 		return ret
+
+
+def intersect_list(items: list, valid_items: list) -> list:
+	"""Same as intersect sets, but keeps order"""
+	return [el for el in items if el in valid_items]

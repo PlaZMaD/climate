@@ -47,7 +47,7 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'TAU', 'TAU_SSITC_TEST', 'TCARI', 'THROUGHFALL', 'TS', 'U_SIGMA', 'USTAR', 'V_SIGMA', 'VPD_PI',
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
-                 # TODO 1 QE  specification has only H20_STR, not H2O_STR - must be error instead of known?
+                 # TODO QE 1 specification has only H20_STR, not H2O_STR - must be error instead of known?
                  'H20_STR', 'H2O_STR'
                  ]
 
@@ -360,7 +360,7 @@ class ErrorFlagHandler(logging.Handler):
 
 
 def draft_check_ias(fpath):
-    # TODO 1 QE storing ias checks as shared code: what are the options? same repo?
+    # TODO 2 QE storing ias checks as shared code: what are the options? same repo?
 
     # TODO 2 QE move to the script start?
     # will it be translation method for all the tools?
