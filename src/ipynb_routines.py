@@ -98,8 +98,11 @@ def setup_plotly(out_dir):
 	if ENV.COLAB:
 		renderers.default = 'colab'
 	elif ENV.IPYNB or ENV.LOCAL:
+		renderers.default = 'svg'
+		# python < 3.10:
 		# https://stackoverflow.com/a/72614865/10141885
 		# on W10, pip install --upgrade "kaleido==0.1.*" may be required instead of 0.2.0
-		renderers.default = 'svg'
+		# python >= 3.10:
+		# plotly_get_chrome may be required
 		go.Figure.show = lambda self, **args: _plotly_show_override(self, out_dir, **args)
 		print(f"Pure py plotly renderer is set to: {renderers.default}.")

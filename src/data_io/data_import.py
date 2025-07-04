@@ -1,6 +1,7 @@
 import logging
 from enum import Enum
 from pathlib import Path
+from typing import Union
 
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
@@ -17,7 +18,7 @@ class ImportMode(Enum):
 	EDDYPRO_L1 = 1
 	EDDYPRO_L1_AND_BIOMET = 2
 	IAS_L2 = 3
-	CSF_L = 4
+	CSF_ = 4
 	AUTO = 5
 
 
@@ -74,11 +75,13 @@ def detect_known_files(input_dir='.', from_list: list[Path] = None) -> dict[Path
 	return {k: v for k, v in input_file_types.items() if v != InputFileType.UNKNOWN}
 
 
-def change_if_auto(option, new_option=None, new_option_call=None, ok_msg=None, skip_msg=None):
+def change_if_auto(option, new_option=None, new_option_call=None,
+					auto: Union[str, ImportMode] = 'auto',
+                   ok_msg=None, skip_msg=None):
 	# new_option_call can be used instead of new_option to optimise out new option detection:
 	# if not auto, detection will be skipped
 
-	if option != 'auto':
+	if option != auto:
 		if skip_msg:
 			logging.warning(skip_msg)
 		return option
@@ -115,14 +118,13 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
 		raise AutoImportException(f'Multiple input modes possible: {possible_input_modes}, cannot auto pick.\n'
 		                          "Remove some files or specify manually config['path'].")
 
-	logging.info(f'Picked input mode: {mode}')
 	return mode
 
 
-def auto_config_ias_input(input_file_types: dict[Path, InputFileType], config_meteo):
+def detect_auto_config_ias(input_file_types: dict[Path, InputFileType], config_meteo):
 	# files are already verified in detect_input_mode
 
-	config_path = list(input_file_types.keys())
+	auto_config_path = list(input_file_types.keys())
 	config_meteo_use_biomet = True
 
 	if config_meteo['path'] is not None and config_meteo['path'] != 'auto':
@@ -130,21 +132,26 @@ def auto_config_ias_input(input_file_types: dict[Path, InputFileType], config_me
 		                f"will be ignored due to ias_2 input mode (ias file includes biomet)")
 	config_meteo_path = None
 
-	ias_output_prefix, ias_output_version = try_parse_ias_fname(Path(config_path[0]).name)
-	return config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
+	ias_output_prefix, ias_output_version = try_parse_ias_fname(Path(auto_config_path[0]).name)
+	return auto_config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
 
 
-def auto_config_eddypro_input(input_file_types: dict[Path, InputFileType], config_meteo):
+def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType], mode: ImportMode):
 	# files are already verified in detect_input_mode
 	# 1 or 0 biomet files are already ensured
+	assert mode in [ImportMode.EDDYPRO_L1_AND_BIOMET, ImportMode.EDDYPRO_L1]
 
 	config_path = [k for k, v in input_file_types.items() if v == InputFileType.EDDYPRO]
 
 	biomets = [k for k, v in input_file_types.items() if v == InputFileType.BIOMET]
-	if len(biomets) == 1:
-		config_meteo_use_biomet = True
-		config_meteo_path = biomets[0]
-	else:
+
+	if mode == ImportMode.EDDYPRO_L1_AND_BIOMET:
+		if len(biomets) == 1:
+			config_meteo_use_biomet = True
+			config_meteo_path = biomets[0]
+		else:
+			raise AutoImportException('More than 1 biomet files detected, cannot auto pick')
+	elif mode == ImportMode.EDDYPRO_L1:
 		config_meteo_use_biomet = False
 		config_meteo_path = None
 
@@ -165,33 +172,38 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 	# noinspection PyPep8Naming
 	IM = ImportMode
 	assert type(config['mode']) is IM
-	detected_mode = detect_input_mode(input_file_types)
-	if config['mode'] == IM.AUTO:
-		config['mode'] = detected_mode
-	elif config['mode'] != detected_mode:
-		logging.warning(f"Detected mode: {detected_mode} is different from config['mode']: {config['mode']}. "
-		                "Consider changing config['mode'] to .AUTO")
 
-	# TODO 1 test on colab 'auto' switches work independently
+	detected_mode = detect_input_mode(input_file_types)
+	if detected_mode != config['mode']:
+		skip_msg = f"Config['mode']: {config['mode']} is different from detected mode: {detected_mode}."\
+		           "Consider changing config['mode'] to ImportMode.AUTO"
+	else:
+		skip_msg = None
+	config['mode'] = change_if_auto(config['mode'], auto=IM.AUTO, new_option=detected_mode,
+	                                ok_msg=f'Auto picked input mode: {detected_mode}',
+	                                skip_msg=skip_msg)
+
+	# TODO 1 test on colab 'auto' switches work independently FIX: config['mode'] = ImportMode.EDDYPRO_L1
 	# TODO 3 update messages to match exact config naming after updating config options
 	if config['mode'] == IM.IAS_L2:
-		res = auto_config_ias_input(input_file_types, config_meteo)
+		res = detect_auto_config_ias(input_file_types, config_meteo)
 	elif config['mode'] in [IM.EDDYPRO_L1, IM.EDDYPRO_L1_AND_BIOMET]:
-		res = auto_config_eddypro_input(input_file_types, config_meteo)
+		res = detect_auto_config_eddypro(input_file_types, mode=config['mode'])
 	else:
 		raise NotImplementedError
-	config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix_d, ias_output_version_d = res
+	(config_path_auto, config_meteo_use_biomet_auto, config_meteo_path_auto,
+	 ias_output_prefix_auto, ias_output_version_auto) = res
 
 	# TODO 2 this ping pong is result of config['path'] not same as config['all_input_files_list'] = [...]
 	# if generalization is possible, would be better
-	config['path'] = change_if_auto(config['path'], config_path)
-	config_meteo['use_biomet'] = change_if_auto(config_meteo['use_biomet'], new_option=config_meteo_use_biomet,
+	config['path'] = change_if_auto(config['path'], config_path_auto)
+	config_meteo['use_biomet'] = change_if_auto(config_meteo['use_biomet'], new_option=config_meteo_use_biomet_auto,
 	                                            skip_msg="config_meteo['use_biomet'] option is not 'auto'. Auto detection skipped.")
-	config_meteo['path'] = change_if_auto(config_meteo['path'], new_option=config_meteo_path,
+	config_meteo['path'] = change_if_auto(config_meteo['path'], new_option=config_meteo_path_auto,
 	                                      skip_msg="config_meteo['path'] option is not 'auto'. Auto detection skipped.")
 	# TODO QE 2 why ias_output_prefix is not part of config?
-	ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_d)
-	ias_output_version = change_if_auto(ias_output_version, ias_output_version_d)
+	ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_auto)
+	ias_output_version = change_if_auto(ias_output_version, ias_output_version_auto)
 
 	return config, config_meteo, ias_output_prefix, ias_output_version
 

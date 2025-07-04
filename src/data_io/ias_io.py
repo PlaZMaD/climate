@@ -52,7 +52,7 @@ def process_col_names(df: pd.DataFrame, time_col):
 
 	unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
 	if len(unsupported_cols) > 0:
-		# TODO 2 localize properly, remove prints
+		# TODO 2 localize properly, remove prints (logging.* goes to stdout too)
 		print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
 		      unsupported_cols.to_list())
 		logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
@@ -107,7 +107,6 @@ def import_ias(config, config_meteo):
 	df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
 	df = df_init_time_draft(df, time_col)
 
-	# TODO 1 test colab logging = print?
 	print('Диапазон времени IAS (START): ', df.index[[0, -1]])
 	logging.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 	df = ias_table_extend_year(df, time_col, -9999)
