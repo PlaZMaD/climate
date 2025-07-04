@@ -52,6 +52,7 @@ def process_col_names(df: pd.DataFrame, time_col):
 
 	unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
 	if len(unsupported_cols) > 0:
+		# TODO 2 localize properly, remove prints
 		print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
 		      unsupported_cols.to_list())
 		logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
@@ -194,7 +195,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 				logging.exception(e)
 			'''
 
-			print(f'not enough data for {year}')
+			# print(f'not enough data for {year}')
 			logging.info(f'{year} not saved, not enough data!')
 	# fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
 	# ias_df.to_csv(os.path.join('output',fname), index=False)

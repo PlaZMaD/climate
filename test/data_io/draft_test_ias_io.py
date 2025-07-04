@@ -91,12 +91,7 @@ def test_import():
 	d1 = d1[d.columns]
 	test = pd.DataFrame.compare(d[d1.columns], d1, align_axis='columns')
 
-
-	try:
-		if config['debug']:
-			check_with_bglabutils(fpath, df)
-	except Exception as e:
-		logging.info('Unexpected check with bglabutils: ', e)
+	check_with_bglabutils(fpath, df)
 
 
 def test_conversion():

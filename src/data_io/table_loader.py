@@ -17,7 +17,7 @@ def load_xls(fpath, **pd_read_kwargs):
 	data = pd.read_excel(fpath, **pd_read_kwargs)
 	if isinstance(data, dict):
 		if len(data.values()) > 1:
-			logging.error(_("Several lists in data file!"))
+			logging.error(("Several lists in data file!"))
 			assert False
 		else:
 			data = next(iter(data.values()))
@@ -47,7 +47,7 @@ def load_table_logged(fpath):
 	try:
 		data = load_table_from_file(fpath)
 	except Exception as e:
-		logging.error(e)
+		logging.exception(e)
 		raise
 
 	logging.info(f'File {fpath} loaded.\n')
