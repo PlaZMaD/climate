@@ -6,6 +6,7 @@ Also consider to change if nessesary:
 if ENV.IPYNB:
 	import matplotlib.pyplot as plt
 """
+import logging
 from pathlib import Path
 from warnings import warn
 
@@ -18,6 +19,12 @@ from plotly.io import renderers
 
 from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
+from src.helpers.py_helpers import switch_log_level
+
+if ENV.LOCAL:
+	# plotly tweaks
+	logging.getLogger('kaleido').setLevel(logging.WARNING)
+	logging.getLogger('choreographer').setLevel(logging.WARNING)
 
 
 def display_image_row(paths: list[Path]):
@@ -100,9 +107,11 @@ def setup_plotly(out_dir):
 	elif ENV.IPYNB or ENV.LOCAL:
 		renderers.default = 'svg'
 		# python < 3.10:
-		# https://stackoverflow.com/a/72614865/10141885
-		# on W10, pip install --upgrade "kaleido==0.1.*" may be required instead of 0.2.0
+		#     https://stackoverflow.com/a/72614865/10141885
+		#     on W10, pip install --upgrade "kaleido==0.1.*" may be required instead of 0.2.0
 		# python >= 3.10:
-		# plotly_get_chrome may be required
+		#     plotly_get_chrome may be required
+		#     kaleido==1.0.0
+		#     plotly==6.2.0
 		go.Figure.show = lambda self, **args: _plotly_show_override(self, out_dir, **args)
 		print(f"Pure py plotly renderer is set to: {renderers.default}.")

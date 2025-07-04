@@ -46,10 +46,14 @@ def colab_only(func):
 
 def setup_r():
 	if ENV.LOCAL:
-		env_folder = Path(sys.executable).parent
-		r_folder = env_folder / 'Lib/R'
-		assert r_folder.exists()
-		os.environ['R_HOME'] = str(r_folder)
+		# only for conda rpy2: (bundled with embedded R which should go without default R_HOME):
+		# env_folder = Path(sys.executable).parent
+		# r_folder = env_folder / 'Lib/R'
+		# assert r_folder.exists()
+		# os.environ['R_HOME'] = str(r_folder)
+
+		# for pip rpy2 on W10, just set R_HOME correctly
+		pass
 	else:
 		# something different, but it works
 		# print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")

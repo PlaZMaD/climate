@@ -106,3 +106,14 @@ def ensure_list(list_, transform_func=None) -> list:
 def intersect_list(items: list, valid_items: list) -> list:
 	"""Same as intersect sets, but keeps order"""
 	return [el for el in items if el in valid_items]
+
+
+@contextlib.contextmanager
+def switch_log_level(level, logger_name=None):
+	logger = logging.getLogger(logger_name)
+	old_level = logger.level
+	logger.setLevel(level)
+	try:
+		yield
+	finally:
+		logger.setLevel(old_level)
