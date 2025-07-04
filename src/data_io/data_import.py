@@ -142,18 +142,18 @@ def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType], mode
 	assert mode in [ImportMode.EDDYPRO_L1_AND_BIOMET, ImportMode.EDDYPRO_L1]
 
 	config_path = [k for k, v in input_file_types.items() if v == InputFileType.EDDYPRO]
-
 	biomets = [k for k, v in input_file_types.items() if v == InputFileType.BIOMET]
 
 	if mode == ImportMode.EDDYPRO_L1_AND_BIOMET:
-		if len(biomets) == 1:
-			config_meteo_use_biomet = True
-			config_meteo_path = biomets[0]
-		else:
+		if len(biomets) != 1:
 			raise AutoImportException('More than 1 biomet files detected, cannot auto pick')
+		config_meteo_use_biomet = True
+		config_meteo_path = biomets[0]
 	elif mode == ImportMode.EDDYPRO_L1:
 		config_meteo_use_biomet = False
 		config_meteo_path = None
+	else:
+		raise AutoImportException('Unexpected import mode')
 
 	ias_output_prefix, ias_output_version = try_parse_eddypro_fname(Path(config_path[0]).name)
 	return config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
@@ -162,16 +162,23 @@ def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType], mode
 def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix: str, ias_output_version: str):
 	# TODO QE 2 why 2 configs instead of one? merge options?
 
+	# noinspection PyPep8Naming
+	IM = ImportMode
+	assert type(config['mode']) is IM
+
 	if config['path'] == 'auto':
 		logging.info("Detecting input files due to config['path'] = 'auto' ")
 		input_file_types = detect_known_files()
 	else:
 		user_files = ensure_list(config['path'], transform_func=ensure_path)
-		input_file_types = detect_known_files(user_files)
 
-	# noinspection PyPep8Naming
-	IM = ImportMode
-	assert type(config['mode']) is IM
+		# TODO 2 temp fix,rework config later
+		assert config_meteo['use_biomet'] != 'auto'
+		if config_meteo['use_biomet']:
+			assert config_meteo['path'] != 'auto'
+			user_files += [config_meteo['path']]
+
+		input_file_types = detect_known_files(from_list=user_files)
 
 	detected_mode = detect_input_mode(input_file_types)
 	if detected_mode != config['mode']:
@@ -183,7 +190,6 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 	                                ok_msg=f'Auto picked input mode: {detected_mode}',
 	                                skip_msg=skip_msg)
 
-	# TODO 1 test on colab 'auto' switches work independently FIX: config['mode'] = ImportMode.EDDYPRO_L1
 	# TODO 3 update messages to match exact config naming after updating config options
 	if config['mode'] == IM.IAS_L2:
 		res = detect_auto_config_ias(input_file_types, config_meteo)
@@ -202,8 +208,15 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 	config_meteo['path'] = change_if_auto(config_meteo['path'], new_option=config_meteo_path_auto,
 	                                      skip_msg="config_meteo['path'] option is not 'auto'. Auto detection skipped.")
 	# TODO QE 2 why ias_output_prefix is not part of config?
-	ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_auto)
-	ias_output_version = change_if_auto(ias_output_version, ias_output_version_auto)
+	ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_auto,
+	                                   ok_msg=f'Auto picked ias prefix: {ias_output_prefix_auto}')
+	ias_output_version = change_if_auto(ias_output_version, ias_output_version_auto,
+	                                    ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
+
+	# TODO 2 duplicate settings, remove later
+	assert (config['mode'] == ImportMode.EDDYPRO_L1_AND_BIOMET) == config_meteo['use_biomet']
+	if config['mode'] == ImportMode.EDDYPRO_L1_AND_BIOMET:
+		assert config_meteo['path'] is not None
 
 	return config, config_meteo, ias_output_prefix, ias_output_version
 

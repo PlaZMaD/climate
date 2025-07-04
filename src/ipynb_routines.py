@@ -19,6 +19,7 @@ from plotly.io import renderers
 
 from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
+from src.helpers.io_helpers import ensure_empty_dir
 from src.helpers.py_helpers import switch_log_level
 
 if ENV.LOCAL:
@@ -86,14 +87,14 @@ def ipython_enable_word_wrap():
 	print("Word wrap in output is enabled.")
 
 
-def _plotly_show_override(self: go.Figure, out_dir: Path, **args):
+def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
 	if ENV.IPYNB:
 		svg_text = self.to_image(format='svg')
 		display(SVG(svg_text))
 	if ENV.LOCAL:
 		print('Reminder: local screen resolution for plotly render can be adjusted.')
 
-		dir = out_dir / 'local' / 'plots'
+		dir = local_out_dir
 		dir.mkdir(parents=True, exist_ok=True)
 
 		fname = args['config']['toImageButtonOptions']['filename']
@@ -113,5 +114,9 @@ def setup_plotly(out_dir):
 		#     plotly_get_chrome may be required
 		#     kaleido==1.0.0
 		#     plotly==6.2.0
-		go.Figure.show = lambda self, **args: _plotly_show_override(self, out_dir, **args)
+
+		local_dir = out_dir / 'local' / 'plots'
+		ensure_empty_dir(local_dir)
+
+		go.Figure.show = lambda self, **args: _plotly_show_override(self, local_dir, **args)
 		print(f"Pure py plotly renderer is set to: {renderers.default}.")

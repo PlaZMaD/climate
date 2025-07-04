@@ -1250,7 +1250,7 @@ if config['mode'] in [ImportMode.EDDYPRO_L1, ImportMode.EDDYPRO_L1_AND_BIOMET]:
 elif config['mode'] == ImportMode.IAS_L2:
     # TODO QE 2 generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
     res = import_ias(config, config_meteo)
-elif config['mode'] == ImportMode.CSF_L:
+elif config['mode'] == ImportMode.CSF_:
     raise NotImplementedError
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")

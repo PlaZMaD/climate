@@ -7,6 +7,8 @@ import pandas as pd
 def load_csv(fpath, **pd_read_kwargs):
 	try:
 		return pd.read_csv(fpath, **pd_read_kwargs)
+	except FileNotFoundError:
+		raise
 	except Exception as e:
 		logging.error(f'Error when reading {fpath}: {e}, attempting error correction.')
 		with open(fpath, encoding='utf8', errors='backslashreplace') as f:
