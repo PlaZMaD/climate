@@ -101,7 +101,7 @@ def import_ias(config, config_meteo):
 	# ias_df.to_csv(os.path.join('output',ias_filename), index=False)
 	'''
 
-	# TODO 1 QE (TIMESTAMP_START + TIMESTAMP_END) / 2?
+	# TODO QE 2 (TIMESTAMP_START + TIMESTAMP_END) / 2?
 	time_col = 'datetime'
 	df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
 	df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
@@ -119,6 +119,34 @@ def import_ias(config, config_meteo):
 	return df, time_col, biomet_cols_index, df.index.freq, config_meteo
 
 
+def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
+	# possibly will be applied later to each year separately
+
+	# TODO QE QV 1 new_time_index is incorrect if ddata does not contain next year extra row,
+	# year.min() == year.max() if full 1 year, last year skipped
+	new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
+	                               end=f'01.01.{df[time_col].dt.year.max()}',
+	                               freq=df.index.freq, inclusive='left')
+	df_new_time = pd.DataFrame(index=new_time_index)
+	df = df_new_time.join(df, how='left')
+	df[time_col] = df.index
+
+	df['TIMESTAMP_START'] = df[time_col].dt.strftime('%Y%m%d%H%M')
+	time_end = df[time_col] + pd.Timedelta(0.5, 'h')
+	df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
+
+	# TODO QE QV 1 365, 366, 1 (current) -> 365, 366, 367 (IAS docs specification)
+	day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
+	df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
+
+	# original floating point routine had %
+	# s_in_day = pd.Timedelta(days=1).total_seconds()
+	# span = time_end - time_end[0] + pd.Timedelta(0.5, 'h')
+	# day_part = span.dt.seconds % s_in_day / s_in_day
+	# df['DTime'] = np.round(span.dt.days + 1 + day_part, decimals=3)
+	return df
+
+
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
 	# TODO QE 2 explicitly attr/mark new columns created as a result of processing in one of the args
 	#  instead of hardcoding them in this function?
@@ -133,26 +161,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 	var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values())
 	sort_fixed(var_cols, fix_underscore=True)
 
-	# year.min() == year.max() if full 1 year
-	new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
-	                               end=f'01.01.{df[time_col].dt.year.max()}',
-	                               freq=df.index.freq, inclusive='left')
-	df_new_time = pd.DataFrame(index=new_time_index)
-	df = df_new_time.join(df, how='left')
-	df[time_col] = df.index
-
-	# TODO 1 test myltiyear
-	df['TIMESTAMP_START'] = df[time_col].dt.strftime('%Y%m%d%H%M')
-	time_end = df[time_col] + pd.Timedelta(0.5, 'h')
-	df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
-
-	# TODO QE QV 1 365, 366, 1 -> 365, 366, 367 (IAS docs)
-	# df['DTime'] = time_end.dt.dayofyear + np.round(1. / 48 * 2 * time_end.dt.hour +
-	#                                                1. / 48 * (time_end.dt.minute // 30), decimals=3)
-	s_in_day = pd.Timedelta(days=1).total_seconds()
-	span = time_end - time_end[0] + pd.Timedelta(0.5, 'h')
-	day_part = span.dt.seconds % s_in_day / s_in_day
-	df['DTime'] = np.round(span.dt.days + 1 + day_part, decimals=3)
+	df = export_ias_prepare_time_cols(df, time_col)
 
 	# TODO QE 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
 	'''
@@ -170,7 +179,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 		# assert df['SW_IN_1_1_1'] == data_swin_1_1_1
 		df['SW_IN_1_1_1'] = data_swin_1_1_1
 
-	ias_year = df[time_col].dt.year.min()
+
 	col_list_ias = COLS_IAS_TIME + var_cols + [time_col]
 	print(col_list_ias)
 	df = df[col_list_ias]
@@ -197,6 +206,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
 			# print(f'not enough data for {year}')
 			logging.info(f'{year} not saved, not enough data!')
+	# ias_year = df[time_col].dt.year.min()
 	# fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
 	# ias_df.to_csv(os.path.join('output',fname), index=False)
 	# logging.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')
