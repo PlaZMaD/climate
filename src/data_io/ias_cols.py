@@ -25,7 +25,6 @@ COLS_IAS_USED_NORENAME_IMPORT = [
 	#  for example, P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
 	'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
 	'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
-	'VPD_1_1_1',  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
 	'P_1_1_1',  # 'P_1_1_1' <- 'P_1_1_1' or 'P_RAIN_1_1_1'
 	'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
 	'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
@@ -36,7 +35,7 @@ COLS_IAS_UNUSED_NORENAME_IMPORT = [
 	# note: _1_1_1 can be dynamic, but will make occurence search bad
 	'H2O_STR_1_1_1', 'FH2O_1_1_1',
 	'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1', 'TS_2_1_1', 'TS_3_1_1',
-	'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'VPD_PI_1_1_1', 'V_SIGMA_1_1_1', 'WD_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1',
+	'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'V_SIGMA_1_1_1', 'WD_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1',
 	'FCH4_CMB_1_1_1', 'SPEC_PRI_REF_OUT_1_1_1', 'SPEC_PRI_TGT_IN_1_1_1', 'THROUGHFALL_1_1_1', 'MTCI_1_1_1',
 	'FO3_1_1_1',
 	'FO3_SSITC_TEST_1_1_1', 'NDVI_1_1_1', 'T_CANOPY_1_1_1', 'TCARI_1_1_1', 'H20_STR_1_1_1', 'FN2O_CMB_1_1_1',
@@ -66,7 +65,7 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
 	# closely matches to columns which are renamed in the script on IAS export
 	# only columns which are renamed in the script, not including ones with just changed case
 
-	# TODO 1 test for no import renames
+	# TODO 1 test for no import renames (fx-lfs/todo)
 	# Reminder: instead of
 	# IAS -> (lower) -> SCRIPT,
 	# some cols here may be yet silently fixed
@@ -90,6 +89,7 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
 	'(z-d)/L': 'ZL_1_1_1',
 	'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
 	'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
+
 	# TODO QE 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
 	'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
 	'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
@@ -97,10 +97,15 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
 	# possibly cols which are generated if missing
 	'PPFD_1_1_1': 'PPFD_IN_1_1_1',
 	'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
-	'u_star': 'USTAR_1_1_1'
+	'u_star': 'USTAR_1_1_1',
+
+	# TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!!
+	# previously it was 'VPD_1_1_1': 'VPD_1_1_1',
+	'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
+
 
 	# only case changed, moved to COLS_IAS_NORENAME
-	# 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1', 'VPD_1_1_1': 'VPD_1_1_1',
+	# 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1',
 	# 'Pa_1_1_1': 'PA_1_1_1',
 	# 'Ts_2_1_1': 'TS_2_1_1', 'Ts_3_1_1': 'TS_3_1_1',
 }

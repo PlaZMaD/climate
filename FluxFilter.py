@@ -128,7 +128,7 @@ from src.ipynb_routines import setup_plotly
 # cur_dir = %pwd
 # assert cur_dir == '/content'
 out_dir = Path('output')
-# TODO QE 1
+# TODO QE 1 questions:
 # 1) is it ok to cleanup out dir?
 # 2) format all file 4 spaces or tabs?
 # 3) is Python 3.10 syntax or newer ok?
@@ -755,6 +755,7 @@ def quantile_filter(data_in, filters_db_in, config):
 
 
 def mad_hampel_filter(data_in, filters_db_in, config):
+    # TODO 2 why vpd_1_1_1 madhampel is different in single line 5299 for Lga 2023 0.9.4 colab vs 0.9.5 local? seems also occured previously
     if len(config) == 0:
       return data_in, filters_db_in
     data = data_in.copy()
@@ -1076,6 +1077,7 @@ window_size = 10
 calc_nee = True
 
 # Индекс станции для названий выходных файлов, рисунков
+# TODO QE 2 that's just a site name?  only ias version is ias specific?
 ias_output_prefix = 'auto'
 ias_output_version = 'auto'
 
@@ -1339,6 +1341,7 @@ for col_name in data.columns:
   if "rh_1_1_1" in col_name:
     have_rh_flag =True
   if "vpd_1_1_1" in col_name:
+    # TODO QE QOA 1 data['vpd'] (not data['vpd_1_1_1']) may exist in FO, what is relation?  script uses both?
     have_vpd_flag = True
   if 'swin' in col_name or 'sw_in' in col_name:
     have_swin_flag = True
@@ -1397,7 +1400,6 @@ else:
     ehpa = np.power(10, logE)
     if not have_vpd_flag:
       print("calculating vpd_1_1_1 from rh_1_1_1 and air temperature")
-      # TODO 1 data['vpd'] may exist in FO, it will be overridden? over similar cases?
       data['vpd_1_1_1'] = ehpa - (ehpa*data['rh_1_1_1']/100)
     if not have_rh_flag:
       # TODO QE 2 it's from temperature only?
@@ -1798,7 +1800,8 @@ if config_meteo['use_biomet']:
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-    # TODO 1 set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+    # TODO 1 more comparesions after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+    # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1' any eddypro specification to check? also 'nee'  'par' 'rg_1_1_1'
     export_ias(out_dir, ias_output_prefix, ias_output_version,  ias_df, time_col=time, data_swin_1_1_1=data['swin_1_1_1'])
 
 # + [markdown] id="Pm8hiMrb_wRW"

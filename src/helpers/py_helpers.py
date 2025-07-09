@@ -85,7 +85,7 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
 
 def sort_fixed(list_: list[str], fix_underscore: bool):
 	# sort: ['NETRAD_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1', 'P_1_1_1']
-	# sort_without_underscore: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
+	# fix_underscore = True: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
 	def key(s):
 		return s.replace('_', ' ') if fix_underscore else s
 	list_.sort(key=key)

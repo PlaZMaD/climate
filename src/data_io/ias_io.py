@@ -13,14 +13,12 @@ from src.data_io.time_series_utils import df_init_time_draft
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_helpers import sort_fixed, intersect_list
 
-
-# TODO 1 test ias export to match import
+# TODO 1 more tests of ias export to match import after export 1y fixed
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
-	# TODO 2 possibly extract to abstract time series converter/repairer routines later?
-	# TODO QE 2 remove and fix export instead? IAS has only 1 year after import,
-	#  export will not fire without timstamp on the next year
+	# TODO 1 appeared to be bugfix of bug introduced in 0.9.3, which skipped last year of IAS export
+	# after bug fixed, extending year on import won't be nessesary anymore, remove whole func
 
 	# add extra row, because main script expects currently for 2020 year extra row at the start of 2021
 	# specifically, ias export currently requires 2 years, not 1
@@ -38,7 +36,7 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
 	return df
 
 
-def process_col_names(df: pd.DataFrame, time_col):
+def process_ias_col_names(df: pd.DataFrame, time_col):
 	print('Переменные в IAS: \n', df.columns.to_list())
 
 	known_ias_cols = COLS_IAS_KNOWN + [time_col]
@@ -114,7 +112,7 @@ def import_ias(config, config_meteo):
 	print('Replacing -9999 to np.nan')
 	df.replace(-9999, np.nan, inplace=True)
 
-	df, biomet_cols_index = process_col_names(df, time_col)
+	df, biomet_cols_index = process_ias_col_names(df, time_col)
 	return df, time_col, biomet_cols_index, df.index.freq, config_meteo
 
 
@@ -122,7 +120,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
 	# possibly will be applied later to each year separately
 
 	# TODO QE QV 1 new_time_index is incorrect if ddata does not contain next year extra row,
-	# year.min() == year.max() if full 1 year, last year skipped
+	# year.min() == year.max() if full 1 year, last year skipped - bug introduced  0.9.2 -> 0.9.3
 	new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
 	                               end=f'01.01.{df[time_col].dt.year.max()}',
 	                               freq=df.index.freq, inclusive='left')

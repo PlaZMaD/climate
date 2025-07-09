@@ -19,7 +19,7 @@ def try_parse_ias_fname(fname: str):
 	# [try_parse_ias_fname(k) for k,v in examples.items()]
 
 	fname = preprocess_fname(fname)
-	match1 = re.match(r"(.*)_\d{2,4}_(v\d{1,3})", fname)
+	match1 = re.match(r"(.*)_\d{2,4}_(v[\dN]{1,3})", fname)
 
 	if match1:
 		ias_output_prefix = match1.group(1)

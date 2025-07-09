@@ -214,8 +214,8 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 	                                    ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
 
 	# TODO 2 duplicate settings, remove later
-	assert (config['mode'] == ImportMode.EDDYPRO_L1_AND_BIOMET) == config_meteo['use_biomet']
 	if config['mode'] == ImportMode.EDDYPRO_L1_AND_BIOMET:
+		assert config_meteo['use_biomet']
 		assert config_meteo['path'] is not None
 
 	return config, config_meteo, ias_output_prefix, ias_output_version

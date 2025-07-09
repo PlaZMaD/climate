@@ -276,6 +276,9 @@ def load_ias(fpath: Path):
 
 
 def check_ias_file(fpath):
+    # TODO 2 possibly extract later to abstract time series converter/repairer routines which are format independent?
+    # eddypro have similar flaws
+
     data = load_ias(fpath)
 
     total_errors = 0
@@ -378,8 +381,7 @@ def draft_check_ias(fpath):
     stream_handler.setLevel(logging.INFO)
 
     logger.addHandler(stream_handler)
-
-    logger.critical("Process init")
+    # logger.critical("Process init")
 
     formatter = logging.Formatter(
         "[%(levelname)s] %(message)s",
