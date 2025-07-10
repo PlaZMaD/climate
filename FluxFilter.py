@@ -92,7 +92,7 @@
 
 # !git -c init.defaultBranch=main init
 # !git sparse-checkout init
-# !git sparse-checkout set "src"
+# !git sparse-checkout set src locale
 # !git remote add origin https://github.com/PlaZMaD/climate.git
 # !git fetch --depth 1 origin main
 # !git -c advice.detachedHead=false checkout FETCH_HEAD
@@ -1243,6 +1243,7 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # + id="Xw5TapK10EhR"
 from src.data_io.eddypro_loader import load_eddypro_fulloutput
 from src.data_io.ias_io import import_ias, export_ias
+from src.data_io.csf_import import import_csf
 config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )
@@ -1254,7 +1255,7 @@ elif config['mode'] == ImportMode.IAS:
     # TODO QE 2 generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
     res = import_ias(config, config_meteo)
 elif config['mode'] == ImportMode.CSF:
-    raise NotImplementedError
+    raise import_csf(config, config_meteo)
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
 

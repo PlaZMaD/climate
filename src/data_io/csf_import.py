@@ -9,6 +9,7 @@ from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
+from src.helpers.io_helpers import ensure_path
 from src.helpers.pd_helpers import df_ensure_cols_case
 
 
@@ -46,7 +47,7 @@ def import_csf(config, config_meteo):
 	if len(config['path']) != 1:
 		raise NotImplemented(
 			'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
-	fpath = config['path'][0]
+	fpath = ensure_path(config['path'][0])
 	df = load_table_logged(fpath)
 
 	# TODO QOA 2 (TIMESTAMP_START + TIMESTAMP_END) / 2? which is by CSF specification

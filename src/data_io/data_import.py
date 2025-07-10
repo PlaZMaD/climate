@@ -198,7 +198,8 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
 		assert config_meteo['use_biomet'] != 'auto'
 		if config_meteo['use_biomet']:
 			assert config_meteo['path'] != 'auto'
-			user_files += [config_meteo['path']]
+			if config_meteo['path']:
+				user_files += [config_meteo['path']]
 
 		input_file_types = detect_known_files(from_list=user_files)
 
@@ -250,4 +251,4 @@ def try_auto_detect_input_files(*args, **kwargs):
 		return auto_detect_input_files(*args, **kwargs)
 	except AutoImportException as e:
 		logging.error(e)
-		raise SystemExit()
+		raise

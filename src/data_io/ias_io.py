@@ -10,6 +10,7 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
 from src.data_io.ias_error_check import set_lang, draft_check_ias
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
+from src.helpers.io_helpers import ensure_path
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_helpers import sort_fixed, intersect_list
 
@@ -75,7 +76,7 @@ def import_ias(config, config_meteo):
 	if len(config['path']) != 1:
 		raise NotImplemented(
 			'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
-	fpath = config['path'][0]
+	fpath = ensure_path(config['path'][0])
 	draft_check_ias(fpath)
 	df = load_table_logged(fpath)
 	''' from eddypro to ias

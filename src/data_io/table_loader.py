@@ -40,7 +40,7 @@ def load_table_from_file(fpath, nrows=None, header_row=None, no_header=False) ->
 	elif suffix in ['.xls', '.xlsx']:
 		df = load_xls(fpath, **pd_read_kwargs)
 	else:
-		raise Exception(_(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file."))
+		raise Exception(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file.")
 	return df
 
 
