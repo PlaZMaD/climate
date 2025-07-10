@@ -132,6 +132,7 @@ out_dir = Path('output')
 # 1) is it ok to cleanup out dir?
 # 2) format all file 4 spaces or tabs?
 # 3) is Python 3.10 syntax or newer ok?
+# 4) versions 1.1.0, 1.*.0 instead of 0.9.*
 from src.helpers.io_helpers import ensure_empty_dir
 ensure_empty_dir(out_dir)
 # out_dir.mkdir(exist_ok=True)
@@ -999,7 +1000,7 @@ config['time']['converter'] = my_datetime_converter
 config['path'] = 'auto'#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = '/content/DT_Full output.xlsx'
 
-# Тип файлов для загрузки: ImportMode.CSF_, ImportMode.EDDYPRO_L1, ImportMode.EDDYPRO_L1_AND_BIOMET, ImportMode.IAS_L2
+# Тип файлов для загрузки: ImportMode.CSF, ImportMode.EDDYPRO, ImportMode.EDDYPRO_AND_BIOMET, ImportMode.IAS
 # ImportMode.AUTO - экспериментальное автоматическое определение
 config['mode'] = ImportMode.AUTO
 
@@ -1247,12 +1248,12 @@ config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_in
 )
 
 
-if config['mode'] in [ImportMode.EDDYPRO_L1, ImportMode.EDDYPRO_L1_AND_BIOMET]:
+if config['mode'] in [ImportMode.EDDYPRO, ImportMode.EDDYPRO_AND_BIOMET]:
     res = load_eddypro_fulloutput(config, config_meteo)
-elif config['mode'] == ImportMode.IAS_L2:
+elif config['mode'] == ImportMode.IAS:
     # TODO QE 2 generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
     res = import_ias(config, config_meteo)
-elif config['mode'] == ImportMode.CSF_:
+elif config['mode'] == ImportMode.CSF:
     raise NotImplementedError
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")

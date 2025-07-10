@@ -44,10 +44,10 @@ def load_table_from_file(fpath, nrows=None, header_row=None, no_header=False) ->
 	return df
 
 
-def load_table_logged(fpath):
+def load_table_logged(fpath, nrows=None, header_row=None, no_header=False):
 	# with log_exception(...) instead
 	try:
-		data = load_table_from_file(fpath)
+		data = load_table_from_file(fpath, nrows, header_row, no_header)
 	except Exception as e:
 		logging.exception(e)
 		raise
