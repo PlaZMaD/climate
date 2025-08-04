@@ -16,39 +16,39 @@
 
 # %% [markdown] id="oE87fcFbwlIu"
 # ## **Introduction**
-# This open-sourced script is designed for the post-processing - visualization, filtering, filling, and partitioning - of 30-minute data from the eddy covariance stations. The script can be used for obtaining reliable cumulative sums of ecosystem heat, water vapour and NEE fluxes. A user-specified post-processing pipeline is available by means of a set of instruments for data filtering. The input parameters are: data on ecosystem fluxes with a time step of 30 minutes, calculated from the high-frequency data, with diagnostic flags, as well as meteorological parameters with a time resolution of 30 minutes. The main purpose of the script: postprocessing of the eddy covariance data of the 1-st processing level to obtain the data of the levels 2, 3 and 4.
-#
-# * Level 1 means fluxes calculated using the special software with the widely used filtering and correction procedures (example is Full Output file of EddyPro, LI-COR Inc., USA) and meteorological data averaged for each 30 minutes.
-# * Level 2 means unfilled 30-minute data, the PI of the station excludes periods of the obvious malfunction of the instruments (i.e. data for these periods are filled with the missing values code -9999). Such data are equivalent of the Level 2 data of the European fluxes database cluster.
-# * Level 3 refers to level 2 data, also unfilled, but carefully filtered based on physical and statistical criteria.
+# This open-source script is researched for the post-processing - visualization, filtering, filling, and partitioning - of 30-minute data recorded by the eddy covariance stations. It can be used to produce reliable cumulative sums of ecosystem heat, water vapour and NEE fluxes. A user-specified post-processing pipeline is available with a set of instruments for data filtering. Expected input dataset should contain: ecosystem fluxes with a time step of 30 minutes (calculated from the high-frequency data, with diagnostic flags), as well as meteorological parameters with a time resolution of 30 minutes. The main purpose of the script: advancing the eddy covariance data from the 1-st processing level to the levels 2, 3 and 4.
+# * Level 1 means fluxes calculated using the specific software with standard filtering and correction procedures (for example, Full Output file of EddyPro, LI-COR Inc., USA) and meteorological data averaged for each 30 minutes.
+# * Level 2 means unfilled 30-minute data, the PI of the station excludes intervals of the obvious instrument malfunction (i.e. data for these intervals is replaced by the missing values code -9999). Resulting data corresponds to the Level 2 data of the European fluxes database cluster.
+# * Level 3 refers to level 2 data, still unfilled, but thoroughly filtered based on physical and statistical criteria.
 # * Level 4 refers to the gapfilled data.
-# To run the demo-version of the script, just click in the Google Colab "Runtime - Run All"  
-# The newest version of the script is in the repository https://github.com/PlaZMaD/climate/releases
+#
+# To run the script over the demo data, just click in the Google Colab menu *Runtime - Run All*  
+# The newest version of the script is in the repository https://github.com/PlaZMaD/climate/releases  
 #
 # ## **Input files**
-# Input file formats: EddyPro full output file (see [EddyPro manual](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) for fluxes, and EddyPro biomet file ([again](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) for meteorology. Turbulent fluxes and u* are taken from the full output file, and all meteorological variables (air temperature and relative humidity, etc.) are taken from the biomet file. Basic requirements for input files:
+# Input file formats: EddyPro **full output** file (see [EddyPro manual](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) for fluxes, and EddyPro biomet file ([again](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) for meteorology. Turbulent fluxes and u* are loaded from the **full output** file, and all meteorological variables (air temperature and relative humidity, etc.) are loaded from the biomet file. Basic requirements for input files:
 #
-# * Files must be in .csv (comma separated value) format.
-# * Column headings should strictly correspond to the EddyPro manual. The variables in the script are identified by the column names (co2_flux for CO2 flux in full output, Ta_1_1_1 for air temperature in biomet, etc.).
+# * Files must be in .csv format (comma as separator).
+# * Column names should strictly follow the specifications in EddyPro manual. The variables in the script are identified by the column names (co2_flux for CO2 flux in full output, Ta_1_1_1 for air temperature in biomet, etc.).
 # * The missing value indicator in the input files must be -9999.
-# * Units for biomet file variables should be the same as the base units for biomet file as per EddyPro manual. Exception: Air/Soil Temperature should be in degrees Celsius.
-# * An example full output file can be downloaded [here](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing).
-# * An example biomet file can be downloaded [here](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing).
-# * The full output file should have 3 header lines and the variable names should be written in the 2nd line.
-# * The biomet file must have 2 header lines and the variable names must be written in the 1st line. By default, files with date and time written in the TIMESTAMP_1 column in the yyyy-mm-dd HHMM format are read without problems.
+# * Biomet file variable units should also match units in the EddyPro manual for the biomet file. Exception: Air/Soil Temperature should be in degrees Celsius.
+# * An example **full output** file can be downloaded [here](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing).
+# * An example **biomet** file can be downloaded [here](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing).
+# * The **full output** file should contain 3 header lines, with variable names in the 2nd line.
+# * The **biomet** file must conatin 2 header lines and the variable names must be in the 1st line. Date and time format in the TIMESTAMP_1 column, which is supported by default, is yyyy-mm-dd HHMM.
 #
 # ## **Output files**
-# Output file formats (written to the FluxFilter_output.zip archive and to the output directory in the Files section):
-# 1.   A file formatted for European fluxes database cluster, level 2 (ias-file);
-# 2.   Input file for the u* filtering, gap filling and partitioning tool REddyProcWeb (Max Planck Institute, Germany). This file is used as input for the "Processing with the REddyProc tool" section of this script. These are the data of level 3.
+# Output files will be packed to the downloadable FluxFilter_output.zip archive (also avaliable from the output directory in the Files section). Formats are:
+# 1.   A file formatted for European fluxes database cluster, level 2 (ias-file).
+# 2.   Input file for u* filtering, gap filling and flux partitioning tool [REddyProcWeb](https://www.bgc-jena.mpg.de/5624918/Input-Format) (Max Planck Institute, Germany). Also used as input for the "Processing with the REddyProc tool" section of this script. Processing level 3.
 # 3.   Input file for the Flux Analysis Tool (M. Ueyama, Japan) for the gap filling, level 3.
-# 4.   The output_all file contains all the raw variables (level 1) and all flags implemented for the data.
-# 5.   The output_summary file contains the time series for the main variables of the raw data, filtered data, the flag for each filter applyed, average diurnal courses in a 30- and 10-day window.
-# 6.   The log file records during the script's run, includes parameters that were accepted for the filtering at this run.
-# 7.   The reddyproc directory contains the results of gapfilling (level 4) in the same format as the original [REddyProcWeb tool](https://www.bgc-jena.mpg.de/5624929/Output-Format). Additionally, the output/reddyproc directory contains summary files (level 4) with the indexes _hourly (diurnal courses of the original and filled variables), _daily (daily averages), _monthly (monthly averages), and _yearly (yearly values, or for the entire processing period if there is less data).
+# 4.   The output_all file contains all the raw variables (level 1) and all the flags indicating applied filters.
+# 5.   The output_summary file contains the time series for the main variables of the raw data, filtered data, a flag for each filter applied, average diurnal courses in a 30- and 10-day window.
+# 6.   A log file of script processing, includes filtering parameters that were accepted for the last run.
+# 7.   **reddyproc** directory contains results of gapfilling (level 4) in the same format as original [REddyProcWeb tool](https://www.bgc-jena.mpg.de/5624929/Output-Format). Additionally, **output/reddyproc** directory (level 4) contains summary files suffixes _hourly (diurnal courses of the original and filled variables), _daily (daily averages), _monthly (monthly averages), and _yearly (yearly values, or for the all data if time range there is less).
 #
 # ## **Loading the input files**
-# * upload full output and biomet files to the Google drive,
+# * upload **full output** and **biomet** files to the Google drive,
 # * open access to them (sharing to everyone with the link)
 # * in the Data loading config replace the names of the input files with the names of the files under processing
 # * in the Data loading config check the format of the input date and time
@@ -57,14 +57,14 @@
 # ## **Before the filtering**
 # *   You can upload multiple full output and biomet files, they will be automatically arranged in ascending date-time order and merged into the one table
 # *   The timestamps of each input file are checked (regularization)
-# *   VPD <-> RH, SWIN <-> RG <-> PAR are calculated in case of absence of any of them
+# *   VPD <-> RH, SWIN <-> RG <-> PAR are calculated if some of them are missing
 # *   You can process CO2 flux or check the storage data, add it to the CO2 flux and work with NEE
 #
-# ## **How does the filtering happen**
-# The script allows you to identify and remove low-quality and outlier values using 1) physical, 2) statistical filtering, which occurs under your visual control - you can look at the graphs before and after filtering. Each filter can be switched off (just comment the corresponding line), the parameters should be adjusted to the data of a given site and eddy covariance system.
-# 1. Physical filtering includes removing of the following types of the suspicious values: based at the quality flag greater than the threshold, with the gas analyzer signal strength below the threshold, in case of rain events, at high humidity, by night and daytime plausible ranges, by the plausible range in winter.
-# 2. Statistical filtering includes the removal of outliers/spikes using filters for minimum and maximum plausible values, quantiles, deviations from the average diurnal course in a moving window, deviations from the average in a sliding window of several points MAD (Sachs, 2006) and HAMPEL (Pearson et al., 2016).
-# 3. It is possible to exclude data by a list of intervals (exclude from ... to ...), for example, calibrations according to the technical work log.
+# ## **Filtering customisations**
+# The script allows to identify and remove low-quality and outlier values using 1) physical, 2) statistical filtering, which is supported by visual tools like graphs before and after filtering. Each filter can be switched off (by disabling the corresponding code line), parameters should be tuned to the data of a given site and eddy covariance system.
+# 1. Physical filtering offers removal of the next types of the suspicious values: if the quality flag greater than the threshold, if the gas analyzer signal strength below the threshold, in case of rain events, at high humidity, by night and daytime plausible ranges, by the plausible range in winter.
+# 2. Statistical filtering offers the removal of outliers/spikes using filters for minimum and maximum plausible values, quantiles, deviations from the average diurnal course in a moving window, deviations from the average in a sliding window of several points MAD (Sachs, 2006) and HAMPEL (Pearson et al., 2016).
+# 3. It is possible to exclude data by a list of intervals (exclude from ... to ...), for example, calibrations according to the instrument maintenance log.
 #
 # ## **Downloading the output files**
 # All output files can be downloaded in the last section "Downloading results" by clicking the "Download outputs" button.
@@ -135,7 +135,7 @@ logging.info("START")
 
 
 # %% [markdown] id="c_5uwjkzfk45"
-# ## Functions for visualisation
+# ## Visualisation routines
 
 # %% id="5AXOLjh5VeMp"
 def colapse_filters(data, filters_db_in):
@@ -300,7 +300,7 @@ def plot_albedo (plot_data, filters_db):
 
 
 # %% [markdown] id="PKznP_r1foao"
-# ## Functions for filtering
+# ## Filtering routines
 
 # %% id="EuUwWEPRaVT5"
 def min_max_filter(data_in, filters_db_in, config):
@@ -914,32 +914,32 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
 
 
 # %% [markdown] id="WfWRVITABzrz"
-# #Setting the parameters for loading and processing of the data
+# #Setting the parameters for data loading and processing
 #
 
 # %% [markdown] id="ox0UplWMe7wn"
-# ## Data loading config
-# Here the parameters of the input files are specified: names, date-time format, etc.
-# **It is necessary to change:**
+# ## Data load configuration
+# Input files parameters are specified here: names, date-time format, etc.
+# **Necessary to edit:**
 #
-# `###Type the names of your files and the path to them.`
+# `###Edit names and paths to your files.`
 #
-# In `config['path']` should be either path to a file (`= ['1.csv']`) if the filename is 1.csv or the list of paths in case of several files (`= ['1.csv', '2.csv']`). If we import files via the !gdown command from the Google drive,  it is enough to specify in single quotes  *filename.extension*. Do not miss the extension .csv!
+# In `config['path']` should be either path to a file (`= ['1.csv']`) if the filename is 1.csv or the list of paths in case of several files (`= ['1.csv', '2.csv']`). If files are imported via the !gdown command from the Google drive, it is enough to specify in single quotes  *filename.extension*. Do not omit the extension .csv!
 #
-# **It is necessary to check:**
+# **Necessary to check:**
 #
 # `  format = "%Y-%m-%d %H:%M"  #"%d/%m/%Y %H:%M"  #"%Y-%m-%d %H:%M:%S"`
 #
 # Check the date order (year, month, day) and date-time separators in the input files by opening them in a text editor (Notepad). Possible options:
 #
-# 1.  The date is written as 05/29/2024 and the time as 12:00. Then they are encoded as "%d.%m.%Y %H:%M" - this format is written below by default, nothing needs to be changed;
-# 2.  The date is written as 05/29/2024 and the time as 12:00. Change the format in the line below to "%d/%m/%Y %H:%M"
-# 3.  The date is written as 2024-05-29 and the time as 1200. Change the format in the line below to "%Y-%m-%d %H%M"
-# 4.  In other cases, behave similarly. If there are seconds in the time column, the format is encoded as "%Y-%m-%d %H:%M:%S".
+# 1.  Date is written as 05/29/2024 and time as 12:00. Means format is "%d.%m.%Y %H:%M" which is already default one, no changes are nessesary;
+# 2.  Date is written as 05/29/2024 and time as 12:00. Change the format in the line below to "%d/%m/%Y %H:%M"
+# 3.  Date is written as 2024-05-29 and time as 1200. Change the format in the line below to "%Y-%m-%d %H%M"
+# 4.  In other cases, behave similarly. If time column contains secons, format can be encoded as "%Y-%m-%d %H:%M:%S".
 #
 # **Additional options (better not to change without PRO level):**
 #
-# `config['time']['converter']` must contain a function that takes a DataFrame as input and return a valid DateTime column as output, which will be used as a timestamp.
+# `config['time']['converter']` must contain a function that takes a DataFrame as input and returns a valid DateTime column as output, which will be used as a timestamp.
 #
 # `config['-9999_to_nan']` when `True` will replace -9999 to np.nan for the proper work of the algorithm.
 #
@@ -963,38 +963,38 @@ def my_datetime_converter(x):
     time = x['time'].astype(str) #x['time'].dt.strftime('%H:%M') if is_datetime(x['time'].dtype) else x['time'].astype(str)
 
     x['tmp_datetime'] = date + " " + time
-    #Check the format of a date and time in the Full Output file
+    #Check date-time format in the Full Output file
     format = "%d.%m.%Y %H:%M"#"%d/%m/%Y %H:%M"# "%Y-%m-%d %H:%M"  #"%d/%m/%Y %H:%M"  #"%Y-%m-%d %H:%M:%S"
     return pd.to_datetime(x['tmp_datetime'], format=format)#dayfirst=True)#, format=format)
 config['time']['converter'] = my_datetime_converter
 #####################
 
-###Type the names of your files and the path to them. If the files are loaded from the Google drive
+###Edit names of your files and path to them. If files are loaded from the Google drive
 ###using !gdown command, just change the name of the file below
 config['path'] = ['eddy_pro result_SSB 2023.csv']#['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config['path'] = '/content/DT_Full output.xlsx'
 
 # %% [markdown] id="S2Qc-fltJLaF"
 # ## Biomet file loading options
-# `use_biomet`: if there is no file with meteorological data, set it to False. Fluxes will be filtered and filled using the information from the full output file (air temperature and humidity)
+# `use_biomet`: if no meteorological data file provided, set it to `False`. Fluxes will be filtered and filled using the information from the full output file (air temperature and humidity)
 #
-# **It is necessary to change:**
+# **Necessary to change:**
 #
-# `###Type the names of your files and the path to them.`
+# `###Edit names of your files and path to them.`
 #
-# In config['path'] should be either path to a file (= ['1.csv']) if the filename is 1.csv or the list of paths in case of several files (= ['1.csv', '2.csv']). If we import files via the !gdown command from the Google drive, it is enough to specify in single quotes filename.extension. Do not miss the extension .csv!
+# `config['path']` should be either path to a file (= ['1.csv']) if the filename is 1.csv or the list of paths in case of several files (= ['1.csv', '2.csv']). If we import files via the !gdown command from the Google drive, it is enough to specify in single quotes filename.extension. Do not miss the extension .csv!
 #
-# **It is necessary to check:**
+# **Necessary to check:**
 #
 # `  format = "%Y-%m-%d %H%M"  #"%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM`
 #
-# Check the order of the date (year, month, day) and date-time separators in the input files by opening them in a text editor I(Notepad). In the biomet file, by default, the date is written as 2011-11-12 and the time as 1200. It is encoded as "%Y-%m-%d %H%M". In other cases, change the date-time format code according to the instructions for the instruction in Data loading config section (see upper).
+# Verify the order of the date (year, month, day) and date-time separators in the input files by opening them in a text editor I(Notepad). Biomet file default date record is `2011-11-12` and default time is `1200`. It is encoded as "%Y-%m-%d %H%M". If records are different, change the date-time format code according to the instruction in Data loading config section (see above).
 
 # %% id="H7E5LGx1DVsA"
 config_meteo = {}
 config_meteo ['use_biomet'] = True
 config_meteo['debug'] = False  # True will load a small part of a file instead of a full length
-config_meteo['-9999_to_nan'] = True #change -9999 to np.nan
+config_meteo['-9999_to_nan'] = True #replace -9999 to np.nan
 config_meteo['repair_time'] = True #generate a new timestamp in case of errors
 
 #####################
@@ -1002,13 +1002,13 @@ config_meteo['repair_time'] = True #generate a new timestamp in case of errors
 config_meteo['time'] = {}
 config_meteo['time']['column_name'] = 'datetime'
 def my_datetime_converter(x):
-    format = "%Y-%m-%d %H%M"  #"%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM #Check the format of a date and time in the Biomet file
+    format = "%Y-%m-%d %H%M"  #"%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM #Check the format of date and time in the Biomet file
     return pd.to_datetime(x["TIMESTAMP_1"], format=format)
 config_meteo['time']['converter'] = my_datetime_converter
 #####################
 
-###Type the names of your files and the path to them. If the files are loaded from the Google drive
-###using !gdown command, just change the name of the file below
+###Edit names of your files and path to them. If files are loaded from the Google drive
+###using !gdown command, just change the file name
 config_meteo['path'] = 'BiometFy4_2023.csv'#'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # %% [markdown] id="DtxFTNnEfENz"
@@ -1184,7 +1184,7 @@ madhampel_filter_config[ 'ppfd_1_1_1'] =  {'z': 8.0, 'hampel_window': 10}
 # # Loading data
 
 # %% [markdown] id="LV9FvvtnVqdN"
-# **It is necessary to change:**
+# **Necessary to change:**
 #
 # After !gdown, insert the characters after d/ and before the next / from the public link to the file located on Google Drive. For example, if the link is
 # https://drive.google.com/file/d/1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB/view?usp=sharing,
@@ -2043,9 +2043,9 @@ enable_word_wrap()
 #
 # `ig.eddyproc_options` are the settings that correspond to the options of [the online tool](https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php).
 #
-# **It is necessary to check:**  
+# **Necessary to check:**  
 #
-# Enabling detection of the conditions of weak turbulence  
+# Enable detection of conditions of weak turbulence  
 # `is_to_apply_u_star_filtering=True`
 #
 # The Eddy Covariance method is applicable only in the conditions of the developed turbulence. When the friction velocity (*uStar* column) is below a certain threshold, the CO2 flux may be underestimated. Flux data in these conditions are replaced by gaps.

@@ -1,0 +1,82 @@
+Для рассмотрения (правки не включены)
+
+----- Рус:
+когда речь о файлах,
+	full output -> **full output** , biomet -> **biomet**  ?
+
+Директория reddyproc -> Директория **reddyproc**
+Или подсветить директории и названия файлов `reddyproc`
+
+директории output/reddyproc -> директории **output/reddyproc** ?
+
+берутся из файла full output -> загружаются  из файла full output (+1)
+
+либо лист путей в случае загрузки  ->  либо список (list) путей в 
+
+----- Eng:
+This open-sourced script is designed for the post-processing ->  This open-source script is researched for the post-processing
+30-minute data from the eddy covariance stations -> 30-minute data  recorded by the eddy covariance stations
+The input parameters are: data on ecosystem fluxes  -> Expected input dataset should contain: ecosystem fluxes 
+
+The main purpose of the script: postprocessing of the eddy covariance data of the 1-st processing level to obtain the data of the levels 2, 3 and 4. ->
+The main purpose of the script: advancing the eddy covariance data from the 1-st processing level to the levels 2, 3 and 4.
+
+software with the widely used filtering and correction procedures->
+software with standard filtering and correction 
+
+excludes periods of the obvious malfunction of the instruments (i.e. data for these periods are filled with the missing values  ->
+excludes intervals of the obvious instrument malfunction  (i.e. data for these intervals is replaced by the missing values 
+
+Such data are equivalent of the Level 2  ->
+Resulting data is equivalent to the Level 2
+
+click in the Google Colab "Runtime - Run All"  ->
+ the Google Colab menu **Runtime** - **Run All**
+
+Column headings should strictly correspond to the EddyPro manual. ->
+Column names should strictly follow the specification in the EddyPro manual.
+
+The output_all file contains all the raw variables (level 1) and all flags implemented for the data. ->
+The output_all file contains all the raw variables (level 1) and all the flags indicating applied filters.
+
+includes parameters that were accepted for the filtering at this run. ->
+includes filtering parameters that were accepted for the last run.
+
+full output -> `full output` , biomet -> `biomet`  ?  
+The reddyproc directory contains ->
+The `reddyproc` directory contains
++ `output/reddyproc`
+
+"average diurnal courses" -> "mean diurnal courses"
+average -> mean everywhere
+
+VPD <-> RH, SWIN <-> RG <-> PAR are calculated in case of absence of any of them ->
+VPD <-> RH, SWIN <-> RG <-> PAR are calculated if some of them are missing
+
+**How does the filtering happen** -> **Filtering customisations**
+
+# The script allows you to identify and remove low-quality and outlier values using 1) physical, 2) statistical filtering, which occurs under your visual control - you can look at the  graphs before and after filtering ->
+# The script allows identification and removal of low-quality and outlier values using 1) physical, 2) statistical filtering, assisted by visual tools like graphs before and after filtering.
+
+Physical filtering includes removing of the following types of the suspicious values ->
+# 1. Physical filtering offers removal of the next types of the suspicious values
+
+Statistical filtering includes the removal of outliers/spikes using  -> 
+Statistical filtering offers the removal of outliers/spikes 
+
+or check the storage data <-> либо проверить данные о накоплении ?
+
+minimum and maximum plausible values ?
+
+Setting the parameters for loading and processing of the data ->
+Setting the parameters for data load and processing
+
+(Отсутствует в перееводе)
+# 4. Можно исключить данные по списку интервалов (исключить с ... - по ...), например, калибровки по журналу технических работ.
+
+# **It is necessary to check:** ->
+ **Necessary to check:**
+
+
+#Соберем обзорную информацию о нужных величинах: ->
+#Gather the summary information about the parameters? of interest: variables? meteo name?
