@@ -941,9 +941,9 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
 #
 # `config['time']['converter']` must contain a function that takes a DataFrame as input and return a valid DateTime column as output, which will be used as a timestamp.
 #
-# `config['-9999_to_nan']` when set `True` will change -9999 to np.nan для for the proper work of the algorithm.
+# `config['-9999_to_nan']` when `True` will replace -9999 to np.nan for the proper work of the algorithm.
 #
-# `config['repair_time']` when set `True` will check the date-time column for gaps and monotony, and will perform regeneration by the first-last point taking into account the expected step length (calculated by the first pair of values in the series).
+# `config['repair_time']` when `True` will check the date-time column for gaps and monotony, and will perform regeneration by the first-last point taking into account the expected step length (calculated by the first pair of values in the series).
 
 # %% [markdown] id="CXIuHMoSHMts"
 # ## Full output file loading options
@@ -1223,7 +1223,7 @@ if config_meteo ['use_biomet']:
   data_meteo, time_meteo  = bg.load_df(config_meteo)
   data_meteo = data_meteo[next(iter(data_meteo))]  #it was dictionary
   meteo_freq = data_meteo.index.freq
-  print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
+  print("Time range for meteo: ", data_meteo.index[[0, -1]])
   logging.info(f"MeteoData loaded from {config_meteo['path']}")
   logging.info("Time range for meteo: "+ " - ".join(data_meteo.index[[0,-1]].strftime('%Y-%m-%d %H:%M')))
 
@@ -1441,7 +1441,7 @@ if calc_nee and 'co2_strg' in data.columns:
 
 # %% id="2IQ7W6pslYF-"
 # Decide whether to sum co2_flux and co2_strg_filtered_filled for obtaining NEE
-calc_with_strg = False   #To calculate NEE type True.
+calc_with_strg = False   # To calculate NEE with strg type True.
 logging.info(f"calc_with_strg is set to {calc_with_strg}")
 # For working with co2_flux, ignoring co2_strg, type False
 
