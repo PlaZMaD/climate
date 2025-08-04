@@ -21,7 +21,7 @@ def prepare_rg(rep_options: SimpleNamespace):
     data = pd.read_csv(rep_options.input_file, header=0, names=csv_header.columns, skiprows=1, sep=' ')
 
     datetimes = pd.to_datetime({'year': data['Year'], 'month': 1, 'day': 1}, utc=True) - pd.to_timedelta(1, unit='d') + \
-                       pd.to_timedelta(data['DoY'], unit='d') + pd.to_timedelta(data['Hour'] - rep_options.timezone, unit='h')
+                pd.to_timedelta(data['DoY'], unit='d') + pd.to_timedelta(data['Hour'] - rep_options.timezone, unit='h')
     altitude_degs = solar.get_altitude_fast(rep_options.latitude, rep_options.longitude, datetimes)
     altitude_degs[altitude_degs < 0] = 0.001
 
@@ -29,4 +29,4 @@ def prepare_rg(rep_options: SimpleNamespace):
     data[rg_col] = radiation.get_radiation_direct(datetimes, altitude_degs)
 
     csv_header.to_csv(rep_options.input_file, sep=' ', header=True, index=False)
-    data.to_csv(rep_options.input_file, sep=' ', index=False,  header=False, mode='a')
+    data.to_csv(rep_options.input_file, sep=' ', index=False, header=False, mode='a')

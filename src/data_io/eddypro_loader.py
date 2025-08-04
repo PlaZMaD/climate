@@ -5,57 +5,57 @@ from src.helpers.py_helpers import ensure_list
 
 
 def load_biomet(config_meteo, data_freq):
-	print("Проверяем корректность временных меток. Убираем повторы, дополняем пропуски. "
-	      "На случай загрузки нескольких файлов. При загрузке одного делается автоматически.")
+    print("Проверяем корректность временных меток. Убираем повторы, дополняем пропуски. "
+          "На случай загрузки нескольких файлов. При загрузке одного делается автоматически.")
 
-	data_meteo, time_meteo = bg.load_df(config_meteo)
-	data_meteo = data_meteo[next(iter(data_meteo))]  # т.к. изначально у нас словарь
+    data_meteo, time_meteo = bg.load_df(config_meteo)
+    data_meteo = data_meteo[next(iter(data_meteo))]  # т.к. изначально у нас словарь
 
-	meteo_freq = data_meteo.index.freq
-	print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
-	logging.info(f"MeteoData loaded from {config_meteo['path']}")
-	logging.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    meteo_freq = data_meteo.index.freq
+    print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
+    logging.info(f"MeteoData loaded from {config_meteo['path']}")
+    logging.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
-	if data_freq != meteo_freq:
-		print("Resampling meteo data")
-		logging.info(f"Resampling meteo data")
-		data_meteo = data_meteo.asfreq(data_freq)
+    if data_freq != meteo_freq:
+        print("Resampling meteo data")
+        logging.info(f"Resampling meteo data")
+        data_meteo = data_meteo.asfreq(data_freq)
 
-	return data_meteo
+    return data_meteo
 
 
 def load_eddypro_fulloutput(config, config_meteo):
-	# load of eddypro = full_output, optionally with biomet
+    # load of eddypro = full_output, optionally with biomet
 
-	data, time = bg.load_df(config)
-	data = data[next(iter(data))]  # т.к. изначально у нас словарь
-	data_freq = data.index.freq
+    data, time = bg.load_df(config)
+    data = data[next(iter(data))]  # т.к. изначально у нас словарь
+    data_freq = data.index.freq
 
-	# TODO 2 always use list after loading config?
-	paths = ensure_list(config['path'], transform_func=str)
-	logging.info(f"Data loaded from {paths}")
+    # TODO 2 always use list after loading config?
+    paths = ensure_list(config['path'], transform_func=str)
+    logging.info(f"Data loaded from {paths}")
 
-	print("Диапазон времени full_output: ", data.index[[0, -1]])
-	logging.info("Time range for full_output: " + " - ".join(data.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    print("Диапазон времени full_output: ", data.index[[0, -1]])
+    logging.info("Time range for full_output: " + " - ".join(data.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
-	if config_meteo['use_biomet']:
-		data_meteo = load_biomet(config_meteo, data_freq)
+    if config_meteo['use_biomet']:
+        data_meteo = load_biomet(config_meteo, data_freq)
 
-	print("Колонки в FullOutput \n", data.columns.to_list())
-	if config_meteo['use_biomet']:
-		print("Колонки в метео \n", data_meteo.columns.to_list())
+    print("Колонки в FullOutput \n", data.columns.to_list())
+    if config_meteo['use_biomet']:
+        print("Колонки в метео \n", data_meteo.columns.to_list())
 
-	# Сливаем в один DataFrame.
-	if config_meteo['use_biomet']:
-		data = data.join(data_meteo, how='outer', rsuffix='_meteo')
-		data[time] = data.index
-		data = bg.repair_time(data, time)
-		if data[data_meteo.columns[-1]].isna().sum() == len(data.index):
-			print("Bad meteo data range, skipping! Setting config_meteo ['use_biomet']=False")
-			config_meteo['use_biomet'] = False
+    # Сливаем в один DataFrame.
+    if config_meteo['use_biomet']:
+        data = data.join(data_meteo, how='outer', rsuffix='_meteo')
+        data[time] = data.index
+        data = bg.repair_time(data, time)
+        if data[data_meteo.columns[-1]].isna().sum() == len(data.index):
+            print("Bad meteo data range, skipping! Setting config_meteo ['use_biomet']=False")
+            config_meteo['use_biomet'] = False
 
-	biomet_columns = []
-	if config_meteo['use_biomet']:
-		biomet_columns = data_meteo.columns.str.lower()
+    biomet_columns = []
+    if config_meteo['use_biomet']:
+        biomet_columns = data_meteo.columns.str.lower()
 
-	return data, time, biomet_columns, data_freq, config_meteo
+    return data, time, biomet_columns, data_freq, config_meteo

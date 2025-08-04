@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # pyinstaller.exe --onefile --hidden-import openpyxl.cell._writer --windowed --add-data "locale;locale" --add-data "regulation.ico;."
-#<a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
+# <a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
 import gettext
 import logging
 import re
@@ -180,7 +180,7 @@ def check_time(data, time_in, check_year=True):
     data_in_dup = data_in.drop(data_in[missed_values].index, axis=0)
 
     if check_year and (
-    not (data_in_dup[time_in].dt.year.to_numpy()[0] == data_in_dup[time_in].dt.year.to_numpy()[:-1]).all()):
+            not (data_in_dup[time_in].dt.year.to_numpy()[0] == data_in_dup[time_in].dt.year.to_numpy()[:-1]).all()):
         years = data_in_dup[time_in].dt.year.unique()
         examples = [int(data_in_dup.query(f'{time_in}.dt.year=={f}')['default_index'].to_numpy()[0]) for f in years]
         logging.error(

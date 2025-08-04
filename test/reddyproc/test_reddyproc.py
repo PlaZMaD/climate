@@ -4,8 +4,8 @@ import pytest
 
 import src.helpers.os_helpers  # noqa: F401
 import src.ipynb_globals as ig
-from test.reddyproc.helpers.io_helpers import find_rep_file
 from src.helpers.env_helpers import setup_r
+from test.reddyproc.helpers.io_helpers import find_rep_file
 
 
 @pytest.fixture
@@ -42,4 +42,3 @@ def test_draw():
     # ensure_empty_dir('output/reddyproc')
     # shutil.copytree('test/reddyproc/test_process/output_sample', 'output/reddyproc', dirs_exist_ok=True)
     import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
-

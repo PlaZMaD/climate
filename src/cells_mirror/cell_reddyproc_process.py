@@ -1,11 +1,12 @@
 # Reminder: this is duplicate of specific cell used for test purposes, it is outdated or ahead frequently
 
-from src.ipynb_globals import *
 from types import SimpleNamespace
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
+
 import src.ipynb_globals as ig
 from src.helpers.io_helpers import ensure_empty_dir
+from src.ipynb_globals import *
 from src.reddyproc.preprocess_rg import prepare_rg
+from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
 
 ig.rep = SimpleNamespace()
 ig.rep.options = SimpleNamespace(
