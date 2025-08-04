@@ -1275,7 +1275,7 @@ if not config_meteo ['use_biomet']:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
-# TODO QE 1 ppfd_in_1_1_1 is name before import repairs?
+# TODO QE 1 ppfd_in_1_1_1 is name before import repairs? i.e. should be different name instead in this list?
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
                 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',

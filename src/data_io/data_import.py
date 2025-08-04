@@ -43,7 +43,7 @@ def detect_file_type(fpath: Path, header_rows=4) -> InputFileType:
 	ias_cols = (set(IAS_HEADER_DETECTION_COLS), InputFileType.IAS)
 	biomet_cols = (set(BIOMET_HEADER_DETECTION_COLS), InputFileType.BIOMET)
 	eddypro_cols = (set(EDDYPRO_HEADER_DETECTION_COLS), InputFileType.EDDYPRO)
-	csf_cols = (set(CSF_HEADER_DETECTION_COLS), InputFileType.EDDYPRO)
+	csf_cols = (set(CSF_HEADER_DETECTION_COLS), InputFileType.CSF)
 	detect_col_targets = [ias_cols, biomet_cols, eddypro_cols, csf_cols]
 
 	def match_ratio(sample: set, target: set):
@@ -51,19 +51,22 @@ def detect_file_type(fpath: Path, header_rows=4) -> InputFileType:
 
 	# upper/lower case is yet skipped intentionally
 	header_matches = []
-	for _, row in df.iterrows():
+	for i, row in df.iterrows():
 		fixed_row = row.dropna()
 		for cols_set, ftype in detect_col_targets:
 			mr = match_ratio(set(fixed_row), cols_set)
-			if mr > 0.5:
-				header_matches += [(mr, ftype)]
+			header_matches += [(i, ftype, mr)]
 
-	if len(header_matches) == 1:
-		mr, ftype = header_matches[0]
+	positive_matches = [m for m in header_matches if m[2] > 0.5]
+
+	if len(positive_matches) == 1:
+		_, ftype, _ = positive_matches[0]
 		logging.info(f'Detected file {fpath} as {ftype}')
 		return ftype
 	else:
-		logging.warning(f'Cannot detect file type {fpath}, guesses are {header_matches}')
+		guesses = '\n'.join([f'{i} {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
+		logging.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
+		                f'{guesses}')
 		return InputFileType.UNKNOWN
 
 

@@ -99,7 +99,7 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
 	'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
 	'u_star': 'USTAR_1_1_1',
 
-	# TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!!
+	# TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!! (export - convert back or store?)
 	# previously it was 'VPD_1_1_1': 'VPD_1_1_1',
 	'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
 

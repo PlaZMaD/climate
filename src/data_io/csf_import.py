@@ -16,7 +16,7 @@ from src.helpers.pd_helpers import df_ensure_cols_case
 def process_csf_col_names(df: pd.DataFrame, time_col):
 	print('Переменные в csf: \n', df.columns.to_list())
 
-	known_csf_cols = COLS_CSF_KNOWN + [time_col]
+	known_csf_cols = COLS_CSF_KNOWN # TODO 1 # + [time_col]
 	df = df_ensure_cols_case(df, known_csf_cols, ignore_missing=True)
 
 	unknown_cols = df.columns.difference(known_csf_cols)
@@ -48,12 +48,13 @@ def import_csf(config, config_meteo):
 		raise NotImplemented(
 			'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
 	fpath = ensure_path(config['path'][0])
-	df = load_table_logged(fpath)
+	df = load_table_logged(fpath, header_row=1, skiprows=[2,3])
 
-	# TODO QOA 2 (TIMESTAMP_START + TIMESTAMP_END) / 2? which is by CSF specification
+	# TODO 1 import dict?
+	df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
+
 	time_col = 'TIMESTAMP'
-	df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
-	df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
+	df[time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format='%Y-%m-%d %H:%M:%S')
 	df = df_init_time_draft(df, time_col)
 
 	print('Диапазон времени csf (START): ', df.index[[0, -1]])
