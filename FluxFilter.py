@@ -83,6 +83,7 @@
 # key = userdata.get('registry_key')
 
 # + id="E-a6ANTGBsqg"
+# %pip install pysolar
 # %pip install plotly-resampler dateparser >> /dev/null
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
@@ -111,30 +112,34 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly_resampler
 from plotly.subplots import make_subplots
+from rpy2 import robjects
 
 # %load_ext autoreload
 # %autoreload 2
+
 import bglabutils.basic as bg
 import bglabutils.filters as bf
 # import bglabutils.boosting as bb
 # import textwrap
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager
-from src.data_io.data_import import try_auto_detect_input_files, ImportMode
+
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
 from src.helpers.py_helpers import init_logging
-from src.ipynb_routines import setup_plotly
+from src.helpers.io_helpers import ensure_empty_dir, create_archive
+from src.helpers.env_helpers import setup_r
+from src.data_io.data_import import try_auto_detect_input_files, ImportMode
+from src.data_io.eddypro_loader import load_eddypro_fulloutput
+from src.data_io.ias_io import import_ias, export_ias
+from src.data_io.csf_import import import_csf
+from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
+import src.ipynb_globals as ig
+from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
+from src.reddyproc.preprocess_rg import prepare_rg
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
 out_dir = Path('output')
-# TODO QE 1 questions:
-# 1) is it ok to cleanup out dir?
-# 2) format all file 4 spaces or tabs?
-# 3) is Python 3.10 syntax or newer ok?
-# 4) versions 1.1.0, 1.*.0 instead of 0.9.*
-from src.helpers.io_helpers import ensure_empty_dir
-
 ensure_empty_dir(out_dir)
-# out_dir.mkdir(exist_ok=True)
 
 colab_no_scroll()
 colab_enable_custom_widget_manager()
@@ -1311,10 +1316,6 @@ madhampel_filter_config['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-from src.data_io.eddypro_loader import load_eddypro_fulloutput
-from src.data_io.ias_io import import_ias, export_ias
-from src.data_io.csf_import import import_csf
-
 config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
     config, config_meteo, ias_output_prefix, ias_output_version
 )
@@ -1875,7 +1876,7 @@ if config_meteo['use_biomet']:
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-    # TODO 1 more comparesions after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+    # TODO 1 more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
     # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1' any eddypro specification to check? also 'nee'  'par' 'rg_1_1_1'
     export_ias(out_dir, ias_output_prefix, ias_output_version, ias_df, time_col=time,
                data_swin_1_1_1=data['swin_1_1_1'])
@@ -2052,9 +2053,6 @@ logging.info(f"New basic file saved to {summary_fpath}")
 # Загружает используемые в ячейках скрипты в директорию `src` и подготавливает R окружение.
 # + id="06859169"
 
-# %pip install pysolar
-from src.ipynb_routines import ipython_enable_word_wrap
-
 ipython_enable_word_wrap()
 
 # 1.3.2 vs 1.3.3 have slightly different last columns
@@ -2073,12 +2071,7 @@ sink(stdout(), type = "message")
 install_if_missing("REddyProc", "1.3.3", repos = 'http://cran.rstudio.com/')
 sink()
 """
-
-from src.helpers.env_helpers import setup_r
-
 setup_r()
-from rpy2 import robjects
-
 robjects.r(setup_colab_r_code)
 
 # + [markdown] id="034b04a5"
@@ -2138,11 +2131,6 @@ robjects.r(setup_colab_r_code)
 # `output_dir=str(out_dir / 'reddyproc')`
 # + id="278caec5"
 from src.ipynb_globals import *
-from types import SimpleNamespace
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
-import src.ipynb_globals as ig
-from src.helpers.io_helpers import ensure_empty_dir
-from src.reddyproc.preprocess_rg import prepare_rg
 
 ig.rep = SimpleNamespace()
 ig.rep.options = SimpleNamespace(
@@ -2194,18 +2182,11 @@ ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)
 # Тэги именно для этого варианта тетради будут видны после запуска ячейки по вызову `display_tag_info`.
 
 # + id="e66a94ab"
-from typing import Union
-
-import src.ipynb_globals as ig
-from src.helpers.io_helpers import create_archive
-from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
-from src.colab_routines import colab_add_download_button
-
 rep_out_dir = Path(ig.rep.options.output_dir)
 tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_options=ig.rep, img_ext='.png')
 eog = RepOutputGen(tag_handler)
 
-output_sequence: tuple[Union[list[str], str], ...] = (
+output_sequence: tuple[str | list[str], ...] = (
     "## Тепловые карты",
     eog.hmap_compare_row('NEE_*'),
     eog.hmap_compare_row('LE_f'),
@@ -2242,9 +2223,6 @@ tag_handler.display_tag_info(eio.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # + id="E4rv4ucOX8Yz"
-from src.helpers.io_helpers import create_archive
-import src.ipynb_globals as ig
-
 arc_path = out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, folders=[out_dir, ig.rep.options.output_dir], top_folder=out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt', '*.log'], exclude_files=ig.arc_exclude_files)

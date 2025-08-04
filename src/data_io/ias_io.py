@@ -32,7 +32,7 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
         new_row = df.loc[last_timestamp].copy()
         new_row.loc[time_col] = next_timestamp
         new_row.loc[df.columns != time_col] = na_placeholder
-        # TODO QE 3 how to add new row properly with auto index?
+        # TODO 4 QE how to add new row properly with auto index?
         df.loc[next_timestamp] = new_row
         df.index.freq = freq
     return df
@@ -75,8 +75,7 @@ def import_ias(config, config_meteo):
 
     # TODO QV 1 implement merge for iases if necessary
     if len(config['path']) != 1:
-        raise NotImplemented(
-            'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
+        raise NotImplemented('Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
     fpath = ensure_path(config['path'][0])
     draft_check_ias(fpath)
     df = load_table_logged(fpath)

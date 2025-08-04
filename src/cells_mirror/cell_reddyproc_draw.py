@@ -1,7 +1,6 @@
 # Reminder: this is duplicate of specific cell used for test purposes, it is outdated or ahead frequently
 
 from pathlib import Path
-from typing import Union
 
 import src.ipynb_globals as ig
 from src.colab_routines import colab_add_download_button
@@ -12,7 +11,7 @@ rep_out_dir = Path(ig.rep.options.output_dir)
 tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_options=ig.rep, img_ext='.png')
 eog = RepOutputGen(tag_handler)
 
-output_sequence: tuple[Union[list[str], str], ...] = (
+output_sequence: tuple[list[str] | str, ...] = (
     "## Тепловые карты",
     eog.hmap_compare_row('NEE_*'),
     eog.hmap_compare_row('LE_f'),

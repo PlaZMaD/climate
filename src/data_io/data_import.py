@@ -1,7 +1,6 @@
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Union
 
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
@@ -81,7 +80,7 @@ def detect_known_files(input_dir='.', from_list: list[Path] = None) -> dict[Path
 
 
 def change_if_auto(option, new_option=None, new_option_call=None,
-                   auto: Union[str, ImportMode] = 'auto',
+                   auto: str | ImportMode = 'auto',
                    ok_msg=None, skip_msg=None):
     # new_option_call can be used instead of new_option to optimise out new option detection:
     # if not auto, detection will be skipped

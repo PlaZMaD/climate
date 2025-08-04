@@ -1,15 +1,12 @@
 import re
 import zipfile
 from pathlib import Path
-from typing import Union
 from zipfile import ZipFile
 
 from src.helpers.py_helpers import ensure_list
 
 
-# TODO 3 type hints: A | B instead of Union - smth is wrong in pycharm 2024.1 and py 3-11
-
-def ensure_path(arg: Union[Path, str]) -> Path:
+def ensure_path(arg: Path | str) -> Path:
     return arg if isinstance(arg, Path) else Path(arg)
 
 
@@ -28,7 +25,7 @@ def replace_fname_end(fpath: Path, tag: str, new_tag: str):
     return fpath.parent / fpath.name.replace(tag + '.', new_tag + '.')
 
 
-def ensure_empty_dir(folder: Union[str, Path]):
+def ensure_empty_dir(folder: [str | Path]):
     folder = ensure_path(folder)
 
     folder.mkdir(parents=True, exist_ok=True)
@@ -37,8 +34,8 @@ def ensure_empty_dir(folder: Union[str, Path]):
             path.unlink()
 
 
-def create_archive(arc_path: Union[Path, str], folders: Union[list[Union[Path, str]], Union[Path, str]],
-                   top_folder: Union[Path, str], include_fmasks, exclude_files: list[Union[Path, str]]):
+def create_archive(arc_path: Path | str, folders: list[Path | str] | [Path | str],
+                   top_folder: Path | str, include_fmasks, exclude_files: list[Path | str]):
     folders = ensure_list(folders, transform_func=ensure_path)
     exclude_files = ensure_list(exclude_files, transform_func=ensure_path)
 
@@ -54,7 +51,7 @@ def create_archive(arc_path: Union[Path, str], folders: Union[list[Union[Path, s
             zf.write(file, relative_path)
 
 
-def find_in_files(root_dir: Union[Path, str], fname_regex='.*', find_regex: str = None):
+def find_in_files(root_dir: Path | str, fname_regex='.*', find_regex: str = None):
     # fname_regex multiple extensions example '.*\.(py|R|r)$'
     # to exclude, add at the start: ^(?!.*ias_error_check)
     root_dir = ensure_path(root_dir)
