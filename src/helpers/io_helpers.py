@@ -34,7 +34,7 @@ def ensure_empty_dir(folder: [str | Path]):
             path.unlink()
 
 
-def create_archive(arc_path: Path | str, folders: list[Path | str] | [Path | str],
+def create_archive(arc_path: Path | str, folders: list[Path | str] | Path | str,
                    top_folder: Path | str, include_fmasks, exclude_files: list[Path | str]):
     folders = ensure_list(folders, transform_func=ensure_path)
     exclude_files = ensure_list(exclude_files, transform_func=ensure_path)

@@ -52,13 +52,11 @@ def load_xls(fpath, **pd_read_kwargs):
     return data
 
 
-def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=None, no_header=False) -> pd.DataFrame:
+def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=0) -> pd.DataFrame:
     """	nrows: read only first n rows """
     # probably extract to load table? can all repairs be generalised operations on tables?
 
     pd_read_kwargs = {'nrows': nrows, 'header': header_row, 'skiprows': skiprows}
-    if no_header:
-        pd_read_kwargs |= {'header': None}
 
     suffix = Path(fpath).suffix.lower()
     if suffix == '.csv':
@@ -70,12 +68,13 @@ def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=None, no_h
     return df
 
 
-def load_table_logged(fpath, skiprows=None, nrows=None, header_row=None, no_header=False):
+def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0):
     # with log_exception(...) instead
     try:
-        data = load_table_from_file(fpath, skiprows, nrows, header_row, no_header)
+        data = load_table_from_file(fpath, skiprows, nrows, header_row)
     except Exception as e:
         logging.exception(e)
+        # raise SystemExit vs
         raise
 
     logging.info(f'File {fpath} loaded.\n')

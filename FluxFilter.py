@@ -88,8 +88,8 @@
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 
-# TODO 3 support of testing cells separately can be added using import * and mocking global space vars gs.*
-# py -> ipynb conversion is great to keep only .py in git, can this be used?
+# TODO 2 support of testing cells separately can be added using import * and mocking global space vars gs.*
+# py -> ipynb conversion is great to keep only .py in git, this can be used if it's easy to override any function in colab cells
 
 # !git -c init.defaultBranch=main init
 # !git sparse-checkout init
@@ -321,10 +321,12 @@ def plot_albedo(plot_data, filters_db):
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    # TODO 3 QE may be change cols to pl_data.ALB,  pl_data[ALB] ? what is modern pandas recommended?
-    # this may solve: usage search + navigation, different case
+    # TODO 3 may be change cols to pl_data[alb_col]
+    # may solve: usage search + navigation, typing hint, case inconsistensy
+    # consider units conversions on import when same name
+    # consider difference between _1_1_1 instrument code and actual data col
 
-    # TODO QOA 1 ALB_1_1_1 will be used now, ok?
+    # TODO QOA 1 ALB_1_1_1 will be used now (check load renames), ok?
     # priority use of ALB_1_1_1 from ias was not approved by V
 
     # basic.py: def add_albedo(dataT, out_sw, in_sw)
@@ -814,7 +816,8 @@ def quantile_filter(data_in, filters_db_in, config):
 
 
 def mad_hampel_filter(data_in, filters_db_in, config):
-    # TODO 2 why vpd_1_1_1 madhampel is different in single line 5299 for Lga 2023 0.9.4 colab vs 0.9.5 local? seems also occured previously
+    # TODO 2 why vpd_1_1_1 madhampel is different in single line 5299 for Lga 2023
+    #  0.9.4 colab vs 0.9.5 local? seems also occured previously E: send data
     if len(config) == 0:
         return data_in, filters_db_in
     data = data_in.copy()
@@ -1093,10 +1096,13 @@ config['mode'] = ImportMode.AUTO
 
 # + id="H7E5LGx1DVsA"
 config_meteo = {}
-# TODO QE 2 is this nessesary as a part of public config? can be derived from path? private config / flag?
+# derive files from path instead
+# TODO QOA 1 cancel biomet concept since multiple iport options are now avaliable?
+# i.e on ias of csf derive from path instead
 config_meteo['use_biomet'] = 'auto'
 config_meteo['debug'] = False  # True загрузит небольшой кусок файла, а не целый
 config_meteo['-9999_to_nan'] = True  # заменяем -9999  на np.nan
+# TODO 1 repair time should be per file operation now?
 config_meteo['repair_time'] = True  # генерируем новые временные метки в случае ошибок
 
 #####################
@@ -1153,7 +1159,7 @@ window_size = 10
 calc_nee = True
 
 # Индекс станции для названий выходных файлов, рисунков
-# TODO QE 2 that's just a site name?  only ias version is ias specific?
+# TODO 1 that's just a site name, only ias version is ias specific
 ias_output_prefix = 'auto'
 ias_output_version = 'auto'
 
@@ -1323,15 +1329,14 @@ config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_in
 if config['mode'] in [ImportMode.EDDYPRO, ImportMode.EDDYPRO_AND_BIOMET]:
     res = load_eddypro_fulloutput(config, config_meteo)
 elif config['mode'] == ImportMode.IAS:
-    # TODO QE 2 generalize, into SimpleNamespace, Enum biomet_columns and biomet config?
+    # TODO 1 generalize, into SimpleNamespace, Enum biomet_columns and biomet config? E:ok
     res = import_ias(config, config_meteo)
 elif config['mode'] == ImportMode.CSF:
     raise import_csf(config, config_meteo)
 else:
     raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
 
-# rename time to time_col?
-data, time, biomet_columns, data_freq, config_meteo = res
+data, time_col, biomet_columns, data_freq, config_meteo = res
 
 points_per_day = int(pd.Timedelta('24h') / data_freq)
 
@@ -1345,7 +1350,8 @@ if not config_meteo['use_biomet']:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
-# TODO QE 1 ppfd_in_1_1_1 is name before import repairs? i.e. should be different name instead in this list?
+# TODO 1 QOA ppfd_in_1_1_1 is name before import repairs?
+#  i.e. should be different name instead in this list? E: ask OA
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
                 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
@@ -1374,8 +1380,10 @@ if data_type_error_flag:
 #
 
 # + id="mAdYXJFdSRbJ"
-# TODO QE 3 dictionary + optional transform lambda instead? useful to view cols flow,
-#  flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
+# TODO 3 dictionary + optional transform lambda instead? useful to view cols flow,
+# flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
+# E: ok, requires prev section edits too, but low benefit
+# O: check cell description for logic
 have_rh_flag = False
 have_vpd_flag = False
 have_par_flag = False
@@ -1414,7 +1422,8 @@ for col_name in data.columns:
     if "rh_1_1_1" in col_name:
         have_rh_flag = True
     if "vpd_1_1_1" in col_name:
-        # TODO QE QOA 1 data['vpd'] (not data['vpd_1_1_1']) may exist in FO, what is relation?  script uses both?
+        # TODO QOA 1 data['vpd'] (not data['vpd_1_1_1']) may exist in FO, what is relation?  script uses both?
+        # E: task was to use 'vpd_1_1_1'
         have_vpd_flag = True
     if 'swin' in col_name or 'sw_in' in col_name:
         have_swin_flag = True
@@ -1471,7 +1480,8 @@ else:
         print("calculating vpd_1_1_1 from rh_1_1_1 and air temperature")
         data['vpd_1_1_1'] = ehpa - (ehpa * data['rh_1_1_1'] / 100)
     if not have_rh_flag:
-        # TODO QE 2 it's from temperature only?
+        # TODO QOA 1 is it ok from temperature only?
+        # E: seems, do edit print
         print("calculating rh_1_1_1 from vpd_1_1_1 and air temperature")
         data['rh_1_1_1'] = ehpa
 
@@ -1788,7 +1798,7 @@ else:
 # Подставить нужное: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1
 for col in ['nee', 'le', 'h']:
     # Или просто запускать повторно для переключения к следующему параметру
-    plot_nice_year_hist_plotly(plot_data, col, time, filters_db)
+    plot_nice_year_hist_plotly(plot_data, col, time_col, filters_db)
 
 # + [markdown] id="EFscf-JZt3_R"
 # # Формирование выходных файлов
@@ -1800,7 +1810,7 @@ for col in ['nee', 'le', 'h']:
 # Создадим шаблон шапки для файла REddyProc и сохраним требуемые переменные, не забыв учесть фильтрацию. Выходной файл - уровня 3.
 
 # + id="YVu2UrCzLqb4"
-rep_fname = f"REddyProc_{ias_output_prefix}_{int(plot_data[time].dt.year.median())}.txt"
+rep_fname = f"REddyProc_{ias_output_prefix}_{int(plot_data[time_col].dt.year.median())}.txt"
 output_template = {
     'Year': ['-'], 'DoY': ['-'], 'Hour': ['-'], 'NEE': ['umol_m-2_s-1'], 'LE': ['Wm-2'], 'H': ['Wm-2'],
     'Rg': ['Wm-2'], 'Tair': ['degC'], 'Tsoil': ['degC'], 'rH': ['%'], 'VPD': ['hPa'], 'Ustar': ['ms-1'],
@@ -1814,9 +1824,9 @@ for column, filter in filters_db.items():
     filter = get_column_filter(rep_df, filters_db, column)
     rep_df.loc[~filter.astype(bool), column] = np.nan
 
-rep_df['Year'] = rep_df[time].dt.year
-rep_df['DoY'] = rep_df[time].dt.dayofyear
-rep_df['Hour'] = rep_df[time].dt.hour + rep_df[time].dt.minute / 60
+rep_df['Year'] = rep_df[time_col].dt.year
+rep_df['DoY'] = rep_df[time_col].dt.dayofyear
+rep_df['Hour'] = rep_df[time_col].dt.hour + rep_df[time_col].dt.minute / 60
 
 rep_df['NEE'] = rep_df['nee'].fillna(-9999)
 rep_df['LE'] = rep_df['le'].fillna(-9999)
@@ -1826,10 +1836,14 @@ if 'swin_1_1_1' in rep_df.columns:
 else:
     print("WARNING! No swin_1_1_1!")
 
-# TODO QE 1 does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose? introduces nasty complications, requires fix on ias export?
-# TODO QE 2 if biomet, 'air_temperature' contains derivation from 'ta_1_1_1'?
-# is this to avoid numeric conversions?
-# lack of single standard col for temps feels like unfriendly to work with
+# TODO 1 QE does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose? (Q about import, not on export)
+# introduces nasty complications, requires fix on ias export?
+# E: export goal was to match rep
+
+# TODO 2 if biomet, 'air_temperature' contains derivation from 'ta_1_1_1'
+# E: because they are different, 'air_temperature' is worse backup plan if 'ta_1_1_1' is missing
+# TODO 1 check other cols from description
+
 if config_meteo['use_biomet']:
     rep_df['Tair'] = rep_df['ta_1_1_1'].fillna(-9999)
     rep_df['rH'] = rep_df['rh_1_1_1'].fillna(-9999)
@@ -1876,9 +1890,12 @@ if config_meteo['use_biomet']:
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-    # TODO 1 more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
-    # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1' any eddypro specification to check? also 'nee'  'par' 'rg_1_1_1'
-    export_ias(out_dir, ias_output_prefix, ias_output_version, ias_df, time_col=time,
+    # TODO 1 do more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+
+    # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1'
+    #  check eddypro specification, also 'nee'  'par' 'rg_1_1_1'
+
+    export_ias(out_dir, ias_output_prefix, ias_output_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])
 
 # + [markdown] id="Pm8hiMrb_wRW"
@@ -1903,7 +1920,7 @@ if config_meteo['use_biomet']:
         fat_df.loc[~filter.astype(bool), column] = np.nan
 
     fat_df['DoY'] = np.round(
-        fat_df[time].dt.dayofyear + fat_df[time].dt.hour / 24. + fat_df[time].dt.minute / 24. / 60., decimals=3)
+        fat_df[time_col].dt.dayofyear + fat_df[time_col].dt.hour / 24. + fat_df[time_col].dt.minute / 24. / 60., decimals=3)
     fat_df[r'u*'] = fat_df['u_star'].fillna(-99999)
     fat_df['H'] = fat_df['h'].fillna(-99999)
     fat_df['lE'] = fat_df['le'].fillna(-99999)
@@ -1936,7 +1953,7 @@ if config_meteo['use_biomet']:
         fat_filename = f"FAT_{ias_output_prefix}_{year}.csv"
         fat_fpath = out_dir / fat_filename
         pd.DataFrame(fat_output_template).to_csv(fat_fpath, index=False)
-        save_data = fat_df.loc[fat_df[time].dt.year == year]
+        save_data = fat_df.loc[fat_df[time_col].dt.year == year]
         if len(save_data.index) >= 5:
             save_data.to_csv(fat_fpath, index=False, header=False,
                              columns=[i for i in fat_output_template.keys()], mode='a')  # , sep=' ')
@@ -1957,11 +1974,11 @@ if config_meteo['use_biomet']:
 
 # + id="pk1lGANovC5U"
 full_column_list = [c for c in plot_data.columns]
-full_column_list = full_column_list.insert(0, full_column_list.pop(full_column_list.index(time)))
+full_column_list = full_column_list.insert(0, full_column_list.pop(full_column_list.index(time_col)))
 if 'date' in plot_data.columns:
-    plot_data.loc[plot_data['date'].isna(), 'date'] = plot_data[time].dt.date
+    plot_data.loc[plot_data['date'].isna(), 'date'] = plot_data[time_col].dt.date
 if 'time' in plot_data.columns:
-    plot_data.loc[plot_data['time'].isna(), 'time'] = plot_data[time].dt.time
+    plot_data.loc[plot_data['time'].isna(), 'time'] = plot_data[time_col].dt.time
 
 all_fpath = out_dir / 'output_all.csv'
 plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
@@ -1977,10 +1994,10 @@ columns_to_save = ['Date', 'Time', 'DoY', 'ta', 'rh', 'vpd', 'swin', 'ppfd', 'p'
 
 basic_df = plot_data.copy()
 
-basic_df['Date'] = basic_df[time].dt.date
-basic_df['Time'] = basic_df[time].dt.time
+basic_df['Date'] = basic_df[time_col].dt.date
+basic_df['Time'] = basic_df[time_col].dt.time
 basic_df['DoY'] = np.round(
-    basic_df[time].dt.dayofyear + basic_df[time].dt.hour / 24. + basic_df[time].dt.minute / 24. / 60., decimals=3)
+    basic_df[time_col].dt.dayofyear + basic_df[time_col].dt.hour / 24. + basic_df[time_col].dt.minute / 24. / 60., decimals=3)
 
 if not config_meteo['use_biomet']:
     basic_df['ta_1_1_1'] = basic_df['air_temperature'] - 273.15

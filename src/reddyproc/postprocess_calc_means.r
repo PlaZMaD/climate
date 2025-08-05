@@ -5,17 +5,17 @@ library(tibble)
 source('src/reddyproc/r_helpers.r')
 
 
-.aggregate_df <- function(data, by_col, FUN) {
+.aggregate_df <- function(df, by_col, FUN) {
     # forms unique combinations with by_col
     # applies agg_FUN to all rows matching onr of combination
-    # usually original dataframe is simply df = cbind(by_col, data)
+    # usually original dataframe is simply df = cbind(by_col, df)
 
     # rev(by_col): reverse is nessesary for YMD column order,
     # i.e. correct sort order during aggregate is 1) DoY 2) Month 3) Year
-    res <- aggregate(data, by = rev(by_col), FUN = FUN)
+    res <- aggregate(df, by = rev(by_col), FUN = FUN)
 
     # restore YMD column order
-    res <- res[c(colnames(by_col), colnames(data))]
+    res <- res[c(colnames(by_col), colnames(df))]
 }
 
 

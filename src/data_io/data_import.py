@@ -35,8 +35,8 @@ class AutoImportException(Exception):
     pass
 
 
-def detect_file_type(fpath: Path, header_rows=4) -> InputFileType:
-    df = load_table_from_file(fpath, nrows=header_rows, no_header=True)
+def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
+    df = load_table_from_file(fpath, nrows=nrows, header_row=None)
 
     # may be also consider exact header row place
     ias_cols = (set(IAS_HEADER_DETECTION_COLS), InputFileType.IAS)
@@ -118,7 +118,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         possible_input_modes += [ImportMode.CSF]
 
     if len(possible_input_modes) == 0:
-        raise AutoImportException(f'No import modes detected, ensure files are in script folder and review log.')
+        raise AutoImportException(f'No import modes possible, ensure input files are in the script folder and review log.')
     elif len(possible_input_modes) == 1:
         mode = possible_input_modes[0]
     else:
