@@ -72,7 +72,6 @@
 # (с)Евгений Курбатов, Вадим Мамкин, Ольга Куричева
 # (с)Инструмент REddyProc: Wutzler T, Lucas-Moffat A, Migliavacca M, Knauer J, Sickel K, Sigut, Menzer O & Reichstein M (2018) Basic and extensible post-processing of eddy covariance flux data with REddyProc. Biogeosciences, Copernicus, 15, doi: 10.5194/bg-15-5015-2018
 # (с)Адаптация REddyProc и постобработка: Олег Дещеревский
-#
 
 # + [markdown] id="sj6Z0gnhVM-R"
 # # Технический блок
@@ -82,13 +81,11 @@
 # from google.colab import userdata
 # key = userdata.get('registry_key')
 
-# + id="E-a6ANTGBsqg"
 # %pip install pysolar
 # %pip install plotly-resampler dateparser >> /dev/null
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 
-# TODO 2 support of testing cells separately can be added using import * and mocking global space vars gs.*
 # py -> ipynb conversion is great to keep only .py in git, this can be used if it's easy to override any function in colab cells
 
 # !git -c init.defaultBranch=main init
@@ -102,23 +99,17 @@
 import logging
 import os
 import re
-from copy import deepcopy as copy
 from pathlib import Path
 
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly_resampler
-from plotly.subplots import make_subplots
 from rpy2 import robjects
 
 # %load_ext autoreload
 # %autoreload 2
 
 import bglabutils.basic as bg
-import bglabutils.filters as bf
 # import bglabutils.boosting as bb
 # import textwrap
 
@@ -132,6 +123,10 @@ from src.data_io.ias_io import import_ias, export_ias
 from src.data_io.csf_import import import_csf
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
 import src.ipynb_globals as ig
+from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
+    meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
+    meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
+from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo
 from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
 from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
 from src.reddyproc.preprocess_rg import prepare_rg
@@ -147,860 +142,11 @@ setup_plotly(out_dir)
 
 init_logging(level=logging.INFO, fpath=out_dir / 'log.log', to_stdout=True)
 
-
-# + [markdown] id="c_5uwjkzfk45"
-# ## Функции для отрисовки
-
-# + id="5AXOLjh5VeMp"
-def colapse_filters(data, filters_db_in):
-    out_filter = {}
-    for feature, filters in filters_db_in.items():
-        if len(filters) > 0:
-            out_filter[feature] = data[filters[0]].astype(int) if len(filters) == 1 else np.logical_and.reduce(
-                (data[filters].astype(int)), axis=1).astype(int)
-    return out_filter
-
-
-def get_column_filter(data, filters_db_in, column_name):
-    if column_name not in filters_db_in.keys():
-        return np.array([1] * len(data.index))
-    if len(filters_db_in[column_name]) > 0:
-        return colapse_filters(data, filters_db_in)[column_name]
-    else:
-        return np.array([1] * len(data.index))
-
-
-def basic_plot(data, col2plot, filters_db=None, min_days=8, window_days=10, steps_per_day=2 * 24, use_resample=False):
-    multiplot = isinstance(col2plot, list)
-
-    window_days = window_days  # дней в окне
-    min_days = window_days // 2 - 1
-    pl_data = data.copy()
-
-    layout = go.Layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    color_data = 'darkorange'
-    color_line = 'darkslateblue'
-
-    add_color_data = copy(px.colors.qualitative.Pastel1)
-    add_color_line = copy(px.colors.qualitative.Prism)
-
-    add_color_data.insert(0, color_data)
-    add_color_line.insert(0, color_line)
-
-    fig = go.Figure(layout=layout)
-    if multiplot:
-        fig = make_subplots(rows=len(col2plot), cols=1, shared_xaxes=True, figure=fig,
-                            subplot_titles=[i.upper() for i in col2plot])
-    else:
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, figure=fig, row_heights=[.8, .2],
-                            subplot_titles=[col2plot.upper(), 'Residuals'])
-
-    fig.update_xaxes(showline=True, linewidth=2, linecolor='black', gridcolor='Grey', minor_ticks='inside',
-                     minor_tickcolor='Grey')
-    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', gridcolor='Grey')
-    # fig.update_layout(
-    #     title = col2plot,
-    #     xaxis_tickformat = '%H:%M %d %B <br>%Y'
-    # )
-    if not multiplot:
-        cols = [col2plot]
-    else:
-        cols = col2plot
-
-    fig.update_layout(
-        # title = " ".join(cols),
-        xaxis_tickformat='%H:%M %d %B <br>%Y'
-    )
-    for row, col2plot in enumerate(cols):
-        if filters_db is not None:
-            filters = get_column_filter(pl_data, filters_db, col2plot)
-            pl_data.loc[~filters.astype(bool), col2plot] = np.nan
-
-        if steps_per_day % 2 == 0:
-            closed = 'left'
-        else:
-            closed = 'both'
-        rolling_mean = bg.calc_rolling(pl_data[col2plot], step=steps_per_day, rolling_window=window_days,
-                                       min_periods=min_days)
-
-        fig.add_trace(go.Scattergl(
-            x=pl_data.index, y=pl_data[col2plot], mode='markers', name=col2plot,
-            marker_color=add_color_data[row]
-        ), row=row + 1, col=1)
-        fig.add_trace(go.Scattergl(
-            x=rolling_mean.index, y=rolling_mean, mode='lines', name=f'{col2plot} mean {window_days} days',
-            opacity=.7, line_color=add_color_line[row]
-        ), row=row + 1, col=1)
-        if not multiplot:
-            fig.add_trace(go.Scattergl(
-                x=rolling_mean.index, y=rolling_mean - pl_data[col2plot], mode='lines', name=f'residuals'
-            ), row=2, col=1)
-
-    if use_resample:
-        fig = plotly_resampler.FigureResampler(fig, default_n_shown_samples=5000)
-
-    fig_name = f"_{int(np.median(pl_data.index.year))}"
-    if "ias_output_prefix " in locals() or "ias_output_prefix" in globals():
-        fig_name = fig_name + "_" + ias_output_prefix
-    fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
-    fig.show(config=fig_config)
-
-
-def plot_nice_year_hist_plotly(df, to_plot, time_col, filters_db):
-    pl_data = df.copy()  # [to_plot]
-    # point
-    if filters_db is not None:
-        print()
-        filters = get_column_filter(df, filters_db, to_plot)
-        pl_data['filter'] = filters
-        pl_data.loc[~filters.astype(bool), to_plot] = np.nan
-    # print(pl_data.loc[pd.to_datetime('26 June 2016 1:30'), ['nee', 'nee_nightFilter', 'swin_1_1_1', 'filter']].to_string())
-    fig = go.Figure()
-    fig.update_layout(title=f'{to_plot}')
-    fig.add_trace(go.Heatmap(
-        x=pl_data[time_col].dt.date,
-        y=pl_data[time_col].dt.hour + 0.5 * (pl_data[time_col].dt.minute // 30),
-        z=pl_data[to_plot]
-    ))
-    fig_config = {'toImageButtonOptions': {'filename': f'{to_plot}_{int(np.median(pl_data.index.year))}', }}
-
-    fig.show(config=fig_config)
-
-
-def make_filtered_plot(data_pl, col, filters_db):
-    data = data_pl.copy()
-    layout = go.Layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    add_color_dot = copy(px.colors.qualitative.Dark24)
-    fig = go.Figure(layout=layout)
-    fig.update_xaxes(showline=True, linewidth=2, linecolor='black', gridcolor='Grey', minor_ticks='inside',
-                     minor_tickcolor='Grey')
-    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', gridcolor='Grey')
-
-    data['full_filter'] = get_column_filter(data, filters_db, col)
-    data['full_filter'] = data['full_filter'].astype(int)
-    pl_data = data.query(f"full_filter==0")
-    color_ind = 0
-    fig.add_trace(go.Scattergl(
-        x=data.query("full_filter==1").index, y=data.query("full_filter==1")[col],
-        mode='markers', name="Good data", marker_color=add_color_dot[color_ind]
-    ))
-    color_ind += 1
-
-    if len(filters_db[col]) > 0:
-        for filter_name in filters_db[col]:
-            fig.add_trace(go.Scattergl(
-                x=pl_data.query(f"{filter_name}==0").index, y=pl_data.query(f"{filter_name}==0")[col],
-                mode='markers', name=filter_name, marker_color=add_color_dot[color_ind]
-            ))
-            color_ind += 1
-            pl_data = pl_data.query(f"{filter_name}==1")
-
-    fig.update_layout(
-        title=f'{col2plot}',
-        xaxis_tickformat='%H:%M %d %B <br>%Y'
-    )
-    fileName = "basic"
-    if "ias_output_prefix " in locals() or "ias_output_prefix" in globals():
-        fileName = ias_output_prefix
-    fileName += f'_{int(np.median(data.index.year))}_{col}'
-    fig_config = {'toImageButtonOptions': {'filename': fileName, }}
-    fig.show(config=fig_config)
-
-
-def plot_albedo(plot_data, filters_db):
-    pl_data: pd.DataFrame = plot_data.copy()
-
-    layout = go.Layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-
-    # TODO 3 may be change cols to pl_data[alb_col]
-    # may solve: usage search + navigation, typing hint, case inconsistensy
-    # consider units conversions on import when same name
-    # consider difference between _1_1_1 instrument code and actual data col
-
-    # TODO QOA 1 ALB_1_1_1 will be used now (check load renames), ok?
-    # priority use of ALB_1_1_1 from ias was not approved by V
-
-    # basic.py: def add_albedo(dataT, out_sw, in_sw)
-
-    can_calc = {'swin_1_1_1', 'swout_1_1_1'} <= set(pl_data.columns)
-    can_use = 'alb_1_1_1' in pl_data.columns
-
-    if can_calc:
-        pl_data['albedo'] = pl_data['swout_1_1_1'].div(pl_data['swin_1_1_1'])
-        if can_use:
-            print("alb_1_1_1 is available, but will be calculated instead")
-    elif can_use:
-        pl_data['albedo'] = pl_data['alb_1_1_1'] / 100.0
-    else:
-        print("No swin_1_1_1/sout_1_1_1, nor alb_1_1_1")
-        return 0
-
-    pl_data.loc[pl_data['swin_1_1_1'] <= 20., 'albedo'] = np.nan
-    pl_data.loc[pl_data['swout_1_1_1'] <= 0, 'albedo'] = np.nan
-
-    pl_ind = pl_data[pl_data['albedo'] < pl_data['albedo'].quantile(0.95)].index
-    fig = go.Figure(layout=layout)
-    fig.add_trace(go.Scattergl(x=pl_data.loc[pl_ind].index, y=pl_data.loc[pl_ind, 'albedo'], name="Albedo"))
-    fig.update_layout(title='Albedo')
-    fig_config = {'toImageButtonOptions': {'filename': 'albedo', }}
-    fig.show(config=fig_config)
-
-
-# + [markdown] id="PKznP_r1foao"
-# ## Функции для фильтрации
-
-# + id="EuUwWEPRaVT5"
-def min_max_filter(data_in, filters_db_in, config):
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-    for col, limits in config.items():
-        if col not in data.columns:
-            print(f"No column with name {col}, skipping...")
-            continue
-        filter = get_column_filter(data, filters_db, col)
-
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        data[f"{col}_minmaxfilter"] = filter
-
-        if col not in ['rh_1_1_1', 'swin_1_1_1', 'ppfd_1_1_1', 'swin_1_1_1']:
-            data.loc[data.query(f"{col}<{limits[0]}|{col}>{limits[1]}").index, f"{col}_minmaxfilter"] = 0
-        else:
-            if col == 'rh_1_1_1':
-                data[col] = data[col].clip(upper=limits[1])
-                data.loc[data.query(f"{col}<{limits[0]}|{col}>{limits[1]}").index, f"{col}_minmaxfilter"] = 0
-            else:
-                data[col] = data[col].clip(lower=limits[0])
-                if col not in ['swin_1_1_1']:
-                    data.loc[data.query(f"{col}<{limits[0]}|{col}>{limits[1]}").index, f"{col}_minmaxfilter"] = 0
-                else:
-                    data.loc[data.query(f"{col}>{limits[1]}").index, f"{col}_minmaxfilter"] = 0
-
-        if f"{col}_minmaxfilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_minmaxfilter")
-        else:
-            print("filter already exist but will be overwritten")
-    logging.info(f"min_max_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def qc_filter(data_in, filters_db_in, config):
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col, limits in config.items():
-        if col not in data.columns:
-            print(f"No column with name {col}, skipping...")
-            continue
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        data[f"{col}_qcfilter"] = filter
-        if f"qc_{col}" not in data.columns and col != 'nee':
-            print(f"No qc_{col} in data")
-            continue
-        if col != 'nee':
-            data.loc[data[f"qc_{col}"] > config[col], f"{col}_qcfilter"] = 0
-        else:
-            data.loc[data[f"qc_co2_flux"] > config['co2_flux'], f"nee_qcfilter"] = 0
-
-        if f"{col}_qcfilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_qcfilter")
-        else:
-            print("filter already exist but will be overwritten")
-    logging.info(f"qc_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def std_window_filter(data_in, filters_db_in, config):
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-    for col, lconfig in config.items():
-        sigmas = lconfig['sigmas']
-        window_size = lconfig['window']
-        min_periods = lconfig['min_periods']  # (window_size//2-1)
-        points_per_day = int(pd.Timedelta('24h') / data_in.index.freq)  # lconfig['points_per_day']
-        if col not in data.columns:
-            print(f"No column with name {col}, skipping...")
-            continue
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        data[f"{col}_stdwindowfilter"] = filter
-        data['tmp_col'] = data[col]
-        data.loc[~filter.astype(bool), 'tmp_col'] = np.nan
-        rolling_mean = bg.calc_rolling(data['tmp_col'], rolling_window=window_size, step=points_per_day,
-                                       min_periods=min_periods)
-        residuals = data['tmp_col'] - rolling_mean
-        rolling_sigma = residuals.rolling(window=window_size * points_per_day, center=True, closed='both',
-                                          min_periods=window_size * points_per_day // 2).std()
-        data = data.drop(columns='tmp_col')
-        # print(rolling_sigma, rolling_mean)
-        upper_bound = rolling_mean + rolling_sigma * sigmas
-        lower_bound = rolling_mean - rolling_sigma * sigmas
-        upper_inds = upper_bound[upper_bound < data[col]].index
-        lower_inds = lower_bound[lower_bound > data[col]].index
-        data.loc[upper_inds, f"{col}_stdwindowfilter"] = 0
-        data.loc[lower_inds, f"{col}_stdwindowfilter"] = 0
-        # # print(len(lower_inds), len(upper_inds))
-        # plt.plot(rolling_mean)
-        # plt.title(col)
-        # plt.show()
-
-        if f"{col}_stdwindowfilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_stdwindowfilter")
-        else:
-            print("filter already exist but will be overwritten")
-    logging.info(f"std_window_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_filter(
-        data_in, filters_db_in, config
-        # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
-):
-    file_freq = data_in.index.freq
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col in ["co2_flux", 'h', 'le', 'ch4_flux']:
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_physFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_physFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_physFilter"] = filter
-
-    if 'co2_signal_strength' in data.columns and 'CO2SS_min' in config.keys():
-        data.loc[data['co2_signal_strength'] < config['CO2SS_min'], 'co2_flux_physFilter'] = 0
-    else:
-        print("No co2_signal_strength found")
-
-    if 'ch4_signal_strength' in data.columns and 'CH4SS_min' in config.keys():
-        data.loc[data['ch4_signal_strength'] < config['CH4SS_min'], 'ch4_flux_physFilter'] = 0
-    else:
-        print("No ch4_signal_strength found")
-
-    if 'p_rain_limit' in config.keys():
-        data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'co2_flux_physFilter'] = 0
-        data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'h_physFilter'] = 0
-        data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'le_physFilter'] = 0
-        if 'rain_forward_flag' in config:
-            rain_forward_flag = config['rain_forward_flag']
-            for i in range(rain_forward_flag):
-                ind = data.loc[data['p_rain_1_1_1'] > config['p_rain_limit']].index.shift(i, freq=file_freq)
-                data.loc[ind, 'co2_flux_physFilter'] = 0
-                data.loc[ind, 'h_physFilter'] = 0
-                data.loc[ind, 'le_physFilter'] = 0
-
-    if 'RH_max' in config.keys():
-        RH_max = config['RH_max']
-        data.loc[data['rh_1_1_1'] > RH_max, 'co2_flux_physFilter'] = 0
-        data.loc[data['rh_1_1_1'] > RH_max, 'le_physFilter'] = 0
-    logging.info(f"meteorological_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_rh_filter(
-        data_in, filters_db_in, config
-        # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
-):
-    file_freq = data_in.index.freq
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col in ["co2_flux", 'le', 'nee']:
-
-        if col not in data.columns:
-            print(f"no {col}")
-            continue
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_rhFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_rhFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_rhFilter"] = filter
-
-    if 'RH_max' in config.keys() and 'rh_1_1_1' in data.columns:
-        RH_max = config['RH_max']
-        data.loc[data['rh_1_1_1'] > RH_max, 'co2_flux_rhFilter'] = 0
-        if 'nee' in data.columns:
-            data.loc[data['rh_1_1_1'] > RH_max, 'nee_rhFilter'] = 0
-        data.loc[data['rh_1_1_1'] > RH_max, 'le_rhFilter'] = 0
-    logging.info(f"meteorological_rh_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_night_filter(
-        data_in, filters_db_in, config
-        # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
-):
-    if "swin_1_1_1" not in data_in.columns:
-        logging.info(f"meteorological_night_filter not applied, no SWIN found  \n")
-        return data_in, filters_db_in
-
-    if not config['use_night_filter']:
-        logging.info(f"Night filter dissabled.")
-        return data_in, filters_db_in
-
-    file_freq = data_in.index.freq
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-    col_of_interest = ["h", 'le', 'nee', 'co2_flux']
-
-    for col in col_of_interest:
-        if col not in data.columns:
-            print(f"no {col} column")
-            continue
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_nightFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_nightFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_nightFilter"] = filter
-
-    if "nee" in data.columns:
-        data_night_index = data.query(f"swin_1_1_1<10&nee<{config['night_nee_min']}").index
-        data.loc[data_night_index, f"nee_nightFilter"] = 0
-
-    if "co2_flux" in data.columns:
-        data_night_index = data.query("swin_1_1_1<10&co2_flux<0").index
-        data.loc[data_night_index, f"co2_flux_nightFilter"] = 0
-
-    data_night_index = data.query(
-        f"(h<{config['night_h_limits'][0]}|h>{config['night_h_limits'][1]})&swin_1_1_1<10"
-    ).index
-    data.loc[data_night_index, f"h_nightFilter"] = 0
-
-    data_night_index = data.query(
-        f"(h<{config['night_le_limits'][0]}|h>{config['night_le_limits'][1]})&swin_1_1_1<10"
-    ).index
-    data.loc[data_night_index, f"le_nightFilter"] = 0
-
-    # if 'nee' in data.columns:
-    #   data_night_index = data.query(f'nee>{config["day_nee_max"]}&swin_1_1_1>=10').index
-    #   data.loc[data_night_index, f"nee_nightFilter"] = 0
-    logging.info(f"meteorological_night_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_day_filter(data_in, filters_db_in, config):  # , file_freq='30T'):
-    if "swin_1_1_1" not in data_in.columns:
-        logging.info(f"meteorological_day_filter not applied, no SWIN found  \n")
-        return data_in, filters_db_in
-
-    if not config['use_day_filter']:
-        logging.info(f"Day filter dissabled.")
-        return data_in, filters_db_in
-
-    file_freq = data_in.index.freq
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-    col_of_interest = ['nee']
-
-    for col in col_of_interest:
-        if col not in data.columns:
-            print(f"no {col} column")
-            continue
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_dayFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_dayFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_dayFilter"] = filter
-
-    if 'nee' in data.columns:
-        data_day_index = data.query(f'nee>{config["day_nee_max"]}&swin_1_1_1>={config["day_swin_limit"]}').index
-        data.loc[data_day_index, f"nee_dayFilter"] = 0
-    logging.info(f"meteorological_day_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_co2ss_filter(
-        data_in, filters_db_in, config
-        # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
-):
-    file_freq = data_in.index.freq
-    if 'CO2SS_min' not in config.keys():
-        return data_in, filters_db_in
-
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col in ["co2_flux", 'nee']:
-
-        if col not in data.columns:
-            print(f"no {col} column")
-            continue
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_co2ssFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_co2ssFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_co2ssFilter"] = filter
-
-        if 'co2_signal_strength' in data.columns:
-            data.loc[data['co2_signal_strength'] < config['CO2SS_min'], f'{col}_co2ssFilter'] = 0
-
-        else:
-            print("No co2_signal_strength found")
-    logging.info(f"meteorological_co2ss_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_ch4ss_filter(
-        data_in, filters_db_in, config
-        # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
-):
-    file_freq = data_in.index.freq
-    if 'CH4SS_min' not in config.keys():
-        return data_in, filters_db_in
-
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col in ["ch4_flux"]:
-
-        if col not in data.columns:
-            print(f"no {col} column")
-            continue
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_ch4ssFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_ch4ssFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_ch4ssFilter"] = filter
-
-    if 'ch4_signal_strength' in data.columns:
-        data.loc[data['ch4_signal_strength'] < config['CH4SS_min'], 'ch4_flux_ch4ssFilter'] = 0
-    else:
-        print("No ch4_signal_strength found")
-    logging.info(f"meteorological_coh4ss_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def meteorological_rain_filter(
-        data_in, filters_db_in, config
-        # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
-):
-    file_freq = data_in.index.freq
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col in ["co2_flux", 'h', 'le', 'nee', "ch4_flux"]:
-        if col not in data.columns:
-            print(f"no {col}")
-            continue
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_rainFilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_rainFilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_rainFilter"] = filter
-
-    if 'p_rain_limit' in config.keys() and 'p_rain_1_1_1' in data.columns:
-        if 'co2_flux' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'co2_flux_rainFilter'] = 0
-        if 'h' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'h_rainFilter'] = 0
-        if 'le' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'le_rainFilter'] = 0
-        if 'nee' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'nee_rainFilter'] = 0
-        if 'ch4_flux' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'ch4_flux_rainFilter'] = 0
-
-        if 'rain_forward_flag' in config:
-            rain_forward_flag = config['rain_forward_flag']
-            for i in range(rain_forward_flag):
-                ind = data.loc[data['p_rain_1_1_1'] > config['p_rain_limit']].index.shift(i, freq=file_freq)
-                ind = ind.intersection(data.index)
-                if len(ind) == 0:
-                    continue
-                if 'nee' in data.columns:
-                    data.loc[ind, 'nee_rainFilter'] = 0
-                if 'ch4_flux' in data.columns:
-                    data.loc[ind, 'ch4_flux_rainFilter'] = 0
-                if 'co2_flux' in data.columns:
-                    data.loc[ind, 'co2_flux_rainFilter'] = 0
-                if 'h' in data.columns:
-                    data.loc[ind, 'h_rainFilter'] = 0
-                if 'le' in data.columns:
-                    data.loc[ind, 'le_rainFilter'] = 0
-
-    logging.info(f"meteorological_rain_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def quantile_filter(data_in, filters_db_in, config):
-    if len(config) == 0:
-        return data_in, filters_db_in
-
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col, limits in config.items():
-        limit_down, limit_up = limits
-        if col not in data.columns:
-            print(f"No column with name {col}, skipping...")
-            continue
-
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_quantilefilter" not in filters_db[col]:
-            filters_db[col].append(f"{col}_quantilefilter")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_quantilefilter"] = filter
-        up_limit = data.loc[data[f'{col}_quantilefilter'] == 1, col].quantile(limit_up)
-        down_limit = data.loc[data[f'{col}_quantilefilter'] == 1, col].quantile(limit_down)
-        f_inds = data.query(f"{col}_quantilefilter==1").index
-        print("Quantile filter cut values: ", down_limit, up_limit)
-        # data.loc[f_inds, f'{col}_quantilefilter'] = ((data.loc[f_inds, col] <= up_limit) & (data.loc[f_inds, col] >= down_limit)).astype(int)
-        data.loc[data[col] > up_limit, f'{col}_quantilefilter'] = 0
-        data.loc[data[col] < down_limit, f'{col}_quantilefilter'] = 0
-
-        # print(col, (data.loc[f_inds, col] < down_limit).sum(), (data.loc[f_inds, col] > up_limit).sum(), len(data.loc[f_inds, col].index), ((data.loc[f_inds, col] < up_limit) & (data.loc[f_inds, col] > down_limit)).astype(int).sum())
-        # print(filter.sum(), data[f'{col}_quantilefilter'].sum(), filter.sum() - data[f'{col}_quantilefilter'].sum())
-    logging.info(f"quantile_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def mad_hampel_filter(data_in, filters_db_in, config):
-    # TODO 2 why vpd_1_1_1 madhampel is different in single line 5299 for Lga 2023
-    #  0.9.4 colab vs 0.9.5 local? seems also occured previously E: send data
-    if len(config) == 0:
-        return data_in, filters_db_in
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-
-    for col, lconfig in config.items():
-        if col not in data.columns:
-            print(f"No column with name {col}, skipping...")
-            continue
-
-        hampel_window = lconfig['hampel_window']
-        z = lconfig['z']
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-
-        if f"{col}_madhampel" not in filters_db[col]:
-            filters_db[col].append(f"{col}_madhampel")
-        else:
-            print("filter already exist but will be overwritten")
-
-        data[f"{col}_madhampel"] = filter
-
-        # hampel_window = 20
-        print(f"Processing {col}")
-        outdata = bf.apply_hampel_after_mad(data.loc[data[f'{col}_madhampel'] == 1, :], [col], z=z,
-                                            window_size=hampel_window)
-        data.loc[data[f'{col}_madhampel'] == 1, f'{col}_madhampel'] = outdata[f'{col}_filtered'].astype(int)
-        data[f"{col}_madhampel"] = data[f"{col}_madhampel"].astype(int)
-
-    logging.info(f"mad_hampel_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def manual_filter(data_in, filters_db_in, col_name, range, value):
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-    filter = get_column_filter(data, filters_db, col_name)
-    if len(filter) == 0:
-        filter = [1] * len(data.index)
-    data[f"{col_name}_manualFilter"] = filter
-    # if range not in data.index:
-    #   print('WARNING date range is not in index! Nothing is changed!')
-    #   return data, filters_db
-    try:
-        dt_start = pd.to_datetime(start, dayfirst=True)
-        dt_stop = pd.to_datetime(stop, dayfirst=True)
-        if dt_start > dt_stop:
-            raise KeyError("Check your dates")
-
-        if dt_start < data.index[0] and (dt_stop <= data.index[-1] and dt_stop > data.index[0]):
-            dt_start = data.index[0]
-            print(f"Actual manual start: {dt_start}")
-
-        if dt_stop > data.index[-1] and (dt_start >= data.index[0] and dt_start < data.index[-1]):
-            dt_stop = data.index[-1]
-            print(f"Actual manual stop: {dt_start}")
-
-        range = pd.date_range(dt_start, dt_stop, freq=data.index.freq)
-        data.loc[range, f"{col_name}_manualFilter"] = value
-    except KeyError:
-        print("ERROR! Check the date range!")
-        return data, filters_db
-
-    if f"{col_name}_manualFilter" not in filters_db[col_name]:
-        filters_db[col_name].append(f"{col_name}_manualFilter")
-    else:
-        print("filter already exist but will be overwritten")
-    logging.info(f"manual_filter applied with the next config: \n {config}  \n")
-    return data, filters_db
-
-
-def winter_filter(data_in, filters_db_in, config, date_ranges):
-    data = data_in.copy()
-    filters_db = filters_db_in.copy()
-    if ('winter_nee_limits' not in config.keys()) and ('winter_ch4_flux_limits' not in config.keys()):
-        return data, filters_db
-
-    printed_flag_start = False
-    printed_flag_stop = False
-
-    if 'winter_nee_limits' in config.keys():
-        for col in ['nee', 'co2_flux']:
-            if col not in data.columns:
-                print(f"No column with name {col}, skipping...")
-                continue
-
-            filter = get_column_filter(data, filters_db, col)
-            if len(filter) == 0:
-                filter = [1] * len(data.index)
-            data[f"{col}_winterFilter"] = filter
-            try:
-                for start, stop in date_ranges:
-                    dt_start = pd.to_datetime(start, dayfirst=True)
-                    dt_stop = pd.to_datetime(stop, dayfirst=True)
-
-                    if dt_start > dt_stop:
-                        raise KeyError("Check your dates, start > stop")
-
-                    if dt_stop <= data.index[0] or dt_start >= data.index[-1]:
-                        print(f'Warning, empty range {dt_start} - {dt_stop}!')
-                        continue
-
-                    if dt_start < data.index[0] and (dt_stop <= data.index[-1] and dt_stop > data.index[0]):
-                        dt_start = data.index[0]
-                        if not printed_flag_start:
-                            print(f"Actual winter start: {dt_start}")
-                            printed_flag_start = True
-
-                    if dt_stop > data.index[-1] and (dt_start >= data.index[0] and dt_start < data.index[-1]):
-                        dt_stop = data.index[-1]
-                        if not printed_flag_stop:
-                            print(f"Actual winter stop: {dt_start}")
-                            printed_flag_stop = True
-
-                    range = pd.date_range(dt_start, dt_stop, freq=data.index.freq)
-
-                    inds_down = data.loc[range].query(f"{col}<{config['winter_nee_limits'][0]}").index
-                    inds_up = data.loc[range].query(f"{col}>{config['winter_nee_limits'][1]}").index
-                    data.loc[inds_up, f"{col}_winterFilter"] = 0
-                    data.loc[inds_down, f"{col}_winterFilter"] = 0
-            except KeyError:
-                print("ERROR! Check the date range!")
-                return data, filters_db
-
-            if f"{col}_winterFilter" not in filters_db[col]:
-                filters_db[col].append(f"{col}_winterFilter")
-            else:
-                print("filter already exist but will be overwritten")
-
-    if 'winter_ch4_flux_limits' in config.keys():
-        for col in ['ch4_flux']:
-            if col not in data.columns:
-                print(f"No column with name {col}, skipping...")
-                continue
-
-            filter = get_column_filter(data, filters_db, col)
-            if len(filter) == 0:
-                filter = [1] * len(data.index)
-            data[f"{col}_winterFilter"] = filter
-            try:
-                for start, stop in date_ranges:
-
-                    dt_start = pd.to_datetime(start, dayfirst=True)
-                    dt_stop = pd.to_datetime(stop, dayfirst=True)
-
-                    if dt_start > dt_stop:
-                        raise KeyError("Check your dates, start > stop")
-
-                    if dt_stop <= data.index[0] or dt_start >= data.index[-1]:
-                        print(f'Warning, empty range {dt_start} - {dt_stop}!')
-                        continue
-
-                    if dt_start < data.index[0] and (dt_stop <= data.index[-1] and dt_stop > data.index[0]):
-                        dt_start = data.index[0]
-                        if not printed_flag_start:
-                            print(f"Actual winter start: {dt_start}")
-                            printed_flag_start = True
-
-                    if dt_stop > data.index[-1] and (dt_start >= data.index[0] and dt_start < data.index[-1]):
-                        dt_stop = data.index[-1]
-                        if not printed_flag_stop:
-                            print(f"Actual winter stop: {dt_start}")
-                            printed_flag_stop = True
-
-                    range = pd.date_range(dt_start, dt_stop, freq=data.index.freq)
-
-                    inds_down = data.loc[range].query(f"{col}<{config['winter_ch4_flux_limits'][0]}").index
-                    inds_up = data.loc[range].query(f"{col}>{config['winter_ch4_flux_limits'][1]}").index
-                    data.loc[inds_up, f"{col}_winterFilter"] = 0
-                    data.loc[inds_down, f"{col}_winterFilter"] = 0
-            except KeyError:
-                print("ERROR! Check the date range!")
-                return data, filters_db
-
-            if f"{col}_winterFilter" not in filters_db[col]:
-                filters_db[col].append(f"{col}_winterFilter")
-            else:
-                print("filter already exist but will be overwritten")
-
-    logging.info(f"winter_filter applied with the next config: \n {config}  \n Date range: {date_ranges} \n")
-    return data, filters_db
-
+# Cells can be executed separately via import * and mocking global vars import global as gl
+# Also an option to experiment with any function above directly in Colab:
+# import inspect
+# code = inspect.getsource(meteorological_night_filter)
+# get_ipython().set_next_input(code, replace=False)
 
 # + [markdown] id="WfWRVITABzrz"
 # #Задаем параметры для загрузки и обработки данных
@@ -1191,12 +337,6 @@ qc_config['ch4_flux'] = 1  # Если система флагов была 1-9, 
 # * `CH4SS_min` - уберет CH4_FLUX при ch4_signal_strength ниже указанного значения
 #
 # При отсутствии в настройках какого-либо из параметров фильтрация не применяется.
-#
-#
-#
-#
-#
-#
 
 # + id="vxpiAbWk2yYr"
 meteo_filter_config = {}
@@ -1533,7 +673,7 @@ if calc_nee and 'co2_strg' in data.columns:
     tmp_data.loc[~get_column_filter(tmp_data, tmp_filter_db, 'co2_strg_tmp').astype(bool), 'co2_strg_tmp'] = np.nan
     # tmp_data['co2_strg_tmp'] = tmp_data['co2_strg_tmp'].interpolate(limit=3)
     # tmp_data['co2_strg_tmp'].fillna(bg.calc_rolling(tmp_data['co2_strg_tmp'], rolling_window=10 , step=points_per_day, min_periods=4))
-    basic_plot(tmp_data, ['co2_strg_tmp'], tmp_filter_db, steps_per_day=points_per_day)
+    basic_plot(tmp_data, ['co2_strg_tmp'], ias_output_prefix, tmp_filter_db, steps_per_day=points_per_day)
     print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
 
 # + id="2IQ7W6pslYF-"
@@ -1702,8 +842,8 @@ man_ranges = [
     # ['1.5.2023 00:00', '1.6.2023 00:00'],
     # ['25.8.2023 12:00', '25.8.2023 12:00'],
 ]
-for start, stop in man_ranges:
-    plot_data, tmp_filter = manual_filter(plot_data, filters_db, col_name="nee", range=[start, stop], value=0)
+for man_range in man_ranges:
+    plot_data, tmp_filter = manual_filter(plot_data, filters_db, col_name="nee", man_range=man_range, value=0, config=config)
 
 # + [markdown] id="APyqyqSEHx3K"
 # ## На случай необходимости откатить последний фильтр
@@ -1729,6 +869,7 @@ for key, filters in filters_db.items():
             pl_data = pl_data.query(f"{filter_name}==1")
             # print(filter_name, filtered_amount, len(pl_data.index) - old_val)
 fdf_df = pd.DataFrame(all_filters)
+# TODO 2 cuts print middle part on 0.9.4 Chr
 print("Какая часть данных от общего количества (в %) была отфильтрована:")
 print(fdf_df.iloc[1] / len(plot_data) * 100)
 logging.info("Какая часть данных от общего количества (в %) была отфильтрована:")
@@ -1754,7 +895,7 @@ col2plot = 'nee'
 
 # Или закомментировать одну строку выше и запускать повторно для переключения к следующему параметру
 if col2plot:
-    make_filtered_plot(plot_data, col2plot, filters_db)
+    make_filtered_plot(plot_data, col2plot, col2plot, ias_output_prefix, filters_db)
 else:
     print("No more data, start from the begining!")
     plot_terator = iter(cols_to_investigate)
@@ -1786,7 +927,7 @@ col2plot = next(plot_terator, False)
 col2plot = ['nee', 'le']
 # Или просто запускать повторно для переключения к следующему параметру
 if col2plot:
-    basic_plot(plot_data, col2plot, filters_db, steps_per_day=points_per_day)
+    basic_plot(plot_data, col2plot, ias_output_prefix, filters_db, steps_per_day=points_per_day)
 else:
     print("No more data, start from the begining!")
     plot_terator = iter(cols_to_investigate)
