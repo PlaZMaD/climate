@@ -1,4 +1,6 @@
+import numpy as np
 import pandas as pd
+import numpy.typing as npt
 
 from src.helpers.py_helpers import fix_strs_case
 
@@ -58,3 +60,13 @@ def df_verify_cols(df: pd.DataFrame, must_cols, optional_cols, allow_unknown=Tru
             msg = f'Unrecognised columns: {unknown_cols}'
             return False, msg
     return True, ''
+
+
+def find_changed_el(arr: npt.NDArray, from_end=False):
+    """ Find index of the first changed element in array """
+    diff = np.where(arr[1:] != arr[:-1])[0] + 1
+    if not from_end:
+        res = diff[0] if len(diff) > 0 else len(arr)
+    else:
+        res = diff[-1] - 1 if len(diff) > 0 else -1
+    return int(res)

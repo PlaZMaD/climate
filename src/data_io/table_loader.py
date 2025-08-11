@@ -1,43 +1,48 @@
 import logging
 from pathlib import Path
-
 import pandas as pd
+import numpy as np
+
+from src.helpers.pd_helpers import find_changed_el
 
 
-def guess_csv_table_start(fpath: Path, nrows=10, sep=','):
-    equal_rows_start_at = 0
+def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwargs):
+    rows = [pd.read_csv(fpath, skiprows=i, nrows=1, header=None, **pd_io_kwargs) for i in range(lookup_rows)]
+    row_l = np.array([len(row.columns) for row in rows])
+    equal_rows_start_at = find_changed_el(row_l, from_end=True) + 1
 
-    # TODO 2 is enumerate fast?
-    with open(fpath, "r") as fp:
-        prev_ncols = -1
-        for i, line in enumerate(fp):
-            ncols = line.count(sep) + 1
-            if prev_ncols != ncols:
-                equal_rows_start_at = i
-            prev_ncols = ncols
-            if i == nrows:
-                break
-
-    if equal_rows_start_at == nrows:
+    if equal_rows_start_at == lookup_rows:
         raise Exception(f'Cannot guess start of csv table in {fpath}')
 
     return equal_rows_start_at
 
 
-def load_csv(fpath: Path, **pd_read_kwargs):
+def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
+    '''
+    # does not work reliably even with 10 numeric lines
+    import chardet
+    if 'encoding' not in pd_read_kwargs:
+        with open(fpath, "r+b") as fb:
+            first_lines = [next(fb) for _ in range(max_header_rows)]
+            <delete numeric lines ?>
+            enc = chardet.detect(b'\n'.join(first_lines))
+            pd_read_kwargs['encoding'] = enc
+    '''
+
+    fallback_io_kwargs = {'encoding': 'utf8', 'encoding_errors': 'backslashreplace'}
+
     try:
         return pd.read_csv(fpath, **pd_read_kwargs)
     except FileNotFoundError:
         raise
     except Exception as e:
+        # TODO 2 change to UnicodeDecodeError, <header err name>?
         logging.error(f'Error when reading {fpath}: {e}, attempting error correction.')
 
-        if 'skiprows':
-            header_row_guess = guess_csv_table_start(fpath)
-            pd_read_kwargs['skiprows'] = header_row_guess
+        if pd_read_kwargs['skiprows'] is None:
+            pd_read_kwargs['skiprows'] = guess_inconsistent_csv_table_start(fpath, **fallback_io_kwargs)
 
-        with open(fpath, encoding='utf8', errors='backslashreplace') as f:
-            return pd.read_csv(f, **pd_read_kwargs)
+        return pd.read_csv(fpath, **fallback_io_kwargs, **pd_read_kwargs)
 
 
 def load_xls(fpath, **pd_read_kwargs):
