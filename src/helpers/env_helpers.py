@@ -3,7 +3,7 @@ from IPython import get_ipython
 
 class _Env:
     def __init__(self):
-        # TODO 3 add local ipynb? (COLAB | LOCAL, IPYNB | PY)
+        # TODO QE 3 add support local ipynb or skip? (COLAB | LOCAL, IPYNB | PY)
         try:
             import google.colab
         except ImportError:

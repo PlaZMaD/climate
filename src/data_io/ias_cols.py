@@ -1,4 +1,5 @@
 # TODO QE 2 store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
+# E: unclear if table will help
 '''
 current renames EDDYPRO? -> SCRIPT to consider
 'u*' -> u_star"
@@ -88,6 +89,7 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
 
     # TODO QE 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
+    # E: seems it was ok, but better to check
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 
@@ -97,6 +99,8 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     'u_star': 'USTAR_1_1_1',
 
     # TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!! (export - convert back or store?)
+    # E: 'VPD' could be bad ?
+
     # previously it was 'VPD_1_1_1': 'VPD_1_1_1',
     'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
 

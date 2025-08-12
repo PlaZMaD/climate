@@ -19,7 +19,8 @@ from src.helpers.py_helpers import sort_fixed, intersect_list
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
-    # TODO 1 appeared to be bugfix of bug introduced in 0.9.3, which skipped last year of IAS export
+    # TODO QV 1 appeared to be bugfix of bug introduced in 0.9.3, which skipped last year of IAS export
+    # E: ias should have 1 extra day and export should not export if not a full year
     # after bug fixed, extending year on import won't be nessesary anymore, remove whole func
 
     # add extra row, because main script expects currently for 2020 year extra row at the start of 2021
@@ -33,6 +34,7 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
         new_row.loc[time_col] = next_timestamp
         new_row.loc[df.columns != time_col] = na_placeholder
         # TODO 4 QE how to add new row properly with auto index?
+        # E: seems no better option
         df.loc[next_timestamp] = new_row
         df.index.freq = freq
     return df
@@ -61,6 +63,7 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     print('Переменные после загрузки: \n', df.columns.to_list())
 
     # TODO 2 QE prob remove whole biomet_cols_index from the script
+    # E: seems it will be ok to replace to col based approach instead
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     return df, biomet_cols_index
@@ -101,6 +104,7 @@ def import_ias(config, config_meteo):
     '''
 
     # TODO QE 2 (TIMESTAMP_START + TIMESTAMP_END) / 2?
+    # E: eddypro - very probably START, not end, nor mid
     time_col = 'datetime'
     df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
     df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
@@ -121,6 +125,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     # possibly will be applied later to each year separately
 
     # TODO QE QV 1 new_time_index is incorrect if ddata does not contain next year extra row,
+    # E: if data is not full year, it should not be exported (is this IAS )
     # year.min() == year.max() if full 1 year, last year skipped - bug introduced  0.9.2 -> 0.9.3
     new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
                                    end=f'01.01.{df[time_col].dt.year.max()}',
@@ -134,6 +139,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
 
     # TODO QE QV 1 365, 366, 1 (current) -> 365, 366, 367 (IAS docs specification)
+    # E: 95% 1 must be, ask V
     day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
     df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
 
@@ -147,7 +153,8 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
 
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
     # TODO QE 2 explicitly attr/mark new columns created as a result of processing in one of the args
-    #  instead of hardcoding them in this function?
+    # instead of hardcoding them in this function?
+    #  E: no info yet is attached to columns
 
     # think about abstraction, i.e. how much script-aware should be ias import and export?
     # may be even merge each import and export routine?
@@ -162,6 +169,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     df = export_ias_prepare_time_cols(df, time_col)
 
     # TODO QE 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
+    # E: probably no special reason, unless cols above all nust be presented
     '''
     if 'h_strg' in df.columns:
         df['SH_1_1_1'] = df['h_strg']
@@ -173,6 +181,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
     # TODO QE 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
+    # E: possibly mistake
     if 'SW_IN_1_1_1' in df.columns:
         # assert df['SW_IN_1_1_1'] == data_swin_1_1_1
         df['SW_IN_1_1_1'] = data_swin_1_1_1
@@ -192,7 +201,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
             save_data.to_csv(fpath, index=False)
             logging.info(f'IAS file saved to {fpath}')
         else:
-            # TODO QE 2 this seems should not be caught ?
+            # TODO 2 change also similar place
             fpath.unlink(missing_ok=True)
             '''
             try:

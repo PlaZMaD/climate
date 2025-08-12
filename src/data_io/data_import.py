@@ -185,6 +185,7 @@ def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType], mode
 
 def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix: str, ias_output_version: str):
     # TODO QE 2 why 2 configs instead of one? merge options?
+    # E: per file extra options, two vars for historical reason
 
     # noinspection PyPep8Naming
     IM = ImportMode
@@ -235,6 +236,7 @@ def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix:
     config_meteo['path'] = change_if_auto(config_meteo['path'], new_option=config_meteo_path_auto,
                                           skip_msg="config_meteo['path'] option is not 'auto'. Auto detection skipped.")
     # TODO QE 2 why ias_output_prefix is not part of config?
+    # E: no special reason, ok to common
     ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_auto,
                                        ok_msg=f'Auto picked ias prefix: {ias_output_prefix_auto}')
     ias_output_version = change_if_auto(ias_output_version, ias_output_version_auto,

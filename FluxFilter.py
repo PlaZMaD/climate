@@ -195,6 +195,7 @@ config['time'] = {}
 config['time']['column_name'] = 'datetime'
 
 
+# TODO 1 E: may be required, keep option per file
 def my_datetime_converter(x):
     date = x['date'].astype(str)
     # date =  x['date'].dt.strftime('%d.%m.%Y') if is_datetime(x['date'].dtype) else x['date'].astype(str)
@@ -257,6 +258,7 @@ config_meteo['time'] = {}
 config_meteo['time']['column_name'] = 'datetime'
 
 
+# TODO 1 auto detecting time may not be possible, keep options
 def my_datetime_converter(x):
     format = "%Y-%m-%d %H%M"  # "%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM
     return pd.to_datetime(x["TIMESTAMP_1"], format=format)
@@ -305,7 +307,7 @@ window_size = 10
 calc_nee = True
 
 # Индекс станции для названий выходных файлов, рисунков
-# TODO 1 that's just a site name, only ias version is ias specific
+# TODO 1 ias version -> config move E:ok
 ias_output_prefix = 'auto'
 ias_output_version = 'auto'
 
@@ -977,7 +979,7 @@ if 'swin_1_1_1' in rep_df.columns:
 else:
     print("WARNING! No swin_1_1_1!")
 
-# TODO 1 QE does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose? (Q about import, not on export)
+# TODO 1 QOA does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose? (Q about import, not on export)
 # introduces nasty complications, requires fix on ias export?
 # E: export goal was to match rep
 
