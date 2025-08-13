@@ -4,13 +4,13 @@ import pytest
 
 import src.helpers.os_helpers  # noqa: F401
 import src.ipynb_globals as ig
-from src.helpers.env_helpers import setup_r
+from src.helpers.env_helpers import setup_r_env
 from test.reddyproc.helpers.io_helpers import find_rep_file
 
 
 @pytest.fixture
 def use_r_from_python_env():
-    setup_r()
+    setup_r_env()
 
     # from rpy2 import robjects
     # robjects.r("ip = as.data.frame(installed.packages()[,c(1,3:4)]); ip = ip[is.na(ip$Priority),1:2,drop=FALSE];print(ip)")

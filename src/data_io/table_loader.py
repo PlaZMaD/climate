@@ -1,3 +1,8 @@
+"""
+This file is an attempt to handle table load as an abstract initial part of data processing,
+and to separate operations like time series repair or merge years from specific file format (if this is possible at all)
+"""
+
 import logging
 from pathlib import Path
 import pandas as pd

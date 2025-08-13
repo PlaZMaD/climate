@@ -500,7 +500,7 @@ def mad_hampel_filter(data_in, filters_db_in, config):
     return data, filters_db
 
 
-def manual_filter(data_in, filters_db_in, col_name, man_range, value, config):
+def manual_filter(data_in, filters_db_in, col_name, man_range, value, manual_config):
     # TODO QE 2 function args were duplicated (compare to 0.9.5 vs 1.0.0), check if man_range arg works same way
 
     data = data_in.copy()
@@ -538,7 +538,7 @@ def manual_filter(data_in, filters_db_in, col_name, man_range, value, config):
         filters_db[col_name].append(f"{col_name}_manualFilter")
     else:
         print("filter already exist but will be overwritten")
-    logging.info(f"manual_filter applied with the next config: \n {config}  \n")
+    logging.info(f"manual_filter applied with the next config: \n {manual_config}  \n")
     return data, filters_db
 
 

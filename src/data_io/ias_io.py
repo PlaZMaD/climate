@@ -10,6 +10,7 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
 from src.data_io.ias_error_check import set_lang, draft_check_ias
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
+from src.ffconfig import FFConfig
 from src.helpers.io_helpers import ensure_path
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_helpers import sort_fixed, intersect_list
@@ -69,19 +70,16 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     return df, biomet_cols_index
 
 
-def import_ias(config, config_meteo):
+def import_ias(config: FFConfig):
     # TODO 2 move to ipynb?
     set_lang('ru')
 
-    # TODO 2 merge with config, pack biomet into load routines only?
-    assert config_meteo['use_biomet']
-
     # TODO QV 1 implement merge for iases if necessary
-    if len(config['path']) != 1:
+    if len(config.input_files) != 1:
         raise NotImplemented('Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
-    fpath = ensure_path(config['path'][0])
-    draft_check_ias(fpath)
-    df = load_table_logged(fpath)
+    ias_fpath = list(config.input_files.keys())[0]
+    draft_check_ias(ias_fpath)
+    df = load_table_logged(ias_fpath)
     ''' from eddypro to ias
     for year in ias_df.index.year.unique():
         ias_filename = f'{ias_output_prefix}_{year}_{ias_output_version}.csv'
@@ -118,7 +116,9 @@ def import_ias(config, config_meteo):
     df.replace(-9999, np.nan, inplace=True)
 
     df, biomet_cols_index = process_ias_col_names(df, time_col)
-    return df, time_col, biomet_cols_index, df.index.freq, config_meteo
+
+    has_meteo = True
+    return df, time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
 def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
@@ -201,18 +201,12 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
             save_data.to_csv(fpath, index=False)
             logging.info(f'IAS file saved to {fpath}')
         else:
-            # TODO 2 change also similar place
             fpath.unlink(missing_ok=True)
-            '''
-            try:
-                os.remove(os.path.join('output',ias_filename))
-            except Exception as e:
-                logging.exception(e)
-            '''
 
+            # TODO 2 is print excessive?
             # print(f'not enough data for {year}')
             logging.info(f'{year} not saved, not enough data!')
-# ias_year = df[time_col].dt.year.min()
-# fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
-# ias_df.to_csv(os.path.join('output',fname), index=False)
-# logging.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')
+    # ias_year = df[time_col].dt.year.min()
+    # fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
+    # ias_df.to_csv(os.path.join('output',fname), index=False)
+    # logging.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')

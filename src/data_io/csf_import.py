@@ -8,14 +8,15 @@ from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
+from src.ffconfig import FFConfig
 from src.helpers.io_helpers import ensure_path
 from src.helpers.pd_helpers import df_ensure_cols_case
 
 
-def process_csf_col_names(df: pd.DataFrame, time_col):
+def check_csf_col_names(df: pd.DataFrame):
     print('Переменные в csf: \n', df.columns.to_list())
 
-    known_csf_cols = COLS_CSF_KNOWN  # TODO 1 # + [time_col]
+    known_csf_cols = COLS_CSF_KNOWN
     df = df_ensure_cols_case(df, known_csf_cols, ignore_missing=True)
 
     unknown_cols = df.columns.difference(known_csf_cols)
@@ -26,12 +27,14 @@ def process_csf_col_names(df: pd.DataFrame, time_col):
 
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)
     if len(unused_cols) > 0:
-        # TODO 2 localize properly, remove prints (logging.* goes to stdout too)
+        # TODO 1 localize properly, remove prints (logging.* goes to stdout too)
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
         logging.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))
 
-    df = df.rename(columns=COLS_CSF_IMPORT_MAP)
+
+def import_rename_csf_cols(df: pd.DataFrame, time_col):
+    df.rename(columns=COLS_CSF_IMPORT_MAP, inplace=True)
     print('Переменные после загрузки: \n', df.columns.to_list())
 
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
@@ -39,19 +42,16 @@ def process_csf_col_names(df: pd.DataFrame, time_col):
     return df, biomet_cols_index
 
 
-def import_csf(config, config_meteo):
-    # TODO 2 merge with config, pack biomet into load routines only?
-    assert config_meteo['use_biomet']
-
-    if len(config['path']) != 1:
+def import_csf(config: FFConfig):
+    if len(config.input_files) != 1:
         raise NotImplemented(
             'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
-    fpath = ensure_path(config['path'][0])
+    fpath = list(config.input_files.keys())[0]
     df = load_table_logged(fpath, header_row=1, skiprows=[2, 3])
 
-    # TODO 1 import dict?
-    df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
+    check_csf_col_names(df)
 
+    df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
     time_col = 'TIMESTAMP'
     df[time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format='%Y-%m-%d %H:%M:%S')
     df = df_init_time_draft(df, time_col)
@@ -62,5 +62,7 @@ def import_csf(config, config_meteo):
     print('Replacing -9999 to np.nan')
     df.replace(-9999, np.nan, inplace=True)
 
-    df, biomet_cols_index = process_csf_col_names(df, time_col)
-    return df, time_col, biomet_cols_index, df.index.freq, config_meteo
+    df, biomet_cols_index = import_rename_csf_cols(df, time_col)
+
+    has_meteo = True
+    return df, time_col, biomet_cols_index, df.index.freq, has_meteo
