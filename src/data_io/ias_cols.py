@@ -1,5 +1,7 @@
-# TODO QE 2 store in table file instead (some cols are branching, like rain <-> heavey rain); other problems if table?
+# TODO 3 consider a table with all simple col ops instead of just untransparent import and export transforms
 # E: unclear if table will help
+#  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
+
 '''
 current renames EDDYPRO? -> SCRIPT to consider
 'u*' -> u_star"
@@ -20,7 +22,7 @@ COLS_IAS_USED_NORENAME_IMPORT = [
     # Script uses cols without renames (but lowercases on import)
     'TS_1_1_1',
 
-    # TODO QE QV QOA 1 all new generated cols will still be exported to ias, is this desired?
+    # TODO 1 QOA QV all new generated cols will still be exported to ias, is this desired?
     #  for example, P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
     'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
     'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
@@ -88,7 +90,7 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
 
-    # TODO QE 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
+    # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',

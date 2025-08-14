@@ -27,6 +27,8 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
     # add extra row, because main script expects currently for 2020 year extra row at the start of 2021
     # specifically, ias export currently requires 2 years, not 1
     # it does not look right, but not changing export yet
+
+    # TODO 3 seems no better option to add row, extract to separate func
     freq = df.index.freq
     last_timestamp: pd.Timestamp = df.last_valid_index()
     next_timestamp = last_timestamp + freq
@@ -34,8 +36,6 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
         new_row = df.loc[last_timestamp].copy()
         new_row.loc[time_col] = next_timestamp
         new_row.loc[df.columns != time_col] = na_placeholder
-        # TODO 4 QE how to add new row properly with auto index?
-        # E: seems no better option
         df.loc[next_timestamp] = new_row
         df.index.freq = freq
     return df
@@ -63,8 +63,7 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
 
-    # TODO 2 QE prob remove whole biomet_cols_index from the script
-    # E: seems it will be ok to replace to col based approach instead
+    # TODO 2 prob remove whole biomet_cols_index from the script E: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     return df, biomet_cols_index
@@ -101,8 +100,7 @@ def import_ias(config: FFConfig):
     # ias_df.to_csv(os.path.join('output',ias_filename), index=False)
     '''
 
-    # TODO QE 2 (TIMESTAMP_START + TIMESTAMP_END) / 2?
-    # E: eddypro - very probably START, not end, nor mid
+    # TODO 2 check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid
     time_col = 'datetime'
     df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
     df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
@@ -124,9 +122,7 @@ def import_ias(config: FFConfig):
 def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     # possibly will be applied later to each year separately
 
-    # TODO QE QV 1 new_time_index is incorrect if ddata does not contain next year extra row,
-    # E: if data is not full year, it should not be exported (is this IAS )
-    # year.min() == year.max() if full 1 year, last year skipped - bug introduced  0.9.2 -> 0.9.3
+    # TODO QV 1 years is skipped if IAS data does not contain next year extra row E: intentionally
     new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
                                    end=f'01.01.{df[time_col].dt.year.max()}',
                                    freq=df.index.freq, inclusive='left')
@@ -138,8 +134,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     time_end = df[time_col] + pd.Timedelta(0.5, 'h')
     df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
 
-    # TODO QE QV 1 365, 366, 1 (current) -> 365, 366, 367 (IAS docs specification)
-    # E: 95% 1 must be, ask V
+    # TODO QV 1 365, 366, 1 (current), check it's NOT 365, 366, 367 E: 95% must be 1, ask V
     day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
     df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
 
@@ -152,12 +147,10 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
 
 
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
-    # TODO QE 2 explicitly attr/mark new columns created as a result of processing in one of the args
-    # instead of hardcoding them in this function?
-    #  E: no info yet is attached to columns
+    # TODO 2 check if attr/mark can be avoided and no info nessesary to attach to cols E: no info approach was intentional
 
     # think about abstraction, i.e. how much script-aware should be ias import and export?
-    # may be even merge each import and export routine?
+    # may be even merge some import and export routines?
     # TODO 3 may be add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
 
     df = df.fillna(-9999)
@@ -168,7 +161,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
     df = export_ias_prepare_time_cols(df, time_col)
 
-    # TODO QE 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
+    # TODO 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
     # E: probably no special reason, unless cols above all nust be presented
     '''
     if 'h_strg' in df.columns:
@@ -179,9 +172,9 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
         var_cols.append('SLE_1_1_1')
     '''
 
-    # TODO QE 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
+    # TODO 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
-    # E: possibly mistake
+    # E: possibly simply mistake and could be used without data_swin_1_1_1
     if 'SW_IN_1_1_1' in df.columns:
         # assert df['SW_IN_1_1_1'] == data_swin_1_1_1
         df['SW_IN_1_1_1'] = data_swin_1_1_1

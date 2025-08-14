@@ -17,7 +17,7 @@ from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
 
 def set_lang(language):
-    # TODO QE 3 replaced to Path, verify bundle still works
+    # TODO E 3 replaced to Path, verify bundle still works
     # get the bundle dir if bundled or simply the __file__ dir if not bundled
     bundle_dir = getattr(sys, '_MEIPASS', Path(__file__).parent.parent.parent.absolute())
 
@@ -28,14 +28,9 @@ def set_lang(language):
     lang.install()
 
 
-# other questions not about this ias
-# TODO QE 2 git del leftover branches? will possibly del git activity too
-# E: delete ok
+# TODO 2 git del leftover branches? will possibly del git activity too E: delete ok
 
-# TODO QE 1 store in table file instead? 3+ duplicates now, also case changed:
-#  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
-# TODO QE 1 fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST',
-# E: ok
+# TODO E 2 fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST', need to update IAS check tool
 # 'SPEC_NIR_ OUT' 'SPEC_PRI_REF_ IN', 'SPEC_RED_ OUT', 'SPEC_PRI_ REF_OUT', 'SPEC_RED_ IN'
 known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 'FC', 'FC_CMB', 'FC_SSITC_TEST', 'FCH4',
                  'FCH4_CMB', 'FCH4_PI', 'FETCH_70', 'FETCH_80', 'FETCH_90', 'FETCH_FILTER', 'FETCH_MAX', 'FH2O', 'FN2O',
@@ -50,7 +45,8 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'TAU', 'TAU_SSITC_TEST', 'TCARI', 'THROUGHFALL', 'TS', 'U_SIGMA', 'USTAR', 'V_SIGMA', 'VPD_PI',
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
-                 # TODO QE 1 specification has only H20_STR, not H2O_STR - must be error instead of known?
+                 # TODO E 2 ias check tool requires one specific name too, must be updated
+                 # TODO 1 QV specification has only H20_STR, not H2O_STR, add import rename or error
                  # E: intentional (need to rename, to common name)
                  'H20_STR', 'H2O_STR'
                  ]
@@ -280,9 +276,8 @@ def load_ias(fpath: Path):
 
 
 def check_ias_file(fpath):
-    # TODO QE 2 possibly extract later to abstract time series converter/repairer routines which are format independent?
-    # E: possibly ok
-    # eddypro have similar flaws
+    # TODO 2 possibly extract later to abstract time series converter/repairer routines which are format independent? E: ok
+    # eddypro may have similar flaws
 
     data = load_ias(fpath)
 
@@ -368,8 +363,7 @@ class ErrorFlagHandler(logging.Handler):
 
 
 def draft_check_ias(fpath):
-    # TODO 2 QE storing ias checks as shared code: what are the options? same repo?
-    # E: for now, simply copy duplicate file
+    # TODO 3 E synchronise sometimes to IAS tool repo (via duplicate file)
 
     # TODO 2 move to the script start?
     # will it be translation method for all the tools?
