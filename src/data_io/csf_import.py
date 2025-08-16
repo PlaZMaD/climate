@@ -1,10 +1,11 @@
 import logging
+import re
 
 import numpy as np
 import pandas as pd
 
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
-    COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT
+    COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
@@ -22,11 +23,12 @@ def check_csf_col_names(df: pd.DataFrame):
     unknown_cols = df.columns.difference(known_csf_cols)
     if len(unknown_cols) > 0:
         msg = 'Неизвестные CSF переменные: \n', str(unknown_cols)
-        logging.exception(msg)
-        raise NotImplementedError(msg)
+        logging.critical(msg)
+        # raise NotImplementedError(msg)
 
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)
     if len(unused_cols) > 0:
+        # TODO 1 QOA log - english only? (print may be too?)
         # TODO 1 localize properly, remove prints (logging.* goes to stdout too)
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
@@ -37,9 +39,29 @@ def import_rename_csf_cols(df: pd.DataFrame, time_col):
     df.rename(columns=COLS_CSF_IMPORT_MAP, inplace=True)
     print('Переменные после загрузки: \n', df.columns.to_list())
 
-    expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
-    biomet_cols_index = df.columns.intersection(expected_biomet_cols)
+    known_meteo_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
+    biomet_cols_index = df.columns.intersection(known_meteo_cols)
     return df, biomet_cols_index
+
+
+def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
+    rename_map = {}
+    for expr, tgt_name in regex_map.items():
+        for col in df.columns:
+            match = re.match(expr, col)
+            if not match:
+                continue
+            if col in rename_map:
+                logging.warning(f'Column {col} matches regex rename patterns twice or more: {rename_map} and {expr}.')
+            rename_map[col] = tgt_name
+
+    df.rename(columns=rename_map, inplace=True)
+    if len(rename_map) > 0:
+        print(f'Columns were renamed by next regex match: {rename_map}')
+    else:
+        print('No regex rename matches found.')
+
+    return df
 
 
 def import_csf(config: FFConfig):
@@ -49,10 +71,11 @@ def import_csf(config: FFConfig):
     fpath = list(config.input_files.keys())[0]
     df = load_table_logged(fpath, header_row=1, skiprows=[2, 3])
 
+    df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
     check_csf_col_names(df)
 
     df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
-    time_col = 'TIMESTAMP'
+    time_col = config.time_col
     df[time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format='%Y-%m-%d %H:%M:%S')
     df = df_init_time_draft(df, time_col)
 

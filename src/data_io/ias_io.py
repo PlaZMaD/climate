@@ -16,7 +16,7 @@ from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_helpers import sort_fixed, intersect_list
 
 
-# TODO 1 more tests of ias export to match import after export 1y fixed
+# TODO 1 test more ias export to match import after export 1y fixed
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
@@ -55,7 +55,7 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
 
     unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
     if len(unsupported_cols) > 0:
-        # TODO 2 localize properly, remove prints (logging.* goes to stdout too)
+        # TODO 2 localize properly, check prints (logging.* goes to stdout too, but must be ru / en)
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unsupported_cols.to_list())
         logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
@@ -63,7 +63,7 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
 
-    # TODO 2 prob remove whole biomet_cols_index from the script E: ok
+    # TODO QOA 2 prob remove whole biomet_cols_index from the script E: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     return df, biomet_cols_index
@@ -122,7 +122,7 @@ def import_ias(config: FFConfig):
 def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     # possibly will be applied later to each year separately
 
-    # TODO QV 1 years is skipped if IAS data does not contain next year extra row E: intentionally
+    # TODO QOA QV 1 years is skipped if IAS data does not contain next year extra row E: intentionally
     new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
                                    end=f'01.01.{df[time_col].dt.year.max()}',
                                    freq=df.index.freq, inclusive='left')
@@ -161,7 +161,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
     df = export_ias_prepare_time_cols(df, time_col)
 
-    # TODO 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
+    # TODO QOA 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
     # E: probably no special reason, unless cols above all nust be presented
     '''
     if 'h_strg' in df.columns:
@@ -172,7 +172,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
         var_cols.append('SLE_1_1_1')
     '''
 
-    # TODO 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
+    # TODO QOA 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
     # E: possibly simply mistake and could be used without data_swin_1_1_1
     if 'SW_IN_1_1_1' in df.columns:

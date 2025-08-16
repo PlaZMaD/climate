@@ -1,4 +1,6 @@
 # TODO 3 consider a table with all simple col ops instead of just untransparent import and export transforms
+# problem: Excel files are not ransparent for VCS, use yaml? csv? ...?
+# handling unit/str conversions between import and export if name is same?
 # E: unclear if table will help
 #  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
 
@@ -59,6 +61,33 @@ COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
 # COLS_IAS_UNUSED_NORENAME_IMPORT_DICT = {k: k.lower() for k in COLS_IAS_NORENAME_EXPORT}
 COLS_IAS_NORENAME_EXPORT_DICT = {k.lower(): k for k in COLS_IAS_NORENAME_EXPORT}
 
+
+# TODO 1 double check all via notepad++
+''' 
+#Версия, когда ИАС делали:
+#Переменные для ИАС "Углерод-Э" поставлены в соответствие переменным из входных файлов full output
+#и биомет. Пример: заменить название колонок co2_flux на FC_1_1_1, qc_co2_flux на FC_SSITC_TEST_1_1_1 
+
+#(columns={"co2_flux" : "FC_1_1_1", "qc_co2_flux" : "FC_SSITC_TEST_1_1_1", "LE" : "LE_1_1_1",
+#	"qc_LE" : "LE_SSITC_TEST_1_1_1", "H" : "H_1_1_1", "qc_H" : "H_SSITC_TEST_1_1_1", "Tau" : "TAU_1_1_1",
+#	"qc_Tau" : "TAU_SSITC_TEST_1_1_1", "co2_strg" : "SC_1_1_1", "co2_mole_fraction" : "CO2_1_1_1", !
+#	"h2o_mole_fraction" : "H2O_1_1_1", "sonic_temperature" : "T_SONIC_1_1_1", "u*" : "USTAR_1_1_1",
+#	"Ta_1_1_1" : "TA_1_1_1", "Pa_1_1_1" : "PA_1_1_1", "Swin_1_1_1" : "SW_IN_1_1_1", "Swout_1_1_1" : "SW_OUT_1_1_1",
+#	"Lwin_1_1_1" : "LW_IN_1_1_1", "Lwout_1_1_1" : "LW_OUT_1_1_1", "PPFD_1_1_1" : "PPFD_IN_1_1_1",
+#	"Rn_1_1_1" : "NETRAD_1_1_1", "MWS_1_1_1" : "WS_1_1_1", "Ts_1_1_1" : "TS_1_1_1", "Ts_2_1_1" : "TS_2_1_1",
+#	"Ts_3_1_1" : "TS_3_1_1", "Pswc_1_1_1" : "SWC_1_1_1", "Pswc_2_1_1" : "SWC_2_1_1", "Pswc_3_1_1" : "SWC_3_1_1",
+#	"SHF_1_1_1" : "G_1_1_1", "SHF_2_1_1" : "G_2_1_1", "SHF_3_1_1" : "G_3_1_1", "L" : "MO_LENGTH_1_1_1",
+#	"(z-d)/L" : "ZL_1_1_1", "x_peak" : "FETCH_MAX_1_1_1", "x_70%" : "FETCH_70_1_1_1", "x_90%" : "FETCH_90_1_1_1"}) 
+
+#здесь в словарике есть u*, ты заменил название, кажется											
+#обрати внимание на символы / и % в последних переменных, чтобы они не помешали
+#не отличаются: "RH_1_1_1" : "RH_1_1_1", "P_1_1_1" : "P_1_1_1", "VPD_1_1_1" : "VPD_1_1_1", "WD_1_1_1" : "WD_1_1_1"
+#во входных биометах "Rg_1_1_1" должно быть тождествено равно "Swin_1_1_1", это то же самое.
+#Если нет Swin_1_1_1, нужно написать туда значения из Rg_1_1_1
+
+'''
+
+
 COLS_SCRIPT_E_TO_IAS_RENAMES = {
     # originates from conversion of file formats,
 
@@ -89,9 +118,12 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     '(z-d)/L': 'ZL_1_1_1',
     'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
+    # TODO 1 test added, not checked
+    'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
 
     # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
+    # TODO QOA ch4_signal_strength not in eddy or any specification?
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 

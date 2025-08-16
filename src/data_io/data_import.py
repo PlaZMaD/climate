@@ -93,7 +93,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
             possible_input_modes += [ImportMode.EDDYPRO_FO]
         else:
-            # TODO QOA 1 1 or more?
+            # TODO QOA 1 is multiple supported?
             # if input_ftypes.count(InputFileType.EDDYPRO_BIOMET) > 1:
             #     raise AutoImportException('More than 2 biomet files detected')
             possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
@@ -152,7 +152,7 @@ def auto_detect_input_files(config: FFConfig):
     config.import_mode = detect_input_mode(config.input_files)
     logging.info(f'Auto picked import mode: {config.import_mode}')
 
-    # TODO 3 update messages to match exact config naming after updating config options
+    # TODO 2 update cells descs to match exact config naming after updating config options
     if config.import_mode == IM.IAS:
         res = detect_auto_config_ias(config.input_files)
     elif config.import_mode == IM.CSF:

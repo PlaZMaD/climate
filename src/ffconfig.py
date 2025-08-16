@@ -17,7 +17,6 @@ class InputFileConfig(CleanBaseModel):
     repair_time: bool = True
     # заменяем -9999  на np.nan
     missing_data_codes: str | list[str] = ['-9999']
-    time_col: str = 'datetime'
 
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
     time_converter: Callable[[Any], Any] = None
@@ -41,5 +40,6 @@ class FFConfig(CleanBaseModel):
     # options not for ipynb:
 
     # if True will load just a small chunk of data
+    time_col: str = 'datetime'
     debug: bool = False
     import_mode: ImportMode = ImportMode.AUTO

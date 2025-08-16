@@ -182,10 +182,11 @@ init_logging(level=logging.INFO, fpath=out_dir / 'log.log', to_stdout=True)
 # debug=True быстрый режим скрипта с обработкой только нескольких месяцев
 config = FFConfig(debug=False)
 
+# TODO 1 QOA remove all ru comments from code to description?
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-# config.input_files = 'auto'
-config.input_files = ['tv_fy4_2019_v01.xlsx']
+config.input_files = 'auto'
+# config.input_files = ['tv_fy4_2019_v01.xlsx']
 # config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv']
 # 'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO}]#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config.input_files = {'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO_FO}
@@ -195,7 +196,8 @@ config.input_files = ['tv_fy4_2019_v01.xlsx']
 # на случай сложных колонок времени
 # замена -9999 на np.nan
 config.eddypro_fo.missing_data_codes = ['-9999']
-config.eddypro_fo.time_col = 'datetime'
+# TODO QOA 1 config['time']['column_name'] was never used?
+config.time_col = 'datetime'
 # генерируем новые временные метки в случае ошибок
 config.eddypro_fo.repair_time = True
 
@@ -253,8 +255,8 @@ config.eddypro_biomet.repair_time = True
 
 #####################
 # на случай сложных колонок времени
-config.eddypro_biomet.time_col = 'datetime'
-
+# TODO QOA 1 join Параметры загрузки файлов full output и Параметры загрузки файла biomet
+# TODO QOA 1 auto time format? was actually function edit ever used?
 
 def my_datetime_converter(x):
     format = "%Y-%m-%d %H%M"  # "%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM
@@ -471,7 +473,7 @@ if not config.has_meteo:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
-# TODO 1 QOA ppfd_in_1_1_1 is name before import repairs?
+# TODO 1 QOA ppfd_in_1_1_1 is renamed to ppfd_1_1_1 on import
 #  i.e. should be different name instead in this list? E: ask OA
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
@@ -505,6 +507,7 @@ if data_type_error_flag:
 # flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
 # E: ok, requires prev section edits too, but low benefit
 # O: check cell description for logic
+# TODO QE 3 wait, flags were a way to store info which col is not real?
 have_rh_flag = False
 have_vpd_flag = False
 have_par_flag = False
@@ -552,7 +555,8 @@ for col_name in data.columns:
         have_par_flag = True
     if 'rg_1_1_1' in col_name:
         have_rg_flag = True
-    if 'p_1_1_1' in col_name:
+    # TODO QE 1 false fired on 't_dp_1_1_1', was <'p_1_1_1' in col_name> instead of <'p_1_1_1' == col_name> in some cases intentional?
+    if 'p_1_1_1' == col_name:
         have_p_flag = True
     if 'p_rain_1_1_1' in col_name:
         have_pr_flag = True
@@ -1012,12 +1016,11 @@ if config.has_meteo:
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-    # TODO 1 do more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+    # TODO 1 test more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
 
     # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1'
     #  check eddypro specification, also 'nee'  'par' 'rg_1_1_1'
 
-    # TODO 1 config dict->class was not updated in this function
     export_ias(out_dir, config.site_name, config.ias_output_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])
 

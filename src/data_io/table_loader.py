@@ -41,7 +41,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
     except FileNotFoundError:
         raise
     except Exception as e:
-        # TODO 2 change to UnicodeDecodeError, <header err name>?
+        # TODO 2 change any to UnicodeDecodeError, <header err name>?
         logging.error(f'Error when reading {fpath}: {e}, attempting error correction.')
 
         if pd_read_kwargs['skiprows'] is None:

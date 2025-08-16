@@ -34,7 +34,7 @@ def load_eddypro(config: FFConfig):
 
     # load of eddypro = full_output, optionally with biomet
     if set(c_fo.missing_data_codes) - set(['-9999']) != set():
-        raise NotImplementedError(f"Not yet supported data codes: {c_fo.missing_data_codes}")
+        raise NotImplementedError(f"Not yet supported df codes: {c_fo.missing_data_codes}")
 
     bg_fo_config = {
         'path': fo_paths,
@@ -43,12 +43,12 @@ def load_eddypro(config: FFConfig):
         'time': {'column_name': c_fo.time_col, 'converter': c_fo.time_converter},
         'repair_time': c_fo.repair_time,
     }
-    data, time = bg.load_df(bg_fo_config)
-    data = data[next(iter(data))]  # т.к. изначально у нас словарь
-    data_freq = data.index.freq
+    df, time_col = bg.load_df(bg_fo_config)
+    df = df[next(iter(df))]  # т.к. изначально у нас словарь
+    data_freq = df.index.freq
 
-    print("Диапазон времени full_output: ", data.index[[0, -1]])
-    logging.info("Time range for full_output: " + " - ".join(data.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    print("Диапазон времени full_output: ", df.index[[0, -1]])
+    logging.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
     has_meteo = (config.import_mode == ImportMode.EDDYPRO_FO_AND_BIOMET)
     if has_meteo:
@@ -63,21 +63,21 @@ def load_eddypro(config: FFConfig):
     else:
         data_meteo = None
 
-    print("Колонки в FullOutput \n", data.columns.to_list())
+    print("Колонки в FullOutput \n", df.columns.to_list())
     if has_meteo:
         print("Колонки в метео \n", data_meteo.columns.to_list())
 
     # merge into common DataFrame
     if has_meteo:
-        data = data.join(data_meteo, how='outer', rsuffix='_meteo')
-        data[time] = data.index
-        data = bg.repair_time(data, time)
-        if data[data_meteo.columns[-1]].isna().sum() == len(data.index):
-            print("Bad meteo data range, skipping! Setting config_meteo ['use_biomet']=False")
+        df = df.join(data_meteo, how='outer', rsuffix='_meteo')
+        df[time_col] = df.index
+        df = bg.repair_time(df, time_col)
+        if df[data_meteo.columns[-1]].isna().sum() == len(df.index):
+            print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
             has_meteo = False
 
     biomet_columns = []
     if has_meteo:
         biomet_columns = data_meteo.columns.str.lower()
 
-    return data, time, biomet_columns, data_freq, has_meteo
+    return df, time_col, biomet_columns, data_freq, has_meteo
