@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
+from src.data_io.table_loader import load_table_logged
+
 
 # np.set_printoptions(threshold=sys.maxsize)
 
@@ -233,6 +235,8 @@ def final_time_check(data, time_in):
 
 def load_ias(fpath: Path):
     # TODO 2 try to merge into src.data_io.table_loader -> load_table_from_file
+    # there is something wrong with csv files
+    # may be wrong - file is shared, so will require more shared file
     ext_l = fpath.suffix.lower()
 
     if '.csv' in ext_l:
@@ -279,7 +283,8 @@ def check_ias_file(fpath):
     # TODO 3 possibly extract later to abstract time series converter/repairer routines which are format independent? E: ok
     # eddypro may have similar flaws
 
-    data = load_ias(fpath)
+    # data = load_ias(fpath)
+    data = load_table_logged(fpath)
 
     total_errors = 0
     columns = list(copy(data.columns))

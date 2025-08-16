@@ -5,13 +5,10 @@
 #  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
 
 '''
-current renames EDDYPRO? -> SCRIPT to consider
+current renames EDDYPRO? -> SCRIPT to check
 'u*' -> u_star"
 'ppfd_in_1_1_1' -> ppfd_1_1_1"
 'sw_in_1_1_1' -> swin_1_1_1"
-'co2_signal_strength' -> co2_signal_strength"
-['co2_signal_strength_7500_mean', 'CO2SS'.lower()] or '*co2_signal_strength*' -> 'co2_signal_strength'
-['ch4_signal_strength_7700_mean', 'CH4SS'.lower()] or '*ch4_signal_strength*' -> 'ch4_signal_strength'
 '''
 
 # specifically mark cols used in the script and unused?
@@ -22,23 +19,30 @@ from src.helpers.py_helpers import invert_dict
 
 COLS_IAS_USED_NORENAME_IMPORT = [
     # Script uses cols without renames (but lowercases on import)
-    'TS_1_1_1',
+    'WD_1_1_1',
+    'TS_1_1_1', 'TS_2_1_1', 'TS_3_1_1',
 
     # TODO 1 QOA QV all new generated cols will still be exported to ias, is this desired?
     #  for example, P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
-    'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
     'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
     'P_1_1_1',  # 'P_1_1_1' <- 'P_1_1_1' or 'P_RAIN_1_1_1'
-    'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
+
+    # TODO 1 QV QOA was not in the original import list, I added
     'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
+    'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
+    'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
+
+
+    # TODO 1 QV QOA was in instruction list, but not in IAS specification, only VPD_PI_* is
+    # 'VPD_1_1_1',
 ]
 COLS_IAS_UNUSED_NORENAME_IMPORT = [
     # Script does not use, but may requre on export or import, for example:
     # IAS import (rename to lower) -> script processing -> IAS export (rename back to upper)
     # note: _1_1_1 can be dynamic, but will make occurence search bad
     'H2O_STR_1_1_1', 'FH2O_1_1_1',
-    'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1', 'TS_2_1_1', 'TS_3_1_1',
-    'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'V_SIGMA_1_1_1', 'WD_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1',
+    'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1', 
+    'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'V_SIGMA_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1',
     'FCH4_CMB_1_1_1', 'SPEC_PRI_REF_OUT_1_1_1', 'SPEC_PRI_TGT_IN_1_1_1', 'THROUGHFALL_1_1_1', 'MTCI_1_1_1',
     'FO3_1_1_1',
     'FO3_SSITC_TEST_1_1_1', 'NDVI_1_1_1', 'T_CANOPY_1_1_1', 'TCARI_1_1_1', 'H20_STR_1_1_1', 'FN2O_CMB_1_1_1',
@@ -54,6 +58,9 @@ COLS_IAS_UNUSED_NORENAME_IMPORT = [
     'DBH_1_1_1', 'GPP_PI_1_1_1', 'FNO2_CMB_1_1_1',
     'SR_1_1_1', 'O3_1_1_1', 'REP_1_1_1',
     'PA_1_1_1', 'SG_1_1_1', 'SB_1_1_1',
+
+    # TODO 1 QOA QV what to do
+    'VPD_PI_1_1_1'
 ]
 COLS_IAS_NORENAME_IMPORT = COLS_IAS_UNUSED_NORENAME_IMPORT + COLS_IAS_USED_NORENAME_IMPORT
 COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
@@ -62,30 +69,9 @@ COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
 COLS_IAS_NORENAME_EXPORT_DICT = {k.lower(): k for k in COLS_IAS_NORENAME_EXPORT}
 
 
-# TODO 1 double check all via notepad++
-''' 
-#Версия, когда ИАС делали:
-#Переменные для ИАС "Углерод-Э" поставлены в соответствие переменным из входных файлов full output
-#и биомет. Пример: заменить название колонок co2_flux на FC_1_1_1, qc_co2_flux на FC_SSITC_TEST_1_1_1 
-
-#(columns={"co2_flux" : "FC_1_1_1", "qc_co2_flux" : "FC_SSITC_TEST_1_1_1", "LE" : "LE_1_1_1",
-#	"qc_LE" : "LE_SSITC_TEST_1_1_1", "H" : "H_1_1_1", "qc_H" : "H_SSITC_TEST_1_1_1", "Tau" : "TAU_1_1_1",
-#	"qc_Tau" : "TAU_SSITC_TEST_1_1_1", "co2_strg" : "SC_1_1_1", "co2_mole_fraction" : "CO2_1_1_1", !
-#	"h2o_mole_fraction" : "H2O_1_1_1", "sonic_temperature" : "T_SONIC_1_1_1", "u*" : "USTAR_1_1_1",
-#	"Ta_1_1_1" : "TA_1_1_1", "Pa_1_1_1" : "PA_1_1_1", "Swin_1_1_1" : "SW_IN_1_1_1", "Swout_1_1_1" : "SW_OUT_1_1_1",
-#	"Lwin_1_1_1" : "LW_IN_1_1_1", "Lwout_1_1_1" : "LW_OUT_1_1_1", "PPFD_1_1_1" : "PPFD_IN_1_1_1",
-#	"Rn_1_1_1" : "NETRAD_1_1_1", "MWS_1_1_1" : "WS_1_1_1", "Ts_1_1_1" : "TS_1_1_1", "Ts_2_1_1" : "TS_2_1_1",
-#	"Ts_3_1_1" : "TS_3_1_1", "Pswc_1_1_1" : "SWC_1_1_1", "Pswc_2_1_1" : "SWC_2_1_1", "Pswc_3_1_1" : "SWC_3_1_1",
-#	"SHF_1_1_1" : "G_1_1_1", "SHF_2_1_1" : "G_2_1_1", "SHF_3_1_1" : "G_3_1_1", "L" : "MO_LENGTH_1_1_1",
-#	"(z-d)/L" : "ZL_1_1_1", "x_peak" : "FETCH_MAX_1_1_1", "x_70%" : "FETCH_70_1_1_1", "x_90%" : "FETCH_90_1_1_1"}) 
-
-#здесь в словарике есть u*, ты заменил название, кажется											
-#обрати внимание на символы / и % в последних переменных, чтобы они не помешали
-#не отличаются: "RH_1_1_1" : "RH_1_1_1", "P_1_1_1" : "P_1_1_1", "VPD_1_1_1" : "VPD_1_1_1", "WD_1_1_1" : "WD_1_1_1"
-#во входных биометах "Rg_1_1_1" должно быть тождествено равно "Swin_1_1_1", это то же самое.
-#Если нет Swin_1_1_1, нужно написать туда значения из Rg_1_1_1
-
-'''
+# TODO 3 possible data integrity check to implement - from old ias instructions
+# во входных биометах "Rg_1_1_1" должно быть тождествено равно "Swin_1_1_1", это то же самое.
+# Если нет Swin_1_1_1, нужно написать туда значения из Rg_1_1_1
 
 
 COLS_SCRIPT_E_TO_IAS_RENAMES = {
@@ -118,11 +104,14 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     '(z-d)/L': 'ZL_1_1_1',
     'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
-    # TODO 1 test added, not checked
+    # TODO 1 test - cols added, not checked
     'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
 
     # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
+    # IAS: CH4_RSSI_1_1_1 (%) CH4 Received Signal Strength Indicator
+    # IAS: CO2_STR (-) СО2 signal strength
+    # FF manual: CH42SS (CH4 Signal Strength или RSSI)	(-) <- does not match
     # TODO QOA ch4_signal_strength not in eddy or any specification?
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
@@ -133,10 +122,9 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     'u_star': 'USTAR_1_1_1',
 
     # TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!! (export - convert back or store?)
-    # E: 'VPD' could be bad ?
-
+    # E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
     # previously it was 'VPD_1_1_1': 'VPD_1_1_1',
-    'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
+    # 'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
 
     # only case changed, moved to COLS_IAS_NORENAME
     # 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1',

@@ -23,6 +23,7 @@ COLS_CSF_USED_NORENAME_IMPORT = [
 ]
 COLS_CSF_UNUSED_NORENAME_IMPORT = [
     # TODO 1 QOA only warn for unknown cols, don't stop? import them or skip?
+    # biomet is already part of CSF, right?
     'FC_mass', 'FC_samples', 'ET', 'ET_QC', 'ET_samples', 'LE', 'LE_samples', 'H', 'H_samples', 'Bowen_ratio', 'TSTAR',
     'TKE', 'e', 'e_sat', 'PA', 'PA_SIGMA', 'VPD', 'U', 'U_SIGMA', 'V', 'V_SIGMA', 'W', 'W_SIGMA', 'T_SONIC_SIGMA',
     'sonic_azimuth', 'WS', 'WD_SONIC', 'WD_SIGMA', 'WD', 'WS_MAX', 'CO2_SIGMA', 'CO2_mixratio', 'CO2_mixratio_SIGMA',
