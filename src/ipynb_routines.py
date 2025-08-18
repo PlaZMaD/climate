@@ -4,7 +4,7 @@ However, output may be auto replaced with text.
 
 Also consider to change if nessesary:
 if ENV.IPYNB:
-	import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 """
 import logging
 from pathlib import Path
@@ -22,7 +22,7 @@ from src.helpers.image_tools import grid_images
 from src.helpers.io_helpers import ensure_empty_folder
 
 if ENV.LOCAL:
-    # plotly tweaks
+    # reducing plotly log spam
     logging.getLogger('kaleido').setLevel(logging.WARNING)
     logging.getLogger('choreographer').setLevel(logging.WARNING)
 

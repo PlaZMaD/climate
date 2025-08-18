@@ -40,7 +40,7 @@ def load_eddypro(config: FFConfig):
         'path': fo_paths,
         'debug': config.debug,
         '-9999_to_nan': '-9999' in c_fo.missing_data_codes,
-        'time': {'column_name': c_fo.time_col, 'converter': c_fo.time_converter},
+        'time': {'column_name': config.time_col, 'converter': c_fo.time_converter},
         'repair_time': c_fo.repair_time,
     }
     df, time_col = bg.load_df(bg_fo_config)
@@ -56,7 +56,7 @@ def load_eddypro(config: FFConfig):
             'path': bm_paths,
             'debug': config.debug,
             '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
-            'time': {'column_name': c_bm.time_col, 'converter': c_bm.time_converter},
+            'time': {'column_name': config.time_col, 'converter': c_bm.time_converter},
             'repair_time': c_bm.repair_time,
         }
         data_meteo = load_biomet(bg_bm_config, data_freq)

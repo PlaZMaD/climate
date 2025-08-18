@@ -1,26 +1,29 @@
+import logging
 from contextlib import contextmanager
-from io import TextIOWrapper
+from copy import copy
 from pathlib import Path
 from types import SimpleNamespace
-from warnings import warn
+from typing import TextIO
 
 import rpy2.robjects as ro
 from rpy2 import rinterface_lib as rl
 from rpy2.rinterface_lib.sexp import NULLType
 from rpy2.robjects import conversion, default_converter
 
+from src.ffconfig import RepConfig, RepOutInfo
+
 
 @contextmanager
-def capture_r_output(file: TextIOWrapper):
+def capture_r_output(io_file: TextIO):
     # proper file name is not known yet, but expected to be finalized under yield
 
     rc = rl.callbacks
     cb_bkp = rc.consolewrite_print, rc.consolewrite_warnerror, rc.showmessage
     std_print = rc.consolewrite_print
 
-    rc.consolewrite_print = lambda msg: (file.write(msg), std_print(msg))
-    rc.consolewrite_warnerror = lambda msg: (file.write(msg), std_print(msg))
-    rc.showmessage = lambda msg: (file.write(msg), std_print(msg))
+    rc.consolewrite_print = lambda msg: (io_file.write(msg), std_print(msg))
+    rc.consolewrite_warnerror = lambda msg: (io_file.write(msg), std_print(msg))
+    rc.showmessage = lambda msg: (io_file.write(msg), std_print(msg))
 
     try:
         yield
@@ -35,35 +38,34 @@ def r_converter():
     return conversion.localconverter(default_converter + none_converter)
 
 
-def reddyproc_and_postprocess(options):
-    py_options_fix = options
-    py_options_fix.partitioning_methods = ro.StrVector(options.partitioning_methods)
+def reddyproc_and_postprocess(rep_cfg: RepConfig):
+    rep_cfg_fix = copy(rep_cfg)
+    rep_cfg_fix.partitioning_methods = ro.StrVector(rep_cfg.partitioning_methods)
     with r_converter():
-        r_options = ro.ListVector(vars(py_options_fix))
+        rep_options = ro.ListVector(vars(rep_cfg_fix))
 
     err_prefix = 'error'
-    draft_log_name = Path(options.output_dir) / (err_prefix + options.log_fname_end)
+    draft_log_name = Path(rep_cfg.output_dir) / (err_prefix + rep_cfg.log_fname_end)
 
     with open(draft_log_name, 'w') as f, capture_r_output(f):
         ro.r.source('src/reddyproc/reddyproc_wrapper.r')
         func_run_web_tool = ro.globalenv['reddyproc_and_postprocess']
 
-        r_res = func_run_web_tool(user_options=r_options)
-        res = SimpleNamespace(
+        r_res = func_run_web_tool(user_options=rep_options)
+        roi = RepOutInfo(
             start_year=int(r_res.rx2['info'].rx2['Y.START'][0]),
             end_year=int(r_res.rx2['info'].rx2['Y.END'][0]),
             fnames_prefix=r_res.rx2['out_prefix'][0]
         )
 
-    changed_options = options
     changed_config = r_res.rx2['changed_config']
     if changed_config:
         changed_ustar = changed_config.rx2['isToApplyUStarFiltering'][0]
-        if changed_ustar != options.is_to_apply_u_star_filtering:
-            warn('REddyProc fallback on isToApplyUStarFiltering is detected and propagated.')
-            changed_options.is_to_apply_u_star_filtering = changed_ustar
+        if changed_ustar != rep_cfg.is_to_apply_u_star_filtering:
+            logging.warning('REddyProc fallback on isToApplyUStarFiltering is detected and propagated.')
+            rep_cfg.is_to_apply_u_star_filtering = changed_ustar
 
-    new_path = draft_log_name.parent / draft_log_name.name.replace(err_prefix, res.fnames_prefix)
+    new_path = draft_log_name.parent / draft_log_name.name.replace(err_prefix, roi.fnames_prefix)
     draft_log_name.rename(new_path)
 
-    return res, changed_options
+    return roi, rep_cfg

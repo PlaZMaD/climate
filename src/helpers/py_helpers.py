@@ -1,7 +1,9 @@
 import contextlib
+import inspect
 import logging
 import sys
 from pathlib import Path
+from typing import Callable
 
 
 @contextlib.contextmanager
@@ -83,20 +85,20 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
     logging.info("START")
 
 
-def sort_fixed(list_: list[str], fix_underscore: bool):
+def sort_fixed(items: list[str], fix_underscore: bool):
     # sort: ['NETRAD_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1', 'P_1_1_1']
     # fix_underscore = True: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
     def key(s):
         return s.replace('_', ' ') if fix_underscore else s
 
-    list_.sort(key=key)
+    items.sort(key=key)
 
 
-def ensure_list(list_, transform_func=None) -> list:
-    if not isinstance(list_, list):
-        ret = [list_]
+def ensure_list(items: list, transform_func=None) -> list:
+    if not isinstance(items, list):
+        ret = [items]
     else:
-        ret = list_
+        ret = items
 
     if transform_func:
         return [transform_func(el) for el in ret]
@@ -118,3 +120,28 @@ def switch_log_level(level, logger_name=None):
         yield
     finally:
         logger.setLevel(old_level)
+
+
+def func_to_str(fn: Callable) -> str:
+    return inspect.getsource(fn).strip()
+
+
+def str_to_func(code: str) -> Callable:
+    """
+    WARNNG: unsafe, str may contain undesirable code
+    code: must contain all imports too
+    """
+    ns = {}
+    # exec("import pandas as pd", globals(), ns)
+    exec(code, globals(), ns)
+
+    # def src_func(*args, **kwargs):
+    #     # import pandas as pd
+    #
+    #     ns = {'pd': pd}
+    #     result = ns['my_datetime_converter'](df)
+    #     return exec(code, {'args': args, 'kwargs': kwargs})
+
+    func = list(ns.values())[0]
+    assert callable(func)
+    return func

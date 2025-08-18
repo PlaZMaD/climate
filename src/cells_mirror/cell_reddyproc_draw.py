@@ -8,7 +8,7 @@ from src.helpers.io_helpers import create_archive
 from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
 
 rep_out_dir = Path(ig.rep.options.output_dir)
-tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_options=ig.rep, img_ext='.png')
+tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_cfg=ig.rep, img_ext='.png')
 eog = RepOutputGen(tag_handler)
 
 output_sequence: tuple[list[str] | str, ...] = (

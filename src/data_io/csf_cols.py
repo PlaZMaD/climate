@@ -7,6 +7,8 @@ COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES = {
     # 'ch4_signal_strength_7700_mean': 'ch4_signal_strength',
     'ch4_signal_strength.{1,}': 'ch4_signal_strength'
 }
+# TODO 1 variables of interest only loaded; only WARNING
+# TODO 1 QE: why drag to colab was not approved
 
 # TODO 1 QOA try to use import and export table
 # can you say that 2-4 levels are done on unique set of cols, no duplicates or dupe cols from formats (biomet vs eddy vpd)?
