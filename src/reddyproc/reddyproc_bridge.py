@@ -39,10 +39,10 @@ def r_converter():
 
 
 def reddyproc_and_postprocess(rep_cfg: RepConfig):
-    rep_cfg_fix = copy(rep_cfg)
-    rep_cfg_fix.partitioning_methods = ro.StrVector(rep_cfg.partitioning_methods)
+    cfg_vars = copy(vars(rep_cfg))
+    cfg_vars['partitioning_methods'] = ro.StrVector(rep_cfg.partitioning_methods)
     with r_converter():
-        rep_options = ro.ListVector(vars(rep_cfg_fix))
+        rep_options = ro.ListVector(cfg_vars)
 
     err_prefix = 'error'
     draft_log_name = Path(rep_cfg.output_dir) / (err_prefix + rep_cfg.log_fname_end)

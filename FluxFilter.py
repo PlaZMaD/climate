@@ -187,6 +187,10 @@ if cfg_fpath.exists():
 else:
     config = FFConfig(debug=False, version='1.0')
 
+# TODO 1 del
+# config.load_path = None
+# save_config(config, 'test.yaml')
+
 # TODO 1 QOA remove all ru comments from code to description?
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла

@@ -73,8 +73,8 @@ def column_checker(col_list):
     error_flag = 0
 
     # Проверка на наличие временнЫх колонок
-    minimum_setup = ['TIMESTAMP_START', 'TIMESTAMP_END']
-    if not set(col_list[:2]).issubset(minimum_setup):
+    minimum_setup = {'TIMESTAMP_START', 'TIMESTAMP_END'}
+    if not set(col_list[:2]) <= minimum_setup:  # TODO QE 3 or != ?
         logging.error(
             _("DateTime columns ['TIMESTAMP_START', 'TIMESTAMP_END'] should go first. Check columns order and names."))
         error_flag = 1

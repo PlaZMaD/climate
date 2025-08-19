@@ -4,25 +4,7 @@ from copy import deepcopy
 
 from pydantic import BaseModel, ConfigDict, create_model
 from pydantic.fields import FieldInfo
-from ruamel.yaml import YAML, CommentedSeq
-
-
-def partial_model(model: Type[BaseModel]):
-    def make_field_optional(field: FieldInfo, default: Any = None) -> Tuple[Any, FieldInfo]:
-        new = deepcopy(field)
-        new.default = default
-        new.annotation = Optional[field.annotation]  # type: ignore
-        return new.annotation, new
-    return create_model(
-        f'Partial{model.__name__}',
-        __base__=model,
-        __module__=model.__module__,
-        **{
-            field_name: make_field_optional(field_info)
-            for field_name, field_info in model.__fields__.items()
-        }
-    )
-
+from ruamel.yaml import YAML, CommentedSeq, CommentedMap
 
 class ValidatedBaseModel(BaseModel):
     def __dir__(self):
@@ -38,17 +20,25 @@ def load_basemodel(fpath, load_model_class: type[ValidatedBaseModel]):
     return load_model_class.model_validate(yaml)
 
 
-def inline_short_lists(data, max_len=2):
+def inline_short_lists(data, depth, max_len=5):
     if isinstance(data, dict):
-        for k, v in data.items():
-            data[k] = inline_short_lists(v, max_len)
+        v_types = {type(v) for v in data.values()}
+        if v_types <= {str, int, float} and depth > 1:
+            map_ = CommentedMap(data)
+            map_.fa.set_flow_style()
+            return map_
+        else:
+            return {k: inline_short_lists(v, depth + 1, max_len) for k, v in data.items()}
     elif isinstance(data, list):
-        if len(data) <= max_len and all(not isinstance(i, (dict, list)) for i in data):
+        types = {type(v) for v in data}
+        if len(data) <= max_len and types <= {str, int, float}:
             seq = CommentedSeq(data)
             seq.fa.set_flow_style()
             return seq
-        return [inline_short_lists(i, max_len) for i in data]
-    return data
+        else:
+            return [inline_short_lists(i, depth + 1, max_len) for i in data]
+    else:
+        return data
 
 
 def save_basemodel(fpath: Path, config: ValidatedBaseModel) -> None:
@@ -58,7 +48,7 @@ def save_basemodel(fpath: Path, config: ValidatedBaseModel) -> None:
     yaml.default_flow_style = False
     yaml.indent(mapping=4, sequence=4, offset=4)
 
-    config_yaml = inline_short_lists(config_json, max_len=2)
+    config_yaml = inline_short_lists(config_json, max_len=2, depth=0)
 
     with open(fpath, "w") as fl:
         yaml.dump(config_yaml, fl)
