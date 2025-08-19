@@ -1,10 +1,36 @@
 import logging
 from pathlib import Path
-from typing import Callable, Any
+from typing import Callable, Any, Annotated
+
+from pydantic import Field
 
 from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.helpers.config_io import ValidatedBaseModel, save_basemodel, load_basemodel
 from src.helpers.py_helpers import func_to_str, str_to_func
+
+
+class TrackedConfig(ValidatedBaseModel):
+    _load_path: str = None
+    _auto_values: dict = {}
+
+    def __setattr__(self, name, new_value):
+        cur_value = getattr(self, name)
+
+        if self._load_path and cur_value != new_value:
+            logging.warning(f"Option for **{name}** in ipynb does not match option in configuration file: "
+                            f"ipynb: {new_value}, config (used): {cur_value}")
+            return
+
+        if cur_value != new_value and cur_value in ['auto', ImportMode.AUTO]:
+            self._auto_values |= {name: cur_value}
+
+        super().__setattr__(name, new_value)
+
+    def restore_auto_values(self):
+        if len(self._auto_values) > 0:
+            logging.info(f'Restoring values which originally were auto: {self._auto_values}')
+        for k, v in self._auto_values.items():
+            self.__setattr__(k, v)
 
 
 class InputFileConfig(ValidatedBaseModel):
@@ -31,7 +57,8 @@ class RepConfig(ValidatedBaseModel):
     ustar_rg_source: str = None
     is_bootstrap_u_star: bool = None
     # u_star_seasoning: one of 'WithinYear', 'Continuous', 'User'
-    u_star_seasoning: str = None
+    # TODO 2 how to add enums?
+    u_star_seasoning: str = Field(None, description='WithinYear, Continuous, User')
 
     is_to_apply_partitioning: bool = None
 
@@ -62,11 +89,9 @@ class FiltersConfig(ValidatedBaseModel):
     man_ranges: list[tuple[str, str]] = []
 
 
-class FFConfig(ValidatedBaseModel):
+class FFConfig(TrackedConfig):
     # TODO 3 auto read (from env?) in FluxFilter.py
     version: str
-
-    load_path: str = None
 
     input_files: str | list[str] | dict[str | Path, InputFileType] = 'auto'
     # flexible, but too complicated to edit for user?
@@ -93,6 +118,7 @@ class FFConfig(ValidatedBaseModel):
     # if True will load just a small chunk of data
     time_col: str = 'datetime'
     debug: bool = False
+
     import_mode: ImportMode = ImportMode.AUTO
 
 
@@ -114,8 +140,10 @@ class FFGlobals(ValidatedBaseModel):
 
 
 def save_config(config: FFConfig, fpath: Path):
-    if config.load_path:
-        logging.info(f'Config was loaded from {config.load_path}, saving same config into same file is skipped.')
+    config.restore_auto_values()
+
+    if config._load_path:
+        logging.info(f'Config was loaded from {config._load_path}, saving same config into same file is skipped.')
         return
 
     # TODO 3 switch to auto type conversion if required?
@@ -133,8 +161,8 @@ def save_config(config: FFConfig, fpath: Path):
 
 
 def load_config(fpath: Path) -> FFConfig:
-    config = load_basemodel(fpath, FFConfig)
-    config.load_path = str(fpath)
+    config: FFConfig = load_basemodel(fpath, FFConfig)
+    config._load_path = str(fpath)
 
     if config.eddypro_fo.time_converter_str:
         config.eddypro_fo.time_converter = str_to_func(config.eddypro_fo.time_converter_str)

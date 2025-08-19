@@ -1,10 +1,8 @@
 from pathlib import Path
-from typing import Optional, Type, Any, Tuple
-from copy import deepcopy
 
-from pydantic import BaseModel, ConfigDict, create_model
-from pydantic.fields import FieldInfo
+from pydantic import BaseModel, ConfigDict
 from ruamel.yaml import YAML, CommentedSeq, CommentedMap
+
 
 class ValidatedBaseModel(BaseModel):
     def __dir__(self):
@@ -52,4 +50,3 @@ def save_basemodel(fpath: Path, config: ValidatedBaseModel) -> None:
 
     with open(fpath, "w") as fl:
         yaml.dump(config_yaml, fl)
-
