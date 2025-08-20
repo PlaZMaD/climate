@@ -1,12 +1,14 @@
 import logging
+from enum import Enum
 from pathlib import Path
 from typing import Callable, Any, Annotated
-
-from pydantic import Field
 
 from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.helpers.config_io import ValidatedBaseModel, save_basemodel, load_basemodel
 from src.helpers.py_helpers import func_to_str, str_to_func
+
+
+AUTO_VALUES = ['auto', ImportMode.AUTO]
 
 
 class TrackedConfig(ValidatedBaseModel):
@@ -16,12 +18,12 @@ class TrackedConfig(ValidatedBaseModel):
     def __setattr__(self, name, new_value):
         cur_value = getattr(self, name)
 
-        if self._load_path and cur_value != new_value:
+        if self._load_path and cur_value not in AUTO_VALUES and cur_value != new_value:
             logging.warning(f"Option for **{name}** in ipynb does not match option in configuration file: "
                             f"ipynb: {new_value}, config (used): {cur_value}")
             return
 
-        if cur_value != new_value and cur_value in ['auto', ImportMode.AUTO]:
+        if cur_value != new_value and cur_value in AUTO_VALUES:
             self._auto_values |= {name: cur_value}
 
         super().__setattr__(name, new_value)
@@ -30,7 +32,14 @@ class TrackedConfig(ValidatedBaseModel):
         if len(self._auto_values) > 0:
             logging.info(f'Restoring values which originally were auto: {self._auto_values}')
         for k, v in self._auto_values.items():
-            self.__setattr__(k, v)
+            prev = vars(self)[k]
+            if isinstance(prev, Enum):
+                prev = prev.value
+
+            if not self.model_fields[k].metadata:
+                self.model_fields[k].metadata = {}
+            self.model_fields[k].metadata |= {'dynamic value': prev}
+            vars(self)[k] = v
 
 
 class InputFileConfig(ValidatedBaseModel):
@@ -49,30 +58,22 @@ class RepConfig(ValidatedBaseModel):
     site_id: str = None
 
     is_to_apply_u_star_filtering: bool = None
-    # if default REP cannot detect threshold, this value may be used instead; None to disable
     ustar_threshold_fallback: float = None
-    # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
-    # 'Rg_th_Py', 'Rg_th_REP' - estimate by theoretical algs,
-    # 'Rg' - by real data, '' - ignore Rg and filter both days and nights
-    ustar_rg_source: str = None
+    ustar_rg_source:  Annotated[str, 'Rg_th_Py, Rg_th_REP, Rg, ""'] = None
     is_bootstrap_u_star: bool = None
-    # u_star_seasoning: one of 'WithinYear', 'Continuous', 'User'
     # TODO 2 how to add enums?
-    u_star_seasoning: str = Field(None, description='WithinYear, Continuous, User')
+    u_star_seasoning: Annotated[str, 'WithinYear, Continuous, User'] = None
 
     is_to_apply_partitioning: bool = None
 
-    # partitioning_methods: one or both of 'Reichstein05', 'Lasslop10'
-    partitioning_methods: list[str] = None
+    partitioning_methods: Annotated[list[str], 'Reichstein05, Lasslop10'] = None
 
     latitude: float = None
     longitude: float = None
     timezone: float = None
 
-    # 'Tsoil'
     temperature_data_variable: str = None
 
-    # do not change
     u_star_method: str = 'RTw'
     is_to_apply_gap_filling: bool = True
     input_file: str = None
@@ -87,6 +88,10 @@ class FiltersConfig(ValidatedBaseModel):
     window: dict = {}
     min_max: dict = {}
     man_ranges: list[tuple[str, str]] = []
+
+
+def gen_enum_info(enum_class) -> str:
+    return ", ".join(m.name for m in enum_class)
 
 
 class FFConfig(TrackedConfig):
@@ -119,7 +124,7 @@ class FFConfig(TrackedConfig):
     time_col: str = 'datetime'
     debug: bool = False
 
-    import_mode: ImportMode = ImportMode.AUTO
+    import_mode: Annotated[ImportMode, gen_enum_info(ImportMode)] = ImportMode.AUTO
 
 
 class RepOutInfo(ValidatedBaseModel):
@@ -139,11 +144,11 @@ class FFGlobals(ValidatedBaseModel):
     rep_level3_fpath: Path = None
 
 
-def save_config(config: FFConfig, fpath: Path):
+def save_config(config: FFConfig, fpath: str | Path):
     config.restore_auto_values()
 
     if config._load_path:
-        logging.info(f'Config was loaded from {config._load_path}, saving same config into same file is skipped.')
+        logging.info(f'Config was loaded from {config._load_path}, saving same config into the same file is skipped.')
         return
 
     # TODO 3 switch to auto type conversion if required?
@@ -157,7 +162,7 @@ def save_config(config: FFConfig, fpath: Path):
             config.eddypro_biomet.time_converter_str = func_to_str(config.eddypro_biomet.time_converter)
         config.eddypro_biomet.time_converter = None
 
-    save_basemodel(fpath, config)
+    save_basemodel(Path(fpath), config)
 
 
 def load_config(fpath: Path) -> FFConfig:

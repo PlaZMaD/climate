@@ -112,6 +112,7 @@ import bglabutils.basic as bg
 # import textwrap
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
+from src.data_io.data_import_modes import ImportMode
 from src.data_io.fat_export import export_fat
 from src.data_io.rep_level3_export import export_rep_level3
 from src.ffconfig import FFConfig, RepConfig, FFGlobals, save_config, load_config

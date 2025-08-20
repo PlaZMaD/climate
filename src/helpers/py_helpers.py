@@ -132,7 +132,7 @@ def str_to_func(code: str) -> Callable:
     code: must contain all imports too
     """
     ns = {}
-    # exec("import pandas as pd", globals(), ns)
+    exec("import pandas as pd", globals(), ns)
     exec(code, globals(), ns)
 
     # def src_func(*args, **kwargs):
@@ -142,6 +142,6 @@ def str_to_func(code: str) -> Callable:
     #     result = ns['my_datetime_converter'](df)
     #     return exec(code, {'args': args, 'kwargs': kwargs})
 
-    func = list(ns.values())[0]
+    func = list(ns.values())[1]
     assert callable(func)
     return func
