@@ -97,14 +97,12 @@
 
 # + id="Ywv5kp0rzanK"
 import logging
-import os
 import re
 from pathlib import Path
 
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
-from rpy2 import robjects
 
 # %load_ext autoreload
 # %autoreload 2
@@ -114,33 +112,31 @@ import bglabutils.basic as bg
 # import textwrap
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
+from src.data_io.data_import_modes import ImportMode
+from src.data_io.fat_export import export_fat
+from src.data_io.rep_level3_export import export_rep_level3
+from src.ffconfig import FFConfig, RepConfig, FFGlobals, save_config, load_config
 from src.helpers.py_helpers import init_logging
-from src.helpers.io_helpers import ensure_empty_dir, create_archive
-from src.helpers.env_helpers import setup_r
-from src.data_io.data_import import try_auto_detect_input_files, ImportMode
-from src.data_io.eddypro_loader import load_eddypro_fulloutput
-from src.data_io.ias_io import import_ias, export_ias
-from src.data_io.csf_import import import_csf
+from src.helpers.io_helpers import ensure_empty_folder, create_archive
+from src.helpers.env_helpers import setup_r_env
+from src.data_io.data_import import try_auto_detect_input_files, import_data
+from src.data_io.ias_io import export_ias
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
-import src.ipynb_globals as ig
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
 from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
-from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
-from src.reddyproc.preprocess_rg import prepare_rg
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
-out_dir = Path('output')
-ensure_empty_dir(out_dir)
+gl = FFGlobals(out_dir=Path('output'))
+ensure_empty_folder(gl.out_dir)
 
 colab_no_scroll()
 colab_enable_custom_widget_manager()
-setup_plotly(out_dir)
+setup_plotly(gl.out_dir)
 
-init_logging(level=logging.INFO, fpath=out_dir / 'log.log', to_stdout=True)
+init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
 # Also an option to experiment with any function above directly in Colab:
@@ -184,49 +180,60 @@ init_logging(level=logging.INFO, fpath=out_dir / 'log.log', to_stdout=True)
 # ## Параметры загрузки файла full output
 
 # + id="tVJ_DRBrlpYd"
-config = {}
-config['debug'] = False  # True загрузит небольшой кусок файла, а не целый
-config['-9999_to_nan'] = True  # заменяем -9999  на np.nan
-config['repair_time'] = True  # генерируем новые временные метки в случае ошибок
+
+# debug=True быстрый режим скрипта с обработкой только нескольких месяцев
+cfg_fpath = Path('config.yaml')
+if cfg_fpath.exists():
+    config = load_config(Path('config.yaml'))
+else:
+    config = FFConfig(debug=False, version='1.0')
+
+
+# TODO 1 QOA remove all ru comments from code to description?
+###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
+###через команду !gdown, то достаточно заменить название файла
+config.input_files = 'auto'
+# config.input_files = ['tv_fy4_2019_v01.xlsx']
+# config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv']
+# 'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO}]#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
+# config.input_files = {'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO_FO}
+# config['path'] = '/content/DT_Full output.xlsx'
 
 #####################
 # на случай сложных колонок времени
-config['time'] = {}
-config['time']['column_name'] = 'datetime'
+# замена -9999 на np.nan
+config.eddypro_fo.missing_data_codes = ['-9999']
+# TODO QOA 1 config['time']['column_name'] was never used?
+config.time_col = 'datetime'
+# генерируем новые временные метки в случае ошибок
+config.eddypro_fo.repair_time = True
 
 
-def my_datetime_converter(x):
-    date = x['date'].astype(str)
+def my_datetime_converter(df: pd.DataFrame):
+    # required for serialization
+    import pandas as pd
+
+    date = df['date'].astype(str)
     # date =  x['date'].dt.strftime('%d.%m.%Y') if is_datetime(x['date'].dtype) else x['date'].astype(str)
-    time = x['time'].astype(str)
+    time = df['time'].astype(str)
     # date =  x['time'].dt.strftime('%H:%M') if is_datetime(x['time'].dtype) else x['time'].astype(str)
 
-    x['tmp_datetime'] = date + " " + time
+    df['tmp_datetime'] = date + " " + time
     # Проверить формат даты-времени в FullOutput
     format = "%d.%m.%Y %H:%M"
     # format = "%d/%m/%Y %H:%M"
     # format = "%Y-%m-%d %H:%M"
     # format = "%d/%m/%Y %H:%M"
     # format = "%Y-%m-%d %H:%M:%S"
-    return pd.to_datetime(x['tmp_datetime'], format=format)  # dayfirst=True)#, format=format)
+    return pd.to_datetime(df['tmp_datetime'], format=format)  # dayfirst=True)#, format=format)
 
 
-config['time']['converter'] = my_datetime_converter
+# TODO 1 fix
+config.eddypro_fo.time_converter = my_datetime_converter
 #####################
-
-###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
-###через команду !gdown, то достаточно заменить название файла
-config['path'] = 'auto'  # ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv']#['eddypro_noHMP_full_output_2014_1-5.csv', 'eddypro_noHMP_full_output_2014_5-12.csv']#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
-
-# config['path'] = '/content/DT_Full output.xlsx'
-
-# Тип файлов для загрузки: ImportMode.CSF, ImportMode.EDDYPRO, ImportMode.EDDYPRO_AND_BIOMET, ImportMode.IAS
-# ImportMode.AUTO - экспериментальное автоматическое определение
-config['mode'] = ImportMode.AUTO
 
 # + [markdown] id="S2Qc-fltJLaF"
 # ## Параметры загрузки файла biomet
-# `use_biomet`: при отсутствии файла с метеорологическими данными выставите на False
 #
 # **Необходимо поменять:**
 #
@@ -241,33 +248,38 @@ config['mode'] = ImportMode.AUTO
 # Проверьте порядок записи даты (год, месяц, день) и разделители даты-времени во входных файлах, открыв их в текстовом редакторе. В биомет-файле по умолчанию дата записана как 2011-11-12 и время как 1200. Кодируется как "%Y-%m-%d %H%M". В других случаях поменяйте код формата дат-времени согласно инструкции для блока Конфиг загрузки файла full output
 
 # + id="H7E5LGx1DVsA"
-config_meteo = {}
+
+
+###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
+###через команду !gdown, то достаточно заменить название файла
+# config.input_files += ['BiometFy4_2016.csv'] #'BiometNCT_2011-22.csv'
+
 # derive files from path instead
-# TODO QOA 1 cancel biomet concept since multiple iport options are now avaliable?
+# TODO QOA 1 cancel mid-script biomet concept since multiple iport options are now avaliable?
 # i.e on ias of csf derive from path instead
-config_meteo['use_biomet'] = 'auto'
-config_meteo['debug'] = False  # True загрузит небольшой кусок файла, а не целый
-config_meteo['-9999_to_nan'] = True  # заменяем -9999  на np.nan
-# TODO 1 repair time should be per file operation now?
-config_meteo['repair_time'] = True  # генерируем новые временные метки в случае ошибок
+
+# замена -9999 на np.nan при импорте
+config.eddypro_biomet.missing_data_codes = ['-9999']
+
+# генерируем новые временные метки в случае ошибок
+config.eddypro_biomet.repair_time = True
+
 
 #####################
 # на случай сложных колонок времени
-config_meteo['time'] = {}
-config_meteo['time']['column_name'] = 'datetime'
-
+# TODO QOA 1 join Параметры загрузки файлов full output и Параметры загрузки файла biomet
+# TODO QOA 1 auto time format? was actually function edit ever used?
 
 def my_datetime_converter(x):
+    # required for serialization
+    import pandas as pd
+
     format = "%Y-%m-%d %H%M"  # "%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM
     return pd.to_datetime(x["TIMESTAMP_1"], format=format)
 
 
-config_meteo['time']['converter'] = my_datetime_converter
+config.eddypro_biomet.time_converter = my_datetime_converter
 #####################
-
-###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
-###через команду !gdown, то достаточно заменить название файла
-config_meteo['path'] = 'auto'  # 'BiometFy4_2016.csv'#'BiometNCT_2011-22.csv'
 
 # + [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -301,23 +313,20 @@ cols_to_investigate = [k.lower() for k in cols_to_investigate]
 # ### Фильтрация физическая
 
 # + id="pPemVdWVbq2E"
-window_size = 10
-calc_nee = True
+config.calc_nee = True
 
 # Индекс станции для названий выходных файлов, рисунков
-# TODO 1 that's just a site name, only ias version is ias specific
-ias_output_prefix = 'auto'
-ias_output_version = 'auto'
+config.site_name = 'auto'
+config.ias_output_version = 'auto'
 
 # + [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные с значением флага больше порога будут исключены.
 
 # + id="ukl734CBblay"
-qc_config = {}
-qc_config['h'] = 1  # Если система флагов была 1-9, поправить
-qc_config['le'] = 1  # Если система флагов была 1-9, поправить
-qc_config['co2_flux'] = 1  # Если система флагов была 1-9, поправить
-qc_config['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
+config.qc['h'] = 1  # Если система флагов была 1-9, поправить
+config.qc['le'] = 1  # Если система флагов была 1-9, поправить
+config.qc['co2_flux'] = 1  # Если система флагов была 1-9, поправить
+config.qc['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
 
 # + [markdown] id="QPIFpLN_-8Uf"
 # Параметры фильтрации по метеорологическим переменным, возможные опции:
@@ -339,29 +348,28 @@ qc_config['ch4_flux'] = 1  # Если система флагов была 1-9, 
 # При отсутствии в настройках какого-либо из параметров фильтрация не применяется.
 
 # + id="vxpiAbWk2yYr"
-meteo_filter_config = {}
-meteo_filter_config['CO2SS_min'] = 80.
+config.filters.meteo['CO2SS_min'] = 80.
 
 # Фильтры могут не понадобиться для систем закрытого типа
-meteo_filter_config['p_rain_limit'] = .1
-meteo_filter_config['rain_forward_flag'] = 2
+config.filters.meteo['p_rain_limit'] = .1
+config.filters.meteo['rain_forward_flag'] = 2
 # Фильтр влажности ниже: применять только тогда, когда нет CO2SS (образование конденсата) и диагностики анемометра
 # и данные не были отфильтрованы по этим показателям на этапе расчета в EddyPro
 # meteo_filter_config['RH_max'] = 98
 
 # Какие значения допускаются днем/ночью
-meteo_filter_config['use_day_filter'] = True
-meteo_filter_config['use_night_filter'] = True
-meteo_filter_config['day_nee_max'] = 5
-meteo_filter_config['night_nee_min'] = -5
-meteo_filter_config['day_swin_limit'] = 10
-meteo_filter_config['night_h_limits'] = [-50, 20]
-meteo_filter_config['night_le_limits'] = [-50, 20]
+config.filters.meteo['use_day_filter'] = True
+config.filters.meteo['use_night_filter'] = True
+config.filters.meteo['day_nee_max'] = 5
+config.filters.meteo['night_nee_min'] = -5
+config.filters.meteo['day_swin_limit'] = 10
+config.filters.meteo['night_h_limits'] = [-50, 20]
+config.filters.meteo['night_le_limits'] = [-50, 20]
 
 # Какие значения допускаются зимой. Для травянистых экосистем правый порог обычно ниже
-meteo_filter_config['winter_nee_limits'] = [0, 5]
-meteo_filter_config['winter_ch4_flux_limits'] = [-1, 1]
-meteo_filter_config['CH4SS_min'] = 20.
+config.filters.meteo['winter_nee_limits'] = [0, 5]
+config.filters.meteo['winter_ch4_flux_limits'] = [-1, 1]
+config.filters.meteo['CH4SS_min'] = 20.
 
 # + [markdown] id="utUX7SA4qA_I"
 # ### Фильтрация статистическая
@@ -371,20 +379,19 @@ meteo_filter_config['CH4SS_min'] = 20.
 # Для `rh_1_1_1` значения выше границы не отбрасываются, а заменяются на пограничные. Для `ppfd_1_1_1`, `swin_1_1_1` аналогично обрабатываются минимальные значения.
 
 # + id="HQfIYFOd9uzi"
-min_max_config = {}
-min_max_config['co2_flux'] = [-40, 40]
-min_max_config['co2_strg'] = [-20, 20]
-min_max_config['h'] = [-100, 800]
-min_max_config['le'] = [-100, 1000]
-min_max_config['u_star'] = [0, 10]
-min_max_config['ta_1_1_1'] = [-50, 50]
-min_max_config['p_1_1_1'] = [0, 100]
-min_max_config['vpd_1_1_1'] = [0, 50]
-min_max_config['rh_1_1_1'] = [0, 100]  # max
-min_max_config['swin_1_1_1'] = [0, 1200]  # min
-min_max_config['ppfd_1_1_1'] = [0, 2400]  # min
-min_max_config['rg_1_1_1'] = [0, 2400]  # min
-min_max_config['ch4_flux'] = [-10, 10]
+config.filters.min_max['co2_flux'] = [-40, 40]
+config.filters.min_max['co2_strg'] = [-20, 20]
+config.filters.min_max['h'] = [-100, 800]
+config.filters.min_max['le'] = [-100, 1000]
+config.filters.min_max['u_star'] = [0, 10]
+config.filters.min_max['ta_1_1_1'] = [-50, 50]
+config.filters.min_max['p_1_1_1'] = [0, 100]
+config.filters.min_max['vpd_1_1_1'] = [0, 50]
+config.filters.min_max['rh_1_1_1'] = [0, 100]  # max
+config.filters.min_max['swin_1_1_1'] = [0, 1200]  # min
+config.filters.min_max['ppfd_1_1_1'] = [0, 2400]  # min
+config.filters.min_max['rg_1_1_1'] = [0, 2400]  # min
+config.filters.min_max['ch4_flux'] = [-10, 10]
 
 # + [markdown] id="vmyTKbV1RdjD"
 # Параметры фильтрации по отклонению от среднего суточного хода.
@@ -393,47 +400,42 @@ min_max_config['ch4_flux'] = [-10, 10]
 # * `min_periods` - минимальное число точек в окне. Если меньше - оценка скользящего будет отсутствовать, фильтр не применится.
 
 # + id="xfRVNYbFYzG3"
-window_filter_config = {}
-
 # Для систем закрытого типа фильтр может быть мягче (например, 3 sigma)
-window_filter_config['co2_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
-window_filter_config['ch4_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
+config.filters.window['co2_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
+config.filters.window['ch4_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
 
 # Если удаляются надежные значения - нужно увеличить 'sigmas'
-window_filter_config['ta_1_1_1'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
-window_filter_config['u_star'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
+config.filters.window['ta_1_1_1'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
+config.filters.window['u_star'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
 for col in ['h', 'le', 'rh_1_1_1', 'vpd_1_1_1']:
-    window_filter_config[col] = {'sigmas': 7, 'window': 10, 'min_periods': 4}
+    config.filters.window[col] = {'sigmas': 7, 'window': 10, 'min_periods': 4}
 for col in ['swin_1_1_1', 'ppfd_1_1_1']:
-    window_filter_config[col] = {'sigmas': 8, 'window': 10, 'min_periods': 4}
+    config.filters.window[col] = {'sigmas': 8, 'window': 10, 'min_periods': 4}
 
 # + [markdown] id="KF_MGD7pSGre"
 # Параметры фильтрации выше-ниже порога по квантилям (выпадающие строки отфильтровываются)
 
 # + id="asO_t2tZmiD0"
-quantile_filter_config = {}
-quantile_filter_config['co2_flux'] = [0.01, 0.99]
-quantile_filter_config['ch4_flux'] = [0.01, 0.99]
-quantile_filter_config['co2_strg'] = [0.01, 0.99]
+config.filters.quantile['co2_flux'] = [0.01, 0.99]
+config.filters.quantile['ch4_flux'] = [0.01, 0.99]
+config.filters.quantile['co2_strg'] = [0.01, 0.99]
 
 # + [markdown] id="cPiTN288UaP3"
 # Параметры для фильтрации по отклонению от соседних точек, фильтры MAD и Hampel.
 
 # + id="2b3eBVFUq3AU"
-# madhampel_filter_config = {i:{'z': 5.5, 'hampel_window': 10} for i in cols_to_investigate if 'p_1_1_1' not in i}
-madhampel_filter_config = {}
-
+# config.filters.madhampel = {i:{'z': 5.5, 'hampel_window': 10} for i in cols_to_investigate if 'p_1_1_1' not in i}
 # Более жесткая фильтрация: 'z'=4. Более мягкая: 'z'=7
-madhampel_filter_config['co2_flux'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['ch4_flux'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['le'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['h'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['co2_strg'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['ta_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['rh_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['vpd_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
-madhampel_filter_config['swin_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
-madhampel_filter_config['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
+config.filters.madhampel['co2_flux'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['ch4_flux'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['le'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['h'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['co2_strg'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['ta_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['rh_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['vpd_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
+config.filters.madhampel['swin_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
+config.filters.madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 
 # + [markdown] id="wVF1vDm4EauW"
 # # Загружаем данные
@@ -452,6 +454,7 @@ madhampel_filter_config['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # `#Загрузка файла biomet`
 # Здесь нужно прописать символы из ссылки на файл biomet
 
+# TODO QOA 1 why this is not above load configuraion?
 # + id="KMu4IqY45HG6"
 # Загрузка файла full output
 # https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
@@ -462,27 +465,14 @@ madhampel_filter_config['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-config, config_meteo, ias_output_prefix, ias_output_version = try_auto_detect_input_files(
-    config, config_meteo, ias_output_prefix, ias_output_version
-)
+config = try_auto_detect_input_files(config)
+data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
-if config['mode'] in [ImportMode.EDDYPRO, ImportMode.EDDYPRO_AND_BIOMET]:
-    res = load_eddypro_fulloutput(config, config_meteo)
-elif config['mode'] == ImportMode.IAS:
-    # TODO 1 generalize, into SimpleNamespace, Enum biomet_columns and biomet config? E:ok
-    res = import_ias(config, config_meteo)
-elif config['mode'] == ImportMode.CSF:
-    raise import_csf(config, config_meteo)
-else:
-    raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
-
-data, time_col, biomet_columns, data_freq, config_meteo = res
-
-points_per_day = int(pd.Timedelta('24h') / data_freq)
+gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 
 # + id="C8lLDYOWzH2d"
 data.columns = data.columns.str.lower()
-if not config_meteo['use_biomet']:
+if not config.has_meteo:
     for col in ['rh', 'vpd']:
         data[col + "_1_1_1"] = data[col]
 
@@ -490,7 +480,7 @@ if not config_meteo['use_biomet']:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
-# TODO 1 QOA ppfd_in_1_1_1 is name before import repairs?
+# TODO 1 QOA ppfd_in_1_1_1 is renamed to ppfd_1_1_1 on import
 #  i.e. should be different name instead in this list? E: ask OA
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
@@ -505,7 +495,7 @@ for col in cols_2_check:
     error_positions = data[col].fillna(0).apply(pd.to_numeric, errors='coerce').isna()
     if error_positions.any():
         logging.error(
-            f"""Check input files for {col} column near:\n {error_positions[error_positions == True].index.strftime('%d-%m-%Y %H:%M').values} in {'biomet' if len(biomet_columns) > 0 and col in biomet_columns else 'data'} file"""
+            f"""Check input files for {col} column near:\n {error_positions[error_positions == True].index.strftime('%d-%m-%Y %H:%M').values} in {'biomet' if len(meteo_cols) > 0 and col in meteo_cols else 'data'} file"""
         )
         data_type_error_flag = True
 if data_type_error_flag:
@@ -524,6 +514,7 @@ if data_type_error_flag:
 # flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
 # E: ok, requires prev section edits too, but low benefit
 # O: check cell description for logic
+# TODO QE 3 wait, flags were a way to store info which col is not real?
 have_rh_flag = False
 have_vpd_flag = False
 have_par_flag = False
@@ -534,7 +525,7 @@ have_pr_flag = False
 have_ppfd_flag = False
 
 for col_name in data.columns:
-    # TODO 2 move renames to eddypro load or cols table?
+    # TODO 2 which renames are specific for eddypro load and should not be part of main script anymore?
     # if moved, check ias import-export handling
     # or to generalised preprocess check?
     # Eddypro renames
@@ -571,7 +562,8 @@ for col_name in data.columns:
         have_par_flag = True
     if 'rg_1_1_1' in col_name:
         have_rg_flag = True
-    if 'p_1_1_1' in col_name:
+    # TODO QE 1 false fired on 't_dp_1_1_1', was <'p_1_1_1' in col_name> instead of <'p_1_1_1' == col_name> in some cases intentional?
+    if 'p_1_1_1' == col_name:
         have_p_flag = True
     if 'p_rain_1_1_1' in col_name:
         have_pr_flag = True
@@ -645,7 +637,7 @@ for col_name in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
         print(f"renaming {col_name} to ch4_signal_strength")
         data = data.rename(columns={col_name: 'ch4_signal_strength'})
 
-if not config_meteo['use_biomet'] or 'ta_1_1_1' not in data.columns:
+if not config.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
     logging.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
@@ -660,39 +652,40 @@ if not config_meteo['use_biomet'] or 'ta_1_1_1' not in data.columns:
 
 # + id="cjt05XXtbr69"
 # Пробелы длиной 3 и меньше заполняются линейно
-if calc_nee and 'co2_strg' in data.columns:
+if config.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
     tmp_filter_db = {'co2_strg_tmp': []}
-    if 'co2_strg' in quantile_filter_config.keys():
-        tmp_q_config = {'co2_strg_tmp': quantile_filter_config['co2_strg']}
+    if 'co2_strg' in config.filters.quantile.keys():
+        tmp_q_config = {'co2_strg_tmp': config.filters.quantile['co2_strg']}
     else:
         tmp_q_config = {}
     tmp_filter_db = {'co2_strg_tmp': []}
     tmp_data, tmp_filter_db = quantile_filter(tmp_data, tmp_filter_db, tmp_q_config)
     tmp_data.loc[~get_column_filter(tmp_data, tmp_filter_db, 'co2_strg_tmp').astype(bool), 'co2_strg_tmp'] = np.nan
     # tmp_data['co2_strg_tmp'] = tmp_data['co2_strg_tmp'].interpolate(limit=3)
-    # tmp_data['co2_strg_tmp'].fillna(bg.calc_rolling(tmp_data['co2_strg_tmp'], rolling_window=10 , step=points_per_day, min_periods=4))
-    basic_plot(tmp_data, ['co2_strg_tmp'], ias_output_prefix, tmp_filter_db, steps_per_day=points_per_day)
+    # tmp_data['co2_strg_tmp'].fillna(bg.calc_rolling(tmp_data['co2_strg_tmp'], rolling_window=10 , step=gl.points_per_day, min_periods=4))
+    basic_plot(tmp_data, ['co2_strg_tmp'], config.site_name, tmp_filter_db, steps_per_day=gl.points_per_day)
     print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
 
 # + id="2IQ7W6pslYF-"
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
-calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
-logging.info(f"calc_with_strg is set to {calc_with_strg}")
+config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
+logging.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
 # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
 # + id="ueuvsNxYdtgs"
-if calc_nee and 'co2_strg' in data.columns:
-    if calc_with_strg:
+if config.calc_nee and 'co2_strg' in data.columns:
+    if config.calc_with_strg:
         data['nee'] = (tmp_data['co2_flux'] + tmp_data['co2_strg_tmp']).copy()
     else:
         data['nee'] = data['co2_flux'].copy()
     del tmp_data
     if 'nee' not in cols_to_investigate:
         cols_to_investigate.append('nee')
-    for filter_config in [qc_config, meteo_filter_config, min_max_config, window_filter_config, quantile_filter_config,
-                          madhampel_filter_config]:
+    for filter_config in [config.qc, config.filters.meteo, config.filters.min_max, config.filters.window,
+                          config.filters.quantile,
+                          config.filters.madhampel]:
         if 'co2_flux' in filter_config:
             filter_config['nee'] = filter_config['co2_flux']
 
@@ -732,56 +725,56 @@ print(plot_data.columns.to_list())
 
 # + id="GGwe7_uU1C8U"
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = qc_filter(plot_data, filters_db, qc_config)
+plot_data, filters_db = qc_filter(plot_data, filters_db, config.qc)
 
 # + [markdown] id="M_gKSTNYyzjS"
 # ## по порогу CO2SS и CH4SS
 
 # + id="viq7BZue9Ett"
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = meteorological_co2ss_filter(plot_data, filters_db, meteo_filter_config)
+plot_data, filters_db = meteorological_co2ss_filter(plot_data, filters_db, config.filters.meteo)
 
 # + id="5RrPfxfiJGhN"
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = meteorological_ch4ss_filter(plot_data, filters_db, meteo_filter_config)
+plot_data, filters_db = meteorological_ch4ss_filter(plot_data, filters_db, config.filters.meteo)
 
 # + [markdown] id="qwqVDeH6y73_"
 # ## по допустимым значениям RH
 
 # + id="11isfvNZ9FGu"
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = meteorological_rh_filter(plot_data, filters_db, meteo_filter_config)
+plot_data, filters_db = meteorological_rh_filter(plot_data, filters_db, config.filters.meteo)
 
 # + [markdown] id="oSX2h9QzzFkT"
 # ## по наличию дождя
 
 # + id="jz696mc09FlB"
-if config_meteo['use_biomet']:
+if config.has_meteo:
     unroll_filters_db = filters_db.copy()
-    plot_data, filters_db = meteorological_rain_filter(plot_data, filters_db, meteo_filter_config)
+    plot_data, filters_db = meteorological_rain_filter(plot_data, filters_db, config.filters.meteo)
 
 # + [markdown] id="Xy2y00P1zJtZ"
 # ## по ночным и дневным допустимым диапазонам
 
 # + id="ED_Qh6TS0Qkc"
-if config_meteo['use_biomet']:
+if config.has_meteo:
     unroll_filters_db = filters_db.copy()
-    plot_data, filters_db = meteorological_night_filter(plot_data, filters_db, meteo_filter_config)
+    plot_data, filters_db = meteorological_night_filter(plot_data, filters_db, config.filters.meteo)
 
 # + id="X3Vguu8MK635"
-if config_meteo['use_biomet']:
+if config.has_meteo:
     unroll_filters_db = filters_db.copy()
-    plot_data, filters_db = meteorological_day_filter(plot_data, filters_db, meteo_filter_config)
+    plot_data, filters_db = meteorological_day_filter(plot_data, filters_db, config.filters.meteo)
 
 # + [markdown] id="fzfTJdNe68Eu"
 # ## фильтрация зимних периодов, уточните даты!
 
 # + id="wJ87D57S7A91"
-if ('winter_nee_limits' in meteo_filter_config.keys()) or ('winter_ch4_flux_limits' in meteo_filter_config.keys()):
+if ('winter_nee_limits' in config.filters.meteo.keys()) or ('winter_ch4_flux_limits' in config.filters.meteo.keys()):
     plot_albedo(plot_data, filters_db)
 
 # + id="Z_RAYINf67PO"
-if config_meteo['use_biomet']:
+if config.has_meteo:
     unroll_filters_db = filters_db.copy()
     date_ranges = [
         ['01.01.2023 00:00', '26.03.2023 00:00'],
@@ -789,7 +782,7 @@ if config_meteo['use_biomet']:
     ]
     # date_ranges = []
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
-    plot_data, filters_db = winter_filter(plot_data, filters_db, meteo_filter_config, date_ranges)
+    plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo, date_ranges)
 
 # + [markdown] id="iipFLxf6fu5Y"
 # Фильтрация по футпринту
@@ -804,31 +797,31 @@ if config_meteo['use_biomet']:
 # ## по минимальным и максимальным допустимым значениям
 
 # + id="FyJaM1zC1DDg"
-# if config_meteo ['use_biomet']:
+# if config.eddypro_biomet ['use_biomet']:
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = min_max_filter(plot_data, filters_db, min_max_config)
+plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min_max)
 
 # + [markdown] id="j62U1dw8sTEm"
 # ## по квантилям
 
 # + id="aNQ4XDK01DME"
-# if config_meteo ['use_biomet']:
+# if config.eddypro_biomet ['use_biomet']:
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = quantile_filter(plot_data, filters_db, quantile_filter_config)
+plot_data, filters_db = quantile_filter(plot_data, filters_db, config.filters.quantile)
 
 # + [markdown] id="7Sg76Bwasnb4"
 # ## по отклонению от среднего хода
 
 # + id="uoDvHhoQ2MMe"
 unroll_filters_db = filters_db.copy()
-plot_data, filters_db = std_window_filter(plot_data, filters_db, window_filter_config)
+plot_data, filters_db = std_window_filter(plot_data, filters_db, config.filters.window)
 
 # + [markdown] id="iXl5RdINss9D"
 # ## Фильтрация выбросов MAD & Hampel
 
 # + id="gl9cImVr2MO3"
 unroll_filters_db = filters_db.copy()
-plot_data, tmp_filter = mad_hampel_filter(plot_data, filters_db, madhampel_filter_config)
+plot_data, tmp_filter = mad_hampel_filter(plot_data, filters_db, config.filters.madhampel)
 
 # + [markdown] id="iu8MLKyh1AFk"
 # ## Ручная фильтрация
@@ -838,12 +831,13 @@ plot_data, tmp_filter = mad_hampel_filter(plot_data, filters_db, madhampel_filte
 
 # + id="ADy534At0_fN"
 #  фильтр уберет значения от первого до второго включительно
-man_ranges = [
+config.filters.man_ranges = [
     # ['1.5.2023 00:00', '1.6.2023 00:00'],
     # ['25.8.2023 12:00', '25.8.2023 12:00'],
 ]
-for man_range in man_ranges:
-    plot_data, tmp_filter = manual_filter(plot_data, filters_db, col_name="nee", man_range=man_range, value=0, config=config)
+for man_range in config.filters.man_ranges:
+    plot_data, tmp_filter = manual_filter(plot_data, filters_db, col_name="nee", man_range=man_range, value=0,
+                                          manual_config=man_range)
 
 # + [markdown] id="APyqyqSEHx3K"
 # ## На случай необходимости откатить последний фильтр
@@ -895,7 +889,7 @@ col2plot = 'nee'
 
 # Или закомментировать одну строку выше и запускать повторно для переключения к следующему параметру
 if col2plot:
-    make_filtered_plot(plot_data, col2plot, col2plot, ias_output_prefix, filters_db)
+    make_filtered_plot(plot_data, col2plot, col2plot, config.site_name, filters_db)
 else:
     print("No more data, start from the begining!")
     plot_terator = iter(cols_to_investigate)
@@ -908,7 +902,7 @@ else:
 # + id="VtJ8wyx2-XCX"
 # #Заполнение ходом
 # for col in cols_to_investigate:
-#   plot_data[col].fillna(bg.calc_rolling(plot_data[col], rolling_window=10, step=points_per_day, min_periods=7))
+#   plot_data[col].fillna(bg.calc_rolling(plot_data[col], rolling_window=10, step=gl.points_per_day, min_periods=7))
 
 # + [markdown] id="MwuXRVTMtBz2"
 # ## Отрисовка среднего хода для отфильтрованных рядов
@@ -927,7 +921,7 @@ col2plot = next(plot_terator, False)
 col2plot = ['nee', 'le']
 # Или просто запускать повторно для переключения к следующему параметру
 if col2plot:
-    basic_plot(plot_data, col2plot, ias_output_prefix, filters_db, steps_per_day=points_per_day)
+    basic_plot(plot_data, col2plot, config.site_name, filters_db, steps_per_day=gl.points_per_day)
 else:
     print("No more data, start from the begining!")
     plot_terator = iter(cols_to_investigate)
@@ -951,92 +945,36 @@ for col in ['nee', 'le', 'h']:
 # Создадим шаблон шапки для файла REddyProc и сохраним требуемые переменные, не забыв учесть фильтрацию. Выходной файл - уровня 3.
 
 # + id="YVu2UrCzLqb4"
-rep_fname = f"REddyProc_{ias_output_prefix}_{int(plot_data[time_col].dt.year.median())}.txt"
 output_template = {
     'Year': ['-'], 'DoY': ['-'], 'Hour': ['-'], 'NEE': ['umol_m-2_s-1'], 'LE': ['Wm-2'], 'H': ['Wm-2'],
     'Rg': ['Wm-2'], 'Tair': ['degC'], 'Tsoil': ['degC'], 'rH': ['%'], 'VPD': ['hPa'], 'Ustar': ['ms-1'],
     'CH4flux': ['umol_m-2_s-1']
 }
-
-# + id="GFulh7FtNWtM"
 rep_df = plot_data.copy()
-
 for column, filter in filters_db.items():
     filter = get_column_filter(rep_df, filters_db, column)
     rep_df.loc[~filter.astype(bool), column] = np.nan
 
-rep_df['Year'] = rep_df[time_col].dt.year
-rep_df['DoY'] = rep_df[time_col].dt.dayofyear
-rep_df['Hour'] = rep_df[time_col].dt.hour + rep_df[time_col].dt.minute / 60
+gl.rep_level3_fpath = gl.out_dir / f"REddyProc_{config.site_name}_{int(plot_data[time_col].dt.year.median())}.txt"
+export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config, gl.points_per_day)
 
-rep_df['NEE'] = rep_df['nee'].fillna(-9999)
-rep_df['LE'] = rep_df['le'].fillna(-9999)
-rep_df['H'] = rep_df['h'].fillna(-9999)
-if 'swin_1_1_1' in rep_df.columns:
-    rep_df['Rg'] = rep_df['swin_1_1_1'].fillna(-9999)
-else:
-    print("WARNING! No swin_1_1_1!")
-
-# TODO 1 QE does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose? (Q about import, not on export)
-# introduces nasty complications, requires fix on ias export?
-# E: export goal was to match rep
-
-# TODO 2 if biomet, 'air_temperature' contains derivation from 'ta_1_1_1'
-# E: because they are different, 'air_temperature' is worse backup plan if 'ta_1_1_1' is missing
-# TODO 1 check other cols from description
-
-if config_meteo['use_biomet']:
-    rep_df['Tair'] = rep_df['ta_1_1_1'].fillna(-9999)
-    rep_df['rH'] = rep_df['rh_1_1_1'].fillna(-9999)
-    rep_df['VPD'] = rep_df['vpd_1_1_1'].fillna(-9999)
-else:
-    rep_df['Tair'] = (rep_df['air_temperature'] - 273.15).fillna(-9999)
-    rep_df['rH'] = rep_df['rh'].fillna(-9999)
-    rep_df['VPD'] = rep_df['vpd'].fillna(-9999)
-
-if 'ts_1_1_1' in rep_df.columns:
-    rep_df['Tsoil'] = rep_df['ts_1_1_1'].fillna(-9999)
-
-rep_df['Ustar'] = rep_df['u_star'].fillna(-9999)
-
-if 'ch4_flux' in rep_df.columns:
-    rep_df['CH4flux'] = rep_df['ch4_flux'].fillna(-9999)
-
-i = 0
-while rep_df.iloc[i]['Hour'] != 0.5:
-    i += 1
-rep_df = rep_df.iloc[i:]
-
-if len(rep_df.index) < 90 * points_per_day:
-    print("WARNING!  < 90 days in reddyproc file!")
-
-rep_input_fpath = out_dir / rep_fname
-pd.DataFrame({
-    key: item for key, item in output_template.items() if key in rep_df.columns
-}).to_csv(rep_input_fpath, index=False, sep=' ')
-rep_df.to_csv(rep_input_fpath, index=False, header=False,
-              columns=[i for i in output_template.keys() if i in rep_df.columns], mode='a', sep=' ')
-del rep_df
-logging.info(f"REddyProc file saved to {rep_input_fpath}")
-
-# + [markdown] id="62o5-p8ZzR5T"
 # ## Файл для ИАС
 
 # + [markdown] id="e50f7947"
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
 # + id="yaLoIQmtzaYd"
-if config_meteo['use_biomet']:
+if config.has_meteo:
     ias_df: pd.DataFrame = plot_data.copy()
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-    # TODO 1 do more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+    # TODO 1 test more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
 
     # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1'
     #  check eddypro specification, also 'nee'  'par' 'rg_1_1_1'
 
-    export_ias(out_dir, ias_output_prefix, ias_output_version, ias_df, time_col=time_col,
+    export_ias(gl.out_dir, config.site_name, config.ias_output_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])
 
 # + [markdown] id="Pm8hiMrb_wRW"
@@ -1047,7 +985,7 @@ if config_meteo['use_biomet']:
 # ![image.png](data:image/png;base64,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)
 
 # + id="w9hkPLkB_zd1"
-if config_meteo['use_biomet']:
+if config.has_meteo:
     fat_output_template = {
         'DoY': ['--'], r'u*': ['m s-1'], 'H': ['W m-2'], 'lE': ['-'], 'NEE': ['umol m-2 s-1'],
         'PPFD': ['umol m-2 s-1'], 'Ta': ['oC'], 'VPD': ['kPa'], 'PPFD_gapfilling': ['umol m-2 s-1'],
@@ -1055,59 +993,12 @@ if config_meteo['use_biomet']:
     }
 
     fat_df = plot_data.copy()
-
     for column, filter in filters_db.items():
         filter = get_column_filter(fat_df, filters_db, column)
         fat_df.loc[~filter.astype(bool), column] = np.nan
 
-    fat_df['DoY'] = np.round(
-        fat_df[time_col].dt.dayofyear + fat_df[time_col].dt.hour / 24. + fat_df[time_col].dt.minute / 24. / 60., decimals=3)
-    fat_df[r'u*'] = fat_df['u_star'].fillna(-99999)
-    fat_df['H'] = fat_df['h'].fillna(-99999)
-    fat_df['lE'] = fat_df['le'].fillna(-99999)
-    fat_df['NEE'] = fat_df['nee'].fillna(-99999)
-    if 'ppfd_1_1_1' in fat_df.columns:
-        fat_df['PPFD'] = fat_df['ppfd_1_1_1'].fillna(-99999)
-        fat_df['PPFD_gapfilling'] = fat_df['ppfd_1_1_1'].interpolate(limit=3).fillna(
-            bg.calc_rolling(fat_df['ppfd_1_1_1'], rolling_window=10, step=points_per_day, min_periods=4)
-        ).fillna(-99999)
-    else:
-        logging.info(f"FAT file will have no PPFD")
-        fat_output_template.pop('PPFD')
-
-    if not config_meteo['use_biomet']:
-        fat_df['ta_1_1_1'] = fat_df['air_temperature'] - 273.15
-
-    fat_df['Ta'] = fat_df['ta_1_1_1'].fillna(-99999)
-    fat_df['VPD'] = fat_df['vpd_1_1_1'].fillna(-99999)
-
-    fat_df['period'] = fat_df.index.month % 12 // 3 + 1
-
-    fat_df['Ta_gapfilling'] = fat_df['ta_1_1_1'].interpolate(limit=3).fillna(
-        bg.calc_rolling(fat_df['ta_1_1_1'], rolling_window=10, step=points_per_day, min_periods=4)
-    ).fillna(-99999)
-    fat_df['VPD_gapfilling'] = fat_df['vpd_1_1_1'].interpolate(limit=3).fillna(
-        bg.calc_rolling(fat_df['vpd_1_1_1'], rolling_window=10, step=points_per_day, min_periods=4)
-    ).fillna(-99999)
-
-    for year in fat_df.index.year.unique():
-        fat_filename = f"FAT_{ias_output_prefix}_{year}.csv"
-        fat_fpath = out_dir / fat_filename
-        pd.DataFrame(fat_output_template).to_csv(fat_fpath, index=False)
-        save_data = fat_df.loc[fat_df[time_col].dt.year == year]
-        if len(save_data.index) >= 5:
-            save_data.to_csv(fat_fpath, index=False, header=False,
-                             columns=[i for i in fat_output_template.keys()], mode='a')  # , sep=' ')
-        else:
-            try:
-                os.remove(fat_fpath)
-            except Exception as e:
-                print(e)
-
-            print(f"not enough data for {year}")
-            logging.info(f"{year} not saved, not enough data!")
+    export_fat(fat_df, fat_output_template, time_col, gl, config)
     del fat_df
-    logging.info(f"FAT file saved to {fat_fpath}")
 
 # + [markdown] id="GQ1bpermu8eq"
 # ## Полный файл результатов фильтрации
@@ -1121,7 +1012,7 @@ if 'date' in plot_data.columns:
 if 'time' in plot_data.columns:
     plot_data.loc[plot_data['time'].isna(), 'time'] = plot_data[time_col].dt.time
 
-all_fpath = out_dir / 'output_all.csv'
+all_fpath = gl.out_dir / 'output_all.csv'
 plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
 logging.info(f"Basic file saved to {all_fpath}")
 
@@ -1138,9 +1029,10 @@ basic_df = plot_data.copy()
 basic_df['Date'] = basic_df[time_col].dt.date
 basic_df['Time'] = basic_df[time_col].dt.time
 basic_df['DoY'] = np.round(
-    basic_df[time_col].dt.dayofyear + basic_df[time_col].dt.hour / 24. + basic_df[time_col].dt.minute / 24. / 60., decimals=3)
+    basic_df[time_col].dt.dayofyear + basic_df[time_col].dt.hour / 24. + basic_df[time_col].dt.minute / 24. / 60.,
+    decimals=3)
 
-if not config_meteo['use_biomet']:
+if not config.has_meteo:
     basic_df['ta_1_1_1'] = basic_df['air_temperature'] - 273.15
 # метео
 for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
@@ -1189,9 +1081,9 @@ for col in ['h', 'le', 'nee', 'rg', 'ppfd', 'ta', 'rh', 'vpd', 'ch4_flux']:
     col_out = col
     if col == "ppfd":
         col_out = "rg"
-    basic_df[f'{col_out}_10d'] = bg.calc_rolling(basic_df[f"{col}_filtered"], rolling_window=10, step=points_per_day,
+    basic_df[f'{col_out}_10d'] = bg.calc_rolling(basic_df[f"{col}_filtered"], rolling_window=10, step=gl.points_per_day,
                                                  min_periods=7)
-    basic_df[f'{col_out}_30d'] = bg.calc_rolling(basic_df[f"{col}_filtered"], rolling_window=30, step=points_per_day,
+    basic_df[f'{col_out}_30d'] = bg.calc_rolling(basic_df[f"{col}_filtered"], rolling_window=30, step=gl.points_per_day,
                                                  min_periods=7)
     columns_to_save.append(f'{col_out}_10d')
     columns_to_save.append(f'{col_out}_30d')
@@ -1199,7 +1091,7 @@ for col in ['h', 'le', 'nee', 'rg', 'ppfd', 'ta', 'rh', 'vpd', 'ch4_flux']:
 basic_df = basic_df[[col for col in columns_to_save if col in basic_df.columns]]
 basic_df = basic_df.fillna(-9999)
 
-summary_fpath = out_dir / 'output_summary.csv'
+summary_fpath = gl.out_dir / 'output_summary.csv'
 basic_df.to_csv(summary_fpath, index=None)
 logging.info(f"New basic file saved to {summary_fpath}")
 # + [markdown] id="775a473e"
@@ -1229,13 +1121,19 @@ sink(stdout(), type = "message")
 install_if_missing("REddyProc", "1.3.3", repos = 'http://cran.rstudio.com/')
 sink()
 """
-setup_r()
+setup_r_env()
+from rpy2 import robjects
+
 robjects.r(setup_colab_r_code)
+
+from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
+from src.reddyproc.preprocess_rg import prepare_rg
 
 # + [markdown] id="034b04a5"
 # ## Фильтрация и заполнение пропусков
 #
-# Далее `ig.eddyproc_options` - настройки, которые соответствуют опциям [онлайн-инструмента](https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php).
+# Далее `config.reddyproc` - настройки, которые соответствуют опциям [онлайн-инструмента](https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php).
 #
 # **Необходимо проверить:**  
 #
@@ -1290,9 +1188,8 @@ robjects.r(setup_colab_r_code)
 # + id="278caec5"
 from src.ipynb_globals import *
 
-ig.rep = SimpleNamespace()
-ig.rep.options = SimpleNamespace(
-    site_id=ias_output_prefix,
+config.reddyproc = RepConfig(
+    site_id=config.site_name,
 
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
@@ -1320,14 +1217,13 @@ ig.rep.options = SimpleNamespace(
     # do not change
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
-    input_file=str(rep_input_fpath),
-    output_dir=str(out_dir / 'reddyproc'),
-    log_fname_end='_log.txt'
+    input_file=str(gl.rep_level3_fpath),
+    output_dir=str(gl.out_dir / 'reddyproc'),
 )
 
-prepare_rg(ig.rep.options)
-ensure_empty_dir(ig.rep.options.output_dir)
-ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)
+prepare_rg(config.reddyproc)
+ensure_empty_folder(config.reddyproc.output_dir)
+gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc)
 
 # + [markdown] id="0bed439c"
 # ## Контрольные графики
@@ -1340,38 +1236,39 @@ ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)
 # Тэги именно для этого варианта тетради будут видны после запуска ячейки по вызову `display_tag_info`.
 
 # + id="e66a94ab"
-rep_out_dir = Path(ig.rep.options.output_dir)
-tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_options=ig.rep, img_ext='.png')
-eog = RepOutputGen(tag_handler)
+rep_out_dir = Path(config.reddyproc.output_dir)
+tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_cfg=config.reddyproc, rep_out_info=gl.rep_out_info,
+                               img_ext='.png')
+rog = RepOutputGen(tag_handler)
 
 output_sequence: tuple[str | list[str], ...] = (
     "## Тепловые карты",
-    eog.hmap_compare_row('NEE_*'),
-    eog.hmap_compare_row('LE_f'),
-    eog.hmap_compare_row('H_f'),
+    rog.hmap_compare_row('NEE_*'),
+    rog.hmap_compare_row('LE_f'),
+    rog.hmap_compare_row('H_f'),
     "## Суточный ход",
-    eog.diurnal_cycle_row('NEE_*'),
-    eog.diurnal_cycle_row('LE_f'),
-    eog.diurnal_cycle_row('H_f'),
+    rog.diurnal_cycle_row('NEE_*'),
+    rog.diurnal_cycle_row('LE_f'),
+    rog.diurnal_cycle_row('H_f'),
     "## 30-минутные потоки и суточные средние",
-    eog.flux_compare_row('NEE_*'),
-    eog.flux_compare_row('LE_f'),
-    eog.flux_compare_row('H_f')
+    rog.flux_compare_row('NEE_*'),
+    rog.flux_compare_row('LE_f'),
+    rog.flux_compare_row('H_f')
 )
 
-eio = RepOutputHandler(output_sequence=output_sequence, tag_handler=tag_handler, out_info=ig.rep.out_info)
-eio.prepare_images_safe()
-ig.arc_exclude_files = eio.img_proc.raw_img_duplicates
+roh = RepOutputHandler(output_sequence=output_sequence, tag_handler=tag_handler, out_info=gl.rep_out_info)
+roh.prepare_images_safe()
+gl.rep_arc_exclude_files = roh.img_proc.raw_img_duplicates
 
-eproc_arc_path = rep_out_dir / (ig.rep.out_info.fnames_prefix + '.zip')
-create_archive(arc_path=eproc_arc_path, folders=rep_out_dir, top_folder=rep_out_dir,
-               include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=eio.img_proc.raw_img_duplicates)
+rep_arc_path = rep_out_dir / (gl.rep_out_info.fnames_prefix + '.zip')
+create_archive(arc_path=rep_arc_path, folders=rep_out_dir, top_folder=rep_out_dir,
+               include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=roh.img_proc.raw_img_duplicates)
 
-colab_add_download_button(eproc_arc_path, 'Download eddyproc outputs')
+colab_add_download_button(rep_arc_path, 'Download eddyproc outputs')
 
-eio.display_images_safe()
+roh.display_images_safe()
 
-tag_handler.display_tag_info(eio.extended_tags())
+tag_handler.display_tag_info(roh.extended_tags())
 
 # + [markdown] id="HEead6faY22W"
 # # Выгрузка результатов
@@ -1381,7 +1278,9 @@ tag_handler.display_tag_info(eio.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # + id="E4rv4ucOX8Yz"
-arc_path = out_dir / 'FluxFilter_output.zip'
-create_archive(arc_path=arc_path, folders=[out_dir, ig.rep.options.output_dir], top_folder=out_dir,
-               include_fmasks=['*.png', '*.csv', '*.txt', '*.log'], exclude_files=ig.arc_exclude_files)
+save_config(config, gl.out_dir / 'config.yaml')
+
+arc_path = gl.out_dir / 'FluxFilter_output.zip'
+create_archive(arc_path=arc_path, folders=[gl.out_dir, config.reddyproc.output_dir], top_folder=gl.out_dir,
+               include_fmasks=['*.png', '*.csv', '*.txt', '*.log', '*.yaml'], exclude_files=gl.rep_arc_exclude_files)
 colab_add_download_button(arc_path, 'Download outputs')

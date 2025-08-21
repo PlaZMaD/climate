@@ -1,16 +1,17 @@
-import warnings
-from os import chdir
-from pathlib import Path
-from sys import path as sys_paths
-
 """
  This module is intended to be imported before all other user modules.
- ch_project_root_dir() allows to keep consistent imports root (from src.** import) when runnning from different dirs: 
+ ch_project_root_dir() allows to keep consistent imports root (from src.** import) when runnning from different dirs:
     cmd: */run_main.bat, py: ./main.py, py tests: ./test/test_main.py, etc
 
  Import with autorun of declared functions without warning:
  from src.helpers import os_helpers  # noqa: F401
 """
+
+import logging
+import warnings
+from os import chdir
+from pathlib import Path
+from sys import path as sys_paths
 
 
 def ch_project_root_dir():
@@ -24,10 +25,10 @@ def ch_project_root_dir():
     src_dir = str(src_dir)
 
     if src_dir in sys_paths:
-        # ambigious imports can be broken
+        # ambiguous imports can be broken
         sys_paths.remove(src_dir)
     if src_dir in sys_paths:
-        # ambigious imports can be broken, dupe remove is nessesary somethimes
+        # ambiguous imports can be broken, dupe remove is necessary sometimes
         sys_paths.remove(src_dir)
     assert src_dir not in sys_paths
 
@@ -39,11 +40,14 @@ def ch_project_root_dir():
 
 
 def set_simple_user_warnings():
-    # TODO 3 possibly unused; to logging instead?
+    """
+    Prepares warning.warn (not a duplicate of logging.warning)
+    warning.warn is for system level unexpected states, logging.warning is for script logic
+    """
 
     default_show_warning = warnings.showwarning
 
-    # logging.captureWarnings(True)
+    logging.captureWarnings(True)
     # not used yet - replaced with logging.warning for ipynb
 
     def custom_show_warning(message, category, filename, lineno, file=None, line=None):

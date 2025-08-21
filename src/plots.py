@@ -196,6 +196,7 @@ def plot_albedo(plot_data, filters_db):
         if can_use:
             print("alb_1_1_1 is available, but will be calculated instead")
     elif can_use:
+        # TODO 1 QOA should not be here, nor conversion is correct here, must be on import?
         pl_data['albedo'] = pl_data['alb_1_1_1'] / 100.0
     else:
         print("No swin_1_1_1/sout_1_1_1, nor alb_1_1_1")

@@ -1,13 +1,14 @@
+import logging
 import textwrap
 from pathlib import Path
 from types import SimpleNamespace
-from warnings import warn
 
 from IPython.core.display import Markdown
 from IPython.display import display
 from PIL import Image
 
 import src.helpers.os_helpers  # noqa: F401
+from src.ffconfig import RepConfig
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
 from src.helpers.io_helpers import tag_to_fpath
@@ -19,19 +20,19 @@ EddyPrefixes = SimpleNamespace(HEAT_MAP='FP', FLUX='Flux', DIURNAL='DC', DAILY_S
 
 
 class RepImgTagHandler:
-    def __init__(self, main_path, rep_options, img_ext='.png'):
+    def __init__(self, main_path, rep_cfg: RepConfig, rep_out_info, img_ext='.png'):
         self.main_path = Path(main_path)
 
-        is_ustar = rep_options.options.is_to_apply_u_star_filtering
+        is_ustar = rep_cfg.is_to_apply_u_star_filtering
         self.nee_f_suffix = 'uStar_f' if is_ustar else 'f'
 
-        self.loc_prefix = rep_options.out_info.fnames_prefix
+        self.loc_prefix = rep_out_info.fnames_prefix
         self.img_ext = img_ext
 
     def tag_to_img_fpath(self, tag, must_exist=True, warn_if_missing=True):
         fpath = tag_to_fpath(self.main_path, self.loc_prefix, tag, self.img_ext, must_exist)
         if warn_if_missing and not fpath:
-            warn(f"Expected image is missing: {tag}")
+            logging.warning(f"Expected image is missing: {tag}")
 
         return fpath
 
@@ -74,7 +75,7 @@ class RepImgTagHandler:
         def detect_prefix(s, prefixes):
             s = tag.partition('_')[0]
             if s not in prefixes:
-                warn('Unexpected file name start: ' + s)
+                logging.warning('Unexpected file name start: ' + s)
             return s
 
         prefixes_list = list(vars(EddyPrefixes).values())
@@ -252,7 +253,7 @@ class RepOutputHandler:
             else:
                 check = [ct(tag, prefix=prefix, suffix=None) for prefix in list(vars(EddyPrefixes).values())]
                 if len(check) != 1:
-                    warn(f'Unrecognized tag: {tag}')
+                    logging.warning(f'Unrecognized tag: {tag}')
 
     def on_missing_file(self, e):
         print(str(e))

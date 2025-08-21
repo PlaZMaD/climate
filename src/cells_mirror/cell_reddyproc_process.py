@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 
 import src.ipynb_globals as ig
-from src.helpers.io_helpers import ensure_empty_dir
+from src.helpers.io_helpers import ensure_empty_folder
 from src.ipynb_globals import *
 from src.reddyproc.preprocess_rg import prepare_rg
 from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
@@ -18,7 +18,7 @@ ig.rep.options = SimpleNamespace(
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # "Rg_th_Py", "Rg_th_REP" - estimate by theoretical algs,
     # "Rg" - by real data, "" - ignore Rg and filter both days and nights
-    # TODO 2 when fallback activated + (multuyear or bootstrap): test if all ok?
+    # TODO 2 test when fallback activated + (multuyear or bootstrap): if all ok?
     ustar_rg_source="Rg",
     is_bootstrap_u_star=False,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
@@ -45,5 +45,5 @@ ig.rep.options = SimpleNamespace(
 )
 
 prepare_rg(ig.rep.options)
-ensure_empty_dir(ig.rep.options.output_dir)
+ensure_empty_folder(ig.rep.options.output_dir)
 ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)

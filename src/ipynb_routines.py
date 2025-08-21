@@ -4,7 +4,7 @@ However, output may be auto replaced with text.
 
 Also consider to change if nessesary:
 if ENV.IPYNB:
-	import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 """
 import logging
 from pathlib import Path
@@ -19,10 +19,15 @@ from plotly.io import renderers
 
 from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
-from src.helpers.io_helpers import ensure_empty_dir
+from src.helpers.io_helpers import ensure_empty_folder
+
+
+# TODO 2 create git readme and changelog for releases
+# TODO 1 QOA QV have you shared 0.9.5? move to 0.9.4en + edit 0.9.2 source carefully?
+
 
 if ENV.LOCAL:
-    # plotly tweaks
+    # reducing plotly log spam
     logging.getLogger('kaleido').setLevel(logging.WARNING)
     logging.getLogger('choreographer').setLevel(logging.WARNING)
 
@@ -115,7 +120,7 @@ def setup_plotly(out_dir):
         #     plotly==6.2.0
 
         local_dir = out_dir / 'local' / 'plots'
-        ensure_empty_dir(local_dir)
+        ensure_empty_folder(local_dir)
 
         go.Figure.show = lambda self, **args: _plotly_show_override(self, local_dir, **args)
         print(f"Pure py plotly renderer is set to: {renderers.default}.")

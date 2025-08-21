@@ -1,7 +1,11 @@
 import logging
-from enum import Enum
 from pathlib import Path
 
+from src.data_io.csf_import import import_csf
+from src.data_io.data_import_modes import ImportMode, InputFileType
+from src.data_io.eddypro_loader import load_eddypro
+from src.data_io.ias_io import import_ias
+from src.ffconfig import FFConfig
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
@@ -13,24 +17,6 @@ from src.helpers.py_helpers import ensure_list
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
 
-class ImportMode(Enum):
-    # extension and data level before import
-    EDDYPRO = 1
-    EDDYPRO_AND_BIOMET = 2
-    IAS = 3
-    CSF = 4
-    AUTO = 5
-
-
-class InputFileType(Enum):
-    # extension and processing level
-    UNKNOWN = 0
-    EDDYPRO = 1
-    BIOMET = 2
-    CSF = 3
-    IAS = 4
-
-
 class AutoImportException(Exception):
     pass
 
@@ -40,8 +26,8 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
 
     # may be also consider exact header row place
     ias_cols = (set(IAS_HEADER_DETECTION_COLS), InputFileType.IAS)
-    biomet_cols = (set(BIOMET_HEADER_DETECTION_COLS), InputFileType.BIOMET)
-    eddypro_cols = (set(EDDYPRO_HEADER_DETECTION_COLS), InputFileType.EDDYPRO)
+    biomet_cols = (set(BIOMET_HEADER_DETECTION_COLS), InputFileType.EDDYPRO_BIOMET)
+    eddypro_cols = (set(EDDYPRO_HEADER_DETECTION_COLS), InputFileType.EDDYPRO_FO)
     csf_cols = (set(CSF_HEADER_DETECTION_COLS), InputFileType.CSF)
     detect_col_targets = [ias_cols, biomet_cols, eddypro_cols, csf_cols]
 
@@ -103,13 +89,14 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
     input_ftypes = list(input_file_types.values())
     possible_input_modes = []
 
-    if InputFileType.EDDYPRO in input_ftypes:
-        if InputFileType.BIOMET not in input_ftypes:
-            possible_input_modes += [ImportMode.EDDYPRO]
+    if InputFileType.EDDYPRO_FO in input_ftypes:
+        if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
+            possible_input_modes += [ImportMode.EDDYPRO_FO]
         else:
-            if input_ftypes.count(InputFileType.BIOMET) > 1:
-                raise AutoImportException('More than 2 biomet files detected')
-            possible_input_modes += [ImportMode.EDDYPRO_AND_BIOMET]
+            # TODO QOA 1 is multiple supported?
+            # if input_ftypes.count(InputFileType.EDDYPRO_BIOMET) > 1:
+            #     raise AutoImportException('More than 2 biomet files detected')
+            possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
 
     if InputFileType.IAS in input_ftypes:
         possible_input_modes += [ImportMode.IAS]
@@ -118,7 +105,8 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         possible_input_modes += [ImportMode.CSF]
 
     if len(possible_input_modes) == 0:
-        raise AutoImportException(f'No import modes possible, ensure input files are in the script folder and review log.')
+        raise AutoImportException(
+            f'No import modes possible, ensure input files are in the script folder and review log.')
     elif len(possible_input_modes) == 1:
         mode = possible_input_modes[0]
     else:
@@ -128,124 +116,60 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
     return mode
 
 
-def detect_auto_config_ias(input_file_types: dict[Path, InputFileType], config_meteo):
-    # files are already verified in detect_input_mode
-
-    auto_config_path = list(input_file_types.keys())
-    config_meteo_use_biomet = True
-
-    # options are expected to be cleaned up soon
-    if config_meteo['path'] is not None and config_meteo['path'] != 'auto':
-        logging.warning(f"config_meteo['path'] value = {config_meteo['path']} "
-                        f"will be ignored due to IAS input mode (ias file includes biomet)")
-    config_meteo_path = None
-
-    ias_output_prefix, ias_output_version = try_parse_ias_fname(Path(auto_config_path[0]).name)
-    return auto_config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
+def detect_auto_config_ias(input_file_types: dict[Path, InputFileType]):
+    paths = list(input_file_types.keys())
+    return try_parse_ias_fname(paths[0].name)
 
 
-def detect_auto_config_csf(input_file_types: dict[Path, InputFileType], config_meteo):
-    # files are already verified in detect_input_mode
-
-    auto_config_path = list(input_file_types.keys())
-    config_meteo_use_biomet = True
-
-    # options are expected to be cleaned up soon
-    if config_meteo['path'] is not None and config_meteo['path'] != 'auto':
-        logging.warning(f"config_meteo['path'] value = {config_meteo['path']} "
-                        f"will be ignored due to CSF input mode (csf file includes biomet)")
-    config_meteo_path = None
-
-    ias_output_prefix, ias_output_version = try_parse_csf_fname(Path(auto_config_path[0]).name)
-    return auto_config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
+def detect_auto_config_csf(input_file_types: dict[Path, InputFileType]):
+    paths = list(input_file_types.keys())
+    return try_parse_csf_fname(paths[0].name)
 
 
-def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType], mode: ImportMode):
-    # files are already verified in detect_input_mode
+def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType]):
     # 1 or 0 biomet files are already ensured
-    assert mode in [ImportMode.EDDYPRO_AND_BIOMET, ImportMode.EDDYPRO]
-
-    config_path = [k for k, v in input_file_types.items() if v == InputFileType.EDDYPRO]
-    biomets = [k for k, v in input_file_types.items() if v == InputFileType.BIOMET]
-
-    if mode == ImportMode.EDDYPRO_AND_BIOMET:
-        if len(biomets) != 1:
-            raise AutoImportException('More than 1 biomet files detected, cannot auto pick')
-        config_meteo_use_biomet = True
-        config_meteo_path = biomets[0]
-    elif mode == ImportMode.EDDYPRO:
-        config_meteo_use_biomet = False
-        config_meteo_path = None
-    else:
-        raise AutoImportException('Unexpected import mode')
-
-    ias_output_prefix, ias_output_version = try_parse_eddypro_fname(Path(config_path[0]).name)
-    return config_path, config_meteo_use_biomet, config_meteo_path, ias_output_prefix, ias_output_version
+    config_path = [k for k, v in input_file_types.items() if v == InputFileType.EDDYPRO_FO]
+    return try_parse_eddypro_fname(Path(config_path[0]).name)
 
 
-def auto_detect_input_files(config: dict, config_meteo: dict, ias_output_prefix: str, ias_output_version: str):
-    # TODO QE 2 why 2 configs instead of one? merge options?
-
+def auto_detect_input_files(config: FFConfig):
     # noinspection PyPep8Naming
     IM = ImportMode
-    assert type(config['mode']) is IM
 
-    if config['path'] == 'auto':
-        logging.info("Detecting input files due to config['path'] = 'auto' ")
-        input_file_types = detect_known_files()
+    if config.input_files == 'auto':
+        # logging.info("Detecting input files due to config['path'] = 'auto' ")
+        input_files_auto = detect_known_files()
+        config.input_files = change_if_auto(config.input_files, input_files_auto,
+                                            ok_msg=f'Auto picked input files: {input_files_auto}')
+    elif type(config.input_files) in [list, str]:
+        user_fpaths = ensure_list(config.input_files, transform_func=ensure_path)
+        config.input_files = detect_known_files(from_list=user_fpaths)
+    elif type(config.input_files) is dict:
+        config.input_files = {Path(fpath): ftype for fpath, ftype in config.input_files.items()}
     else:
-        user_files = ensure_list(config['path'], transform_func=ensure_path)
+        raise ValueError(f'{config.input_files=}')
 
-        # TODO 2 temp fix,rework config later
-        assert config_meteo['use_biomet'] != 'auto'
-        if config_meteo['use_biomet']:
-            assert config_meteo['path'] != 'auto'
-            if config_meteo['path']:
-                user_files += [config_meteo['path']]
+    config.import_mode = detect_input_mode(config.input_files)
+    logging.info(f'Auto picked import mode: {config.import_mode}')
 
-        input_file_types = detect_known_files(from_list=user_files)
-
-    detected_mode = detect_input_mode(input_file_types)
-    if detected_mode != config['mode']:
-        skip_msg = f"Config['mode']: {config['mode']} is different from detected mode: {detected_mode}." \
-                   "Consider changing config['mode'] to ImportMode.AUTO"
-    else:
-        skip_msg = None
-    config['mode'] = change_if_auto(config['mode'], auto=IM.AUTO, new_option=detected_mode,
-                                    ok_msg=f'Auto picked input mode: {detected_mode}',
-                                    skip_msg=skip_msg)
-
-    # TODO 3 update messages to match exact config naming after updating config options
-    if config['mode'] == IM.IAS:
-        res = detect_auto_config_ias(input_file_types, config_meteo)
-    elif config['mode'] == IM.CSF:
-        res = detect_auto_config_csf(input_file_types, config_meteo)
-    elif config['mode'] in [IM.EDDYPRO, IM.EDDYPRO_AND_BIOMET]:
-        res = detect_auto_config_eddypro(input_file_types, mode=config['mode'])
+    # TODO 2 update cells descs to match exact config naming after updating config options
+    if config.import_mode == IM.IAS:
+        res = detect_auto_config_ias(config.input_files)
+    elif config.import_mode == IM.CSF:
+        res = detect_auto_config_csf(config.input_files)
+    elif config.import_mode in [IM.EDDYPRO_FO, IM.EDDYPRO_FO_AND_BIOMET]:
+        res = detect_auto_config_eddypro(config.input_files)
     else:
         raise NotImplementedError
-    (config_path_auto, config_meteo_use_biomet_auto, config_meteo_path_auto,
-     ias_output_prefix_auto, ias_output_version_auto) = res
+    ias_site_name_auto, ias_output_version_auto = res
 
-    # TODO 2 this ping pong is result of config['path'] not same as config['all_input_files_list'] = [...]
-    # if generalization is possible, would be better
-    config['path'] = change_if_auto(config['path'], config_path_auto)
-    config_meteo['use_biomet'] = change_if_auto(config_meteo['use_biomet'], new_option=config_meteo_use_biomet_auto,
-                                                skip_msg="config_meteo['use_biomet'] option is not 'auto'. Auto detection skipped.")
-    config_meteo['path'] = change_if_auto(config_meteo['path'], new_option=config_meteo_path_auto,
-                                          skip_msg="config_meteo['path'] option is not 'auto'. Auto detection skipped.")
-    # TODO QE 2 why ias_output_prefix is not part of config?
-    ias_output_prefix = change_if_auto(ias_output_prefix, ias_output_prefix_auto,
-                                       ok_msg=f'Auto picked ias prefix: {ias_output_prefix_auto}')
-    ias_output_version = change_if_auto(ias_output_version, ias_output_version_auto,
-                                        ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
+    config.site_name = change_if_auto(config.site_name, ias_site_name_auto,
+                                      ok_msg=f'Auto picked site name: {ias_site_name_auto}')
+    config.ias_output_version = change_if_auto(config.ias_output_version, ias_output_version_auto,
+                                               ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
 
-    # TODO 2 duplicate settings, remove later
-    if config['mode'] == ImportMode.EDDYPRO_AND_BIOMET:
-        assert config_meteo['use_biomet']
-        assert config_meteo['path'] is not None
-
-    return config, config_meteo, ias_output_prefix, ias_output_version
+    config.has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
+    return config
 
 
 def try_auto_detect_input_files(*args, **kwargs):
@@ -254,3 +178,19 @@ def try_auto_detect_input_files(*args, **kwargs):
     except AutoImportException as e:
         logging.error(e)
         raise
+
+
+def import_data(config: FFConfig):
+    if config.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
+        res = load_eddypro(config)
+    elif config.import_mode == ImportMode.IAS:
+        res = import_ias(config)
+    elif config.import_mode == ImportMode.CSF:
+        res = import_csf(config)
+    else:
+        raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
+
+    paths = ensure_list(config.input_files.keys(), transform_func=str)
+    logging.info(f"Data loaded from {paths}")
+
+    return res

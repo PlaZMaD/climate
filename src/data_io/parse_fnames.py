@@ -34,7 +34,7 @@ def try_parse_ias_fname(fname: str):
 
 
 def try_parse_csf_fname(fname: str):
-    # TODO 2 any csf patterns?
+    # TODO QOA 2 any csf patterns?
     '''
     examples = {'tv_fy4_2023_v01.xlsx': 'tv_fy4'}
     txt_examples = examples_to_text(examples)

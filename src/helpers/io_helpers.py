@@ -25,7 +25,7 @@ def replace_fname_end(fpath: Path, tag: str, new_tag: str):
     return fpath.parent / fpath.name.replace(tag + '.', new_tag + '.')
 
 
-def ensure_empty_dir(folder: [str | Path]):
+def ensure_empty_folder(folder: [str | Path]):
     folder = ensure_path(folder)
 
     folder.mkdir(parents=True, exist_ok=True)

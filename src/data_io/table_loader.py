@@ -1,3 +1,8 @@
+"""
+This file is an attempt to handle table load as an abstract initial part of data processing,
+and to separate operations like time series repair or merge years from specific file format (if this is possible at all)
+"""
+
 import logging
 from pathlib import Path
 import pandas as pd
@@ -36,7 +41,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
     except FileNotFoundError:
         raise
     except Exception as e:
-        # TODO 2 change to UnicodeDecodeError, <header err name>?
+        # TODO 2 change any to UnicodeDecodeError, <header err name>?
         logging.error(f'Error when reading {fpath}: {e}, attempting error correction.')
 
         if pd_read_kwargs['skiprows'] is None:
