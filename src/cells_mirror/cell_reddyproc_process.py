@@ -1,3 +1,5 @@
+# Reminder: this is duplicate of specific cell used for test purposes, it is outdated or ahead frequently
+
 from src.ipynb_globals import *
 from types import SimpleNamespace
 from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
@@ -5,8 +7,8 @@ import src.ipynb_globals as ig
 from src.helpers.io_helpers import ensure_empty_dir
 from src.reddyproc.preprocess_rg import prepare_rg
 
-ig.eddyproc = SimpleNamespace()
-ig.eddyproc.options = SimpleNamespace(
+ig.rep = SimpleNamespace()
+ig.rep.options = SimpleNamespace(
     site_id=ias_output_prefix,
 
     is_to_apply_u_star_filtering=True,
@@ -22,12 +24,13 @@ ig.eddyproc.options = SimpleNamespace(
     u_star_seasoning="Continuous",
 
     is_to_apply_partitioning=True,
+
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
     partitioning_methods=["Reichstein05", "Lasslop10"],
 
-    latitude=64.2,
-    longitude=100,
-    timezone=+7,
+    latitude=56.5,
+    longitude=32.6,
+    timezone=+3.0,
 
     # "Tsoil"
     temperature_data_variable="Tair",
@@ -35,11 +38,11 @@ ig.eddyproc.options = SimpleNamespace(
     # do not change
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
-    input_file=f"output/{reddyproc_filename}",
-    output_dir="output/reddyproc",
+    input_file=str(rep_input_fpath),
+    output_dir=str(out_dir / 'reddyproc'),
     log_fname_end='_log.txt'
 )
 
-prepare_rg(ig.eddyproc.options)
-ensure_empty_dir(ig.eddyproc.options.output_dir)
-ig.eddyproc.out_info, ig.eddyproc.options = reddyproc_and_postprocess(ig.eddyproc.options)
+prepare_rg(ig.rep.options)
+ensure_empty_dir(ig.rep.options.output_dir)
+ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)

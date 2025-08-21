@@ -17,17 +17,20 @@ def load_xls(fpath, **pd_read_kwargs):
 	data = pd.read_excel(fpath, **pd_read_kwargs)
 	if isinstance(data, dict):
 		if len(data.values()) > 1:
-			logging.error(_("Several lists in data file!"))
+			logging.error(("Several lists in data file!"))
 			assert False
 		else:
 			data = next(iter(data.values()))
 	return data
 
 
-def load_table_from_file(fpath, nrows=None, header = 'infer') -> pd.DataFrame:
+def load_table_from_file(fpath, nrows=None, header_row=None, no_header=False) -> pd.DataFrame:
+	"""	:param nrows: read only first n rows """
 	# probably extract to load table? can all repairs be generalised operations on tables?
 
-	pd_read_kwargs = {'nrows': nrows, 'header': header}
+	pd_read_kwargs = {'nrows': nrows}
+	if no_header:
+		pd_read_kwargs |= {'header': None}
 
 	suffix = Path(fpath).suffix.lower()
 	if suffix == '.csv':
@@ -37,3 +40,15 @@ def load_table_from_file(fpath, nrows=None, header = 'infer') -> pd.DataFrame:
 	else:
 		raise Exception(_(f"Unknown file type {suffix}. Select CSV, XLS or XLSX file."))
 	return df
+
+
+def load_table_logged(fpath):
+	# with log_exception(...) instead
+	try:
+		data = load_table_from_file(fpath)
+	except Exception as e:
+		logging.exception(e)
+		raise
+
+	logging.info(f'File {fpath} loaded.\n')
+	return data

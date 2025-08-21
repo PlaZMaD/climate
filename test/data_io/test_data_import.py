@@ -1,6 +1,6 @@
 import src.helpers.os_helpers  # noqa: F401
 
-from src.data_import.data_import import auto_detect_input_files
+from src.data_io.data_import import auto_detect_input_files
 from src.helpers.py_helpers import init_logging
 
 

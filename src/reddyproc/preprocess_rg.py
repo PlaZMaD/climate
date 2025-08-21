@@ -1,8 +1,8 @@
 from types import SimpleNamespace
+
 import pandas as pd
-import datetime
-from pysolar import solar
 from pysolar import radiation
+from pysolar import solar
 
 
 # TODO 2 move call earlier to REP file preparation to remove double read of file,

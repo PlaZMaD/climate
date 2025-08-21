@@ -6,14 +6,12 @@ Also consider to change if nessesary:
 if ENV.IPYNB:
 	import matplotlib.pyplot as plt
 """
-import io
 from pathlib import Path
 from warnings import warn
-from PIL import Image
-import matplotlib.pyplot as plt
 
 from IPython import get_ipython
 from IPython.display import display, HTML, SVG
+from PIL import Image
 from ipywidgets import widgets, HBox
 from plotly import graph_objects as go
 from plotly.io import renderers
@@ -22,7 +20,7 @@ from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
 
 
-def display_image_row(paths):
+def display_image_row(paths: list[Path]):
 	imgs = []
 	for path in paths:
 		try:

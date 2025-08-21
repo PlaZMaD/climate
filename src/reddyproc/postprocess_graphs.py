@@ -1,44 +1,42 @@
 import textwrap
 from pathlib import Path
 from types import SimpleNamespace
-from typing import List
 from warnings import warn
 
 from IPython.core.display import Markdown
 from IPython.display import display
-
 from PIL import Image
 
 import src.helpers.os_helpers  # noqa: F401
-from src.helpers.py_helpers import catch
-from src.ipynb_routines import display_image_row
-from src.helpers.io_helpers import tag_to_fname
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
+from src.helpers.io_helpers import tag_to_fpath
+from src.helpers.py_helpers import catch
+from src.ipynb_routines import display_image_row
 
 PostProcSuffixes = SimpleNamespace(HMAPS='hmaps', COMPACT='c')
 EddyPrefixes = SimpleNamespace(HEAT_MAP='FP', FLUX='Flux', DIURNAL='DC', DAILY_SUM='DSum', DAILY_SUMU='DSumU')
 
 
-class EProcImgTagHandler:
-    def __init__(self, main_path, eproc_options, img_ext='.png'):
+class RepImgTagHandler:
+    def __init__(self, main_path, rep_options, img_ext='.png'):
         self.main_path = Path(main_path)
 
-        is_ustar = eproc_options.options.is_to_apply_u_star_filtering
+        is_ustar = rep_options.options.is_to_apply_u_star_filtering
         self.nee_f_suffix = 'uStar_f' if is_ustar else 'f'
 
-        self.loc_prefix = eproc_options.out_info.fnames_prefix
+        self.loc_prefix = rep_options.out_info.fnames_prefix
         self.img_ext = img_ext
 
-    def tag_to_img_fname(self, tag, must_exist=True, warn_if_missing=True):
-        fname = tag_to_fname(self.main_path, self.loc_prefix, tag, self.img_ext, must_exist)
-        if warn_if_missing and not fname:
+    def tag_to_img_fpath(self, tag, must_exist=True, warn_if_missing=True):
+        fpath = tag_to_fpath(self.main_path, self.loc_prefix, tag, self.img_ext, must_exist)
+        if warn_if_missing and not fpath:
             warn(f"Expected image is missing: {tag}")
 
-        return fname
+        return fpath
 
-    def tags_to_img_fnames(self, tags, exclude_missing=True, must_exist=True, warn_if_missing=True):
-        res = {tag: self.tag_to_img_fname(tag, must_exist, warn_if_missing) for tag in tags}
+    def tags_to_img_fpaths(self, tags, exclude_missing=True, must_exist=True, warn_if_missing=True):
+        res = {tag: self.tag_to_img_fpath(tag, must_exist, warn_if_missing) for tag in tags}
         missing_image_tags = [k for k, v in res.items() if not v]
 
         if exclude_missing:
@@ -69,7 +67,8 @@ class EProcImgTagHandler:
         return tag.rstrip(sf)
 
     def display_tag_info(self, extended_tags):
-        img_names = [Path(path).name for path in Path(self.main_path).glob(self.loc_prefix + '_*' + self.img_ext)]
+        mask = self.loc_prefix + '_*' + self.img_ext
+        img_names = [fp.name for fp in self.main_path.glob(mask)]
         possible_tags = [name.removeprefix(self.loc_prefix + '_').removesuffix(self.img_ext) for name in img_names]
 
         def detect_prefix(s, prefixes):
@@ -105,7 +104,7 @@ class EddyImgPostProcess:
     def __init__(self, total_years, tag_handler):
         self.total_years = total_years
         self.tag_handler = tag_handler
-        self.raw_img_duplicates: List[Path] = []
+        self.raw_img_duplicates: list[Path] = []
 
     def ungrid_heatmap(self, img):
         tile_count = self.total_years + 1
@@ -129,8 +128,8 @@ class EddyImgPostProcess:
         fixed = grid_images([c_title] + rows[1: row_count], 1)
         return fixed
 
-    def load_heatmap(self, path):
-        img = Image.open(path)
+    def load_heatmap(self, fpath):
+        img = Image.open(fpath)
 
         # in case of multiple years, they are columns
         maps, legends = self.ungrid_heatmap(img)
@@ -147,50 +146,50 @@ class EddyImgPostProcess:
         raw_tag_f = self.tag_handler.remove_suffix(target_tag, PostProcSuffixes.HMAPS)
         raw_tag = self.tag_handler.raw_tag(raw_tag_f)
 
-        tps = self.tag_handler.tags_to_img_fnames([raw_tag, raw_tag_f], must_exist=True)
+        tps = self.tag_handler.tags_to_img_fpaths([raw_tag, raw_tag_f], must_exist=True)
         if len(tps) != 2:
             return
         else:
-            path, path_f = tps.values()
+            fpath, fpath_f = tps.values()
 
-        maps, legends = self.load_heatmap(path)
-        maps_f, legends_f = self.load_heatmap(path_f)
+        maps, legends = self.load_heatmap(fpath)
+        maps_f, legends_f = self.load_heatmap(fpath_f)
 
         if self.get_legend_scale(legends) != self.get_legend_scale(legends_f):
             print(f'\n\n Legends of heatmaps do not match, check original output of EProc for {target_tag} \n')
         merged = grid_images([maps, maps_f, legends_f], 3)
 
-        merged.save(self.tag_handler.tag_to_img_fname(target_tag, must_exist=False))
-        self.raw_img_duplicates += [path, path_f]
+        merged.save(self.tag_handler.tag_to_img_fpath(target_tag, must_exist=False))
+        self.raw_img_duplicates += [fpath, fpath_f]
 
     def process_flux(self, target_tag):
         raw_tag = self.tag_handler.remove_suffix(target_tag, PostProcSuffixes.COMPACT)
 
-        path = self.tag_handler.tag_to_img_fname(raw_tag, must_exist=True)
-        if not path:
+        fpath = self.tag_handler.tag_to_img_fpath(raw_tag, must_exist=True)
+        if not fpath:
             return
-        img = Image.open(path)
+        img = Image.open(fpath)
 
         fixed = self.compact_title_row(img, self.total_years + 1)
 
-        fixed.save(self.tag_handler.tag_to_img_fname(target_tag, must_exist=False))
-        self.raw_img_duplicates += [path]
+        fixed.save(self.tag_handler.tag_to_img_fpath(target_tag, must_exist=False))
+        self.raw_img_duplicates += [fpath]
 
     def process_diurnal_cycle(self, target_tag):
         raw_tag = self.tag_handler.remove_suffix(target_tag, PostProcSuffixes.COMPACT)
 
-        path = self.tag_handler.tag_to_img_fname(raw_tag, must_exist=True)
-        if not path:
+        fanme = self.tag_handler.tag_to_img_fpath(raw_tag, must_exist=True)
+        if not fanme:
             return
-        img = Image.open(path)
+        img = Image.open(fanme)
 
         fixed = self.compact_title_row(img, 5)
 
-        fixed.save(self.tag_handler.tag_to_img_fname(target_tag, must_exist=False))
-        self.raw_img_duplicates += [path]
+        fixed.save(self.tag_handler.tag_to_img_fpath(target_tag, must_exist=False))
+        self.raw_img_duplicates += [fanme]
 
 
-class EProcOutputGen:
+class RepOutputGen:
     # output is declared as auto generated on each run list of image tags
     # tags mean unique suffixes of image file names,
     # i.e. for 'tv_fy4_22-14_21-24_FP_Rg_f.png' tag is 'FP_Rg_f'
@@ -198,7 +197,7 @@ class EProcOutputGen:
     # or custom order if to declare output list manually in the notebook cell
     # auto generation is nessesary because order depends on reddyproc options
 
-    def __init__(self, tag_handler: EProcImgTagHandler):
+    def __init__(self, tag_handler: RepImgTagHandler):
         self.tag_handler = tag_handler
 
     def col_name_and_suffix(self, col_name):
@@ -208,25 +207,25 @@ class EProcOutputGen:
             sf = self.tag_handler.nee_f_suffix
         return cn, sf
 
-    def hmap_compare_row(self, col_name) -> List[str]:
+    def hmap_compare_row(self, col_name) -> list[str]:
         cn, sf = self.col_name_and_suffix(col_name)
         fp, hm = EddyPrefixes.HEAT_MAP, PostProcSuffixes.HMAPS
         return [f'{fp}_{cn}_{sf}_{hm}']
 
-    def diurnal_cycle_row(self, col_name) -> List[str]:
+    def diurnal_cycle_row(self, col_name) -> list[str]:
         # for example, 'DC_NEE_uStar_f_compact'
         cn, sf = self.col_name_and_suffix(col_name)
         dc, ct = EddyPrefixes.DIURNAL, PostProcSuffixes.COMPACT
         return [f'{dc}_{cn}_{sf}_{ct}']
 
-    def flux_compare_row(self, col_name) -> List[str]:
+    def flux_compare_row(self, col_name) -> list[str]:
         # for example, ['Flux_NEE_compact', 'Flux_NEE_uStar_f_compact'],
         cn, sf = self.col_name_and_suffix(col_name)
         fl, ct = EddyPrefixes.FLUX, PostProcSuffixes.COMPACT
         return [f'{fl}_{cn}_{ct}', f'{fl}_{cn}_{sf}_{ct}']
 
 
-class EProcOutputHandler:
+class RepOutputHandler:
     def __init__(self, output_sequence, tag_handler, out_info):
         self.output_sequence = output_sequence
         self.tag_handler = tag_handler
@@ -268,7 +267,7 @@ class EProcOutputHandler:
                 title_text = output_step
                 display(Markdown(title_text))
             elif type(output_step) is list:
-                paths = self.tag_handler.tags_to_img_fnames(output_step)
+                paths = self.tag_handler.tags_to_img_fpaths(output_step)
                 display_image_row(list(paths.values()))
             else:
                 raise Exception("Wrong ig.output_sequence contents")

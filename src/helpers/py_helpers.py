@@ -17,13 +17,23 @@ def catch(on_exception=None, err_types=Exception):
 			on_exception(e)
 
 
-def invert_dict(dict):
-	vals = dict.values()
+def invert_dict(d: dict):
+	vals = d.values()
 	vals_set = set(vals)
 	if len(vals) != len(vals_set):
 		raise Exception('Cannot invert dictionary with duplicate values')
 
-	return {v: k for k, v in dict.items()}
+	return {v: k for k, v in d.items()}
+
+
+def replace_in_dict_by_values(d: dict, replacements: dict):
+	assert set(replacements.values()) <= set(d.values())
+
+	rd = invert_dict(d)
+	rv = invert_dict(replacements)
+	for k, v in rv.items():
+		rd[k] = v
+	return invert_dict(rd)
 
 
 def fix_strs_case(strs: list[str], correct_case: list[str]):
@@ -73,9 +83,26 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
 	logging.info("START")
 
 
-def sort_fix_underscore(ls: list[str]):
+def sort_fixed(list_: list[str], fix_underscore: bool):
 	# sort: ['NETRAD_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1', 'P_1_1_1']
 	# sort_without_underscore: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
+	def key(s):
+		return s.replace('_', ' ') if fix_underscore else s
+	list_.sort(key=key)
 
-	ls.sort(key=lambda s: s.replace('_', ' '))
-	return ls
+
+def ensure_list(list_, transform_func=None) -> list:
+	if not isinstance(list_, list):
+		ret = [list_]
+	else:
+		ret = list_
+
+	if transform_func:
+		return [transform_func(el) for el in ret]
+	else:
+		return ret
+
+
+def intersect_list(items: list, valid_items: list) -> list:
+	"""Same as intersect sets, but keeps order"""
+	return [el for el in items if el in valid_items]

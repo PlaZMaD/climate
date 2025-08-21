@@ -55,9 +55,9 @@ def _move_progress_bar_to_top():
 
 
 @colab_only
-def colab_add_download_button(fname, caption):
+def colab_add_download_button(fpath, caption):
 	def clicked(arg):
-		files.download(fname)
+		files.download(fpath)
 		_move_progress_bar_to_top()
 	import ipywidgets as widgets
 

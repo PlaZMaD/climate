@@ -1,12 +1,13 @@
 import os
 import sys
 from pathlib import Path
+
 from IPython import get_ipython
 
 
 class _Env:
 	def __init__(self):
-		# TODO 3 COLAB | LOCAL, IPYNB | PY ?
+		# TODO 3 add local ipynb? (COLAB | LOCAL, IPYNB | PY)
 		try:
 			import google.colab
 		except ImportError:
@@ -45,10 +46,10 @@ def colab_only(func):
 
 def setup_r():
 	if ENV.LOCAL:
-		env_folder = os.path.dirname(sys.executable)
-		r_folder = str(Path(env_folder) / "Lib/R")
-		assert Path(r_folder).exists()
-		os.environ['R_HOME'] = r_folder
+		env_folder = Path(sys.executable).parent
+		r_folder = env_folder / 'Lib/R'
+		assert r_folder.exists()
+		os.environ['R_HOME'] = str(r_folder)
 	else:
 		# something different, but it works
 		# print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")

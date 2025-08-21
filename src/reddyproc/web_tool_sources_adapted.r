@@ -106,7 +106,7 @@ getAdditionalDataVariablesToKeep <- function(allDataVariables, keepDataVariables
         # #untrace(usEstUstarThreshold) trace(REddyProc:::usGetValidUstarIndices, recover);
         # untrace(usGetValidUstarIndices)
 
-	    # TODO 2 if RgColName must also be chenged in the other REP routines?
+	    # TODO 2 if RgColName must also be changed in the other REP routines?
         EProc$sEstUstarThold(seasonFactor = seasonFactor, RgColName = eddyProcConfiguration$ustar_rg_source)
     }
 

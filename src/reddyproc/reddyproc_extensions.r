@@ -147,7 +147,7 @@ check_seasons_arg <- function(eddyProcConfiguration, EddyDataWithPosix) {
 	ep_cfg <- eddyProcConfiguration
 
 	if (ep_cfg$ustar_rg_source == 'Rg_th_REP') {
-		# TODO 2 why timestamps are 15, 45 mins when input file is 0, 30?
+		# TODO 2 why timestamps are 15, 45 mins when input file is 0, 30? mean point?
 		hour_dec <- hour(EProc$sDATA$sDateTime) + minute(EProc$sDATA$sDateTime) / 60
 		doy <- yday(EProc$sDATA$sDateTime)
 		EProc$sDATA[[ep_cfg$ustar_rg_source]] <-
