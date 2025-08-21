@@ -33,7 +33,7 @@ def load_eddypro(config: FFConfig):
     bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
 
     # load of eddypro = full_output, optionally with biomet
-    if set(c_fo.missing_data_codes) != {'-9999'}:
+    if not set(c_fo.missing_data_codes) <= {'-9999'}:
         raise NotImplementedError(f"Not yet supported missing codes: {c_fo.missing_data_codes}")
 
     bg_fo_config = {
