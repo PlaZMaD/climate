@@ -137,8 +137,8 @@ class EddyImgPostProcess:
         clegend = crop_monocolor_borders(legends, sides='LR')
         return cmap, clegend
 
-    def get_legend_scale(self, legend_col):
-        legend = ungrid_image(legend_col, ny=self.total_years, flatten=True)[0]
+    def get_legend_scale(self, legend: Image):
+        legend = ungrid_image(legend, ny=self.total_years, flatten=True)[0]
         scale = ungrid_image(legend, ny=3, flatten=True)[1]
         return scale
 

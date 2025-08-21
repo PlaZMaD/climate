@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # pyinstaller.exe --onefile --hidden-import openpyxl.cell._writer --windowed --add-data "locale;locale" --add-data "regulation.ico;."
-#<a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
-import __main__
+# <a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
 import gettext
 import logging
 import re
@@ -20,9 +19,11 @@ from pandas.api.types import is_datetime64_any_dtype as is_datetime
 def set_lang(language):
     # TODO QE 3 replaced to Path, verify bundle still works
     # get the bundle dir if bundled or simply the __file__ dir if not bundled
-    bundle_dir = getattr(sys, '_MEIPASS', Path(__main__.__file__).parent.absolute())
+    bundle_dir = getattr(sys, '_MEIPASS', Path(__file__).parent.parent.parent.absolute())
 
     locales_dir = bundle_dir / 'locale'
+    assert locales_dir.exists()
+
     lang = gettext.translation('messages', locales_dir, fallback=True, languages=[language])
     lang.install()
 
@@ -179,7 +180,7 @@ def check_time(data, time_in, check_year=True):
     data_in_dup = data_in.drop(data_in[missed_values].index, axis=0)
 
     if check_year and (
-    not (data_in_dup[time_in].dt.year.to_numpy()[0] == data_in_dup[time_in].dt.year.to_numpy()[:-1]).all()):
+            not (data_in_dup[time_in].dt.year.to_numpy()[0] == data_in_dup[time_in].dt.year.to_numpy()[:-1]).all()):
         years = data_in_dup[time_in].dt.year.unique()
         examples = [int(data_in_dup.query(f'{time_in}.dt.year=={f}')['default_index'].to_numpy()[0]) for f in years]
         logging.error(
@@ -276,6 +277,9 @@ def load_ias(fpath: Path):
 
 
 def check_ias_file(fpath):
+    # TODO 2 possibly extract later to abstract time series converter/repairer routines which are format independent?
+    # eddypro have similar flaws
+
     data = load_ias(fpath)
 
     total_errors = 0
@@ -378,8 +382,7 @@ def draft_check_ias(fpath):
     stream_handler.setLevel(logging.INFO)
 
     logger.addHandler(stream_handler)
-
-    logger.critical("Process init")
+    # logger.critical("Process init")
 
     formatter = logging.Formatter(
         "[%(levelname)s] %(message)s",
@@ -391,4 +394,8 @@ def draft_check_ias(fpath):
     if errors > 0:
         msg = f"Input file {fpath} cannot be used yet. Please fix errors."
         logging.error(msg)
-        raise SystemExit(msg)
+
+        # TODO 2 colab crashes on this, what is proper silent abort? search 1 more use case
+        # raise SystemExit(msg)
+
+        raise Exception(msg)

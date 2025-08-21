@@ -1,0 +1,14 @@
+1.ipynb -> 1.py, 2.ipynb -> 2.py: 2.py vs 1.py comparison unimportant text:
+
+	[\+%]{0,2}.(\[markdown\])? id=\".*\"
+		covers
+		# + [markdown] id="pqQVYpfkwA8E"
+		# %% [markdown] id="sj6Z0gnhVM-R"
+		# %% id="lZliIHxRJiqk"
+		# + id="lZliIHxRJiqk"
+
+	^#.---[\r\n]..jupyter[\s\S]{0,400}?---$
+		covers header
+		# ---
+		# jupyter:.*
+		# ---

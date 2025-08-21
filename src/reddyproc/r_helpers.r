@@ -57,8 +57,8 @@ insert_row <- function(df, row, r) {
 merge_cols_aligning <- function(df, df_add, expected_col_dupes, f_align_rule){
     # f_align_rule:
     #     function to propose best column insert position:
-    #     function(<df_add_col_name>) -> <df_col_name>
-    #     if returns NULL or df_column is missing, just adds df_add column to the right of df
+    #     function(<col to add>) -> <col after which to insert>
+    #     if returns NULL or insert is missing, just adds df_add column to the right of df
     #
     #     for example, if f_align_rule is: function(cn) sub('_f$', '_sqc', cn)
     #     merge will be: H_f LE_f H_sqc LE_sqc -> H_f H_sqc U_f U_sqc LE_f LE_sqc
