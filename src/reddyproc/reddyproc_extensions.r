@@ -29,7 +29,7 @@ patch_daily_sums_plot_name <- function(orig_call, var_name, ...) {
 }
 
 
-with_patch <- function(s4, closure_name, patched_closure, extra_args, code){
+with_patched_func <- function(s4, closure_name, patched_closure, extra_args, code){
     # instead of original closure,
     # patched_closure(original_closure, extra_args, ...) will be called
 
@@ -49,23 +49,22 @@ with_patch <- function(s4, closure_name, patched_closure, extra_args, code){
 
 
 is_error_ustar_need_rg <- function(err) {
+	# TODO exact column name?
 	grepl('EProc$sEstUstarThold', err$call, fixed = TRUE) %>% any &&
-		err$message == 'Missing columns in dataset: Rg'
+		err$message == 'Missing columns in dataset: '
 }
 
 
-get_ustar_daytime_arg <- function(rg_missing, default_arg, ustar_allowed_on_days) {
-	if (!rg_missing)
-		return(default_arg)
+check_ustar_daytime_arg <- function(real_rg_missing, eddyProcConfiguration) {
+	epc <- eddyProcConfiguration
 
-	if (ustar_allowed_on_days){
-		warning(RE, RU, 'Rg is missing, uStar will be applied to both day and night')
-		return(TRUE)
-	} else {
-		warning('\n', RE, RU, 'Rg is missing, failure is expected during day/night detection when applying uStar.\n',
-				'Consider enabling experimental option ustar_allowed_on_days.\n')
-		return(default_arg)
-	}
+	if (real_rg_missing && epc$ustar_rg_source == 'Rg')
+		warning(RE, RU, 'Missing Rg column is picked for day/night detection, ',
+				'failure is expected when applying uStar.\n',
+				' Consider changing option ustar_rg_source')
+
+	if (epc$ustar_rg_source == '')
+		warning(RE, RU, 'ustar_rg_source: uStar will be applied to both day and night, Rg ignored')
 }
 
 
@@ -73,6 +72,7 @@ get_ustar_daytime_arg <- function(rg_missing, default_arg, ustar_allowed_on_days
     all_thresgolds_ok <- !anyNA(EProc$sUSTAR_SCEN$uStar)
     can_substitute_by_user_preset <- !is.na(eddyProcConfiguration$ustar_threshold_fallback)
 
+    # TODO uncertanity?
     if (all_thresgolds_ok)
         return()
 	message('\n', RE, RU, 'Thresholds not for all seasons were calculated automatically.')
@@ -94,32 +94,73 @@ get_ustar_daytime_arg <- function(rg_missing, default_arg, ustar_allowed_on_days
 }
 
 
-.ustar_rg_safeguard <- function(estUStarThreshold_call, EProc) {
+.verify_theoretical_rg <- function(rg_col, theor_col) {
+	rg_nights <- rg_col < 10
+	th_nights <- theor_col < 10
+
+	nights_match = sum(rg_nights == th_nights, na.rm = TRUE)
+	nights_match_ratio <- nights_match / sum(!is.na(rg_nights))
+	nights_mismatch <- sum(rg_nights != th_nights, na.rm = TRUE)
+	rg_missing_ratio <- sum(is.na(rg_nights)) / length(rg_col)
+
+	abs_diff <- abs(rg_col - theor_col)
+	mean_diff <- mean(abs_diff, na.rm = TRUE)
+	median_diff <- median(abs_diff, na.rm = TRUE)
+
+	fmt <- paste(' Both theoretical and real Rg columns are detected.',
+				 ' Rg missing: %.2f%%',
+				 ' Nights match: %.2f%%',
+				 ' Mean theor vs real (when real is known): %.2f',
+				 ' Median theor vs real (when real is known): %.2f', sep = '\n')
+	message(RE, RU, sprintf(fmt, rg_missing_ratio * 100, nights_match_ratio * 100,
+							mean_diff, median_diff))
+}
+
+
+.ustar_estimate_rg <- function(eddyProcConfiguration, EProc) {
+	ep_cfg <- eddyProcConfiguration
+
+	if (ep_cfg$ustar_rg_source == 'Rg_th_REP') {
+		# TODO why 15, 45 mins when input file is 0, 30?
+		hour_dec <- hour(EProc$sDATA$sDateTime) + minute(EProc$sDATA$sDateTime) / 60
+		doy <- yday(EProc$sDATA$sDateTime)
+		EProc$sDATA[[ep_cfg$ustar_rg_source]] <-
+			fCalcPotRadiation(doy, hour_dec, ep_cfg$latitude, ep_cfg$longitude, ep_cfg$timezone)
+	}
+
+	if (ep_cfg$ustar_rg_source %in% c('Rg_th_REP', 'Rg_th_Py') && 'Rg' %in% colnames(EProc$sDATA))
+		.verify_theoretical_rg(EProc$sDATA[['Rg']], EProc$sDATA[[ep_cfg$ustar_rg_source]])
+}
+
+
+.ustar_rg_safeguard <- function(estUStarThreshold_call, eddyProcConfiguration, EProc) {
+	# if Rg (solar radiation) is missing, still estimate season with NA u*
+
 	season_guess <- function() {factor(levels(EProc$sTEMP$season))}
 
-	# if Rg (solar radiation) is missing, still estimate season with NA u*
 	tryCatch({
-
 		estUStarThreshold_call()
 
 		if (any(EProc$sUSTAR_SCEN$season != season_guess()))
-			warning(RE, RU, 'Unexpected seasons detected.\n',
-					'Current run is ok, but workaround for seasons wont work on similar data. \n')
+			warning(RE, RU, 'Not an error: unexpected seasons data detected.\n',
+					'Please report data setup to improve support of Rg in the script. \n')
 	}, error = function(err) {
-		if (!is_error_ustar_need_rg(err))
+		expected <- is_error_ustar_need_rg(err) && eddyProcConfiguration$ustar_rg_source == ''
+		if (!expected)
 			stop(err)
 
 		p <- parent.env(environment())
 		seasons_ok <- !is.null(p$EProc$sUSTAR_SCEN) && ncol(p$EProc$sUSTAR_SCEN) > 0
 		assert(!seasons_ok)
 
-		message(RE, RU, 'Workaround for seasons detection will be applied')
+		warning(RE, RU, 'Workaround for seasons detection will be applied. Seasons option ignored.')
 		p$EProc$sUSTAR_SCEN <- data.frame(season = season_guess(), uStar = NA, row.names = NULL)
 	})
 }
 
 
 est_ustar_threshold_fixes <- function(estUStarThreshold_call, eddyProcConfiguration, EProc) {
-	.ustar_rg_safeguard(estUStarThreshold_call, EProc)
+	.ustar_estimate_rg(eddyProcConfiguration, EProc)
+	.ustar_rg_safeguard(estUStarThreshold_call, eddyProcConfiguration, EProc)
 	.ustar_threshold_fallback(eddyProcConfiguration, EProc)
 }
