@@ -189,7 +189,6 @@ if cfg_fpath.exists():
 else:
     config = FFConfig(debug=False, version='1.0')
 
-# TODO 1 QOA remove all ru comments from code to description?
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
 config.input_files = 'auto'
@@ -233,7 +232,7 @@ config.eddypro_fo.repair_time = True
 # config.input_files += ['BiometFy4_2016.csv'] # ['BiometNCT_2011-22.csv']
 
 # derive files from path instead
-# TODO QOA 1 cancel mid-script biomet concept since multiple iport options are now avaliable?
+# TODO QOA 1 QV cancel mid-script biomet concept since multiple iport options are now avaliable?
 # i.e on ias of csf derive from path instead
 
 config.eddypro_biomet.missing_data_codes = ['-9999']
@@ -419,7 +418,7 @@ config.filters.madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # `#Загрузка файла biomet`
 # Здесь нужно прописать символы из ссылки на файл biomet
 
-# TODO QOA 1 why this is not above load configuraion?
+# TODO QOA 1 move above load configuraion?
 # + id="KMu4IqY45HG6"
 # Загрузка файла full output
 # https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing

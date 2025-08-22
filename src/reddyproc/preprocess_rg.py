@@ -5,7 +5,7 @@ from pysolar import solar
 from src.ffconfig import RepConfig
 
 
-# TODO 2 move call earlier to REP file preparation to remove double read of file,
+# TODO 2 QOA move call earlier to REP file preparation to remove double read of file,
 #  but will requre user to set lat long earlier in the config
 def prepare_rg(cfg: RepConfig):
     # generate theoretical solar radiation using specifically pysolar

@@ -30,7 +30,19 @@ def set_lang(language):
     lang.install()
 
 
-# TODO 2 git del leftover branches? will possibly del git activity too E: delete ok
+# TODO 1 QV
+'''
+Еще вопросы:
+- использовалась ли ссылка на 0.9.5 или на 1.0.0
+
+- есть мысли добавить таблицу всех колонок;
+    полезна, чтобы просто видеть спецификацию между уровнями 2 и 4
+    полезна, чтобы вручную корректировать правила импорта-экспорта
+    не видно списка столбцов, которые игнорируются или используются
+
+
+- посмотреть ячейки загрузки - одна на все файлы или 4шт?
+'''
 
 # TODO E 3 fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST', need to update IAS check tool
 # 'SPEC_NIR_ OUT' 'SPEC_PRI_REF_ IN', 'SPEC_RED_ OUT', 'SPEC_PRI_ REF_OUT', 'SPEC_RED_ IN'

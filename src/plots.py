@@ -184,7 +184,7 @@ def plot_albedo(plot_data, filters_db):
     # consider difference between _1_1_1 instrument code and actual data col
 
     # TODO QOA 1 ALB_1_1_1 will be used now (check load renames), ok?
-    # priority use of ALB_1_1_1 from ias was not approved by V
+    #  V: ALB_1_1_1 have lower priority than calc from ias was not approved by
 
     # basic.py: def add_albedo(dataT, out_sw, in_sw)
 
