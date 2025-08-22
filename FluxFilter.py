@@ -82,6 +82,7 @@
 # key = userdata.get('registry_key')
 
 # %pip install pysolar
+# %pip install ruamel.yaml
 # %pip install plotly-resampler dateparser >> /dev/null
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
