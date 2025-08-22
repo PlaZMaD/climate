@@ -140,7 +140,7 @@ def auto_detect_input_files(config: FFConfig):
         # logging.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files()
         config.input_files = change_if_auto(config.input_files, input_files_auto,
-                                            ok_msg=f'Auto picked input files: {input_files_auto}')
+                                            ok_msg=f'Detected input files: {input_files_auto}')
     elif type(config.input_files) in [list, str]:
         user_fpaths = ensure_list(config.input_files, transform_func=ensure_path)
         config.input_files = detect_known_files(from_list=user_fpaths)
@@ -150,7 +150,7 @@ def auto_detect_input_files(config: FFConfig):
         raise ValueError(f'{config.input_files=}')
 
     config.import_mode = detect_input_mode(config.input_files)
-    logging.info(f'Auto picked import mode: {config.import_mode}')
+    logging.info(f'Detected import mode: {config.import_mode}')
 
     # TODO 2 update cells descs to match exact config naming after updating config options
     if config.import_mode == IM.IAS:

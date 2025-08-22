@@ -118,7 +118,7 @@ from src.data_io.rep_level3_export import export_rep_level3
 from src.ffconfig import FFConfig, RepConfig, FFGlobals, save_config, load_config
 from src.helpers.py_helpers import init_logging
 from src.helpers.io_helpers import ensure_empty_folder, create_archive
-from src.helpers.env_helpers import setup_r_env
+from src.helpers.env_helpers import setup_r_env, ENV
 from src.data_io.data_import import try_auto_detect_input_files, import_data
 from src.data_io.ias_io import export_ias
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
@@ -170,7 +170,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 #
 # **Дополнительные опции (без уровня PRO лучше не менять)**:
 #
-# В `config['time']['converter']` должна находиться функция, которая примет на входа DataFrame и на выходе вернет корректную колонку формата DateTime, которая будет использоваться как временная метка.
+# В `config['time']['converter']` должна находиться функция, которая примет на вход DataFrame и на выходе вернет корректную колонку формата DateTime, которая будет использоваться как временная метка.
 #
 # `config['-9999_to_nan']` будучи установленным `True` заменит -9999 на np.nan для адекватной работы алгоритмов.
 #
@@ -188,7 +188,6 @@ if cfg_fpath.exists():
 else:
     config = FFConfig(debug=False, version='1.0')
 
-
 # TODO 1 QOA remove all ru comments from code to description?
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
@@ -197,39 +196,17 @@ config.input_files = 'auto'
 # config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv']
 # 'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO}]#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config.input_files = {'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO_FO}
-# config['path'] = '/content/DT_Full output.xlsx'
 
-#####################
-# на случай сложных колонок времени
-# замена -9999 на np.nan
-config.eddypro_fo.missing_data_codes = ['-9999']
 # TODO QOA 1 config['time']['column_name'] was never used?
 config.time_col = 'datetime'
-# генерируем новые временные метки в случае ошибок
+
+config.eddypro_fo.missing_data_codes = ['-9999']
+config.eddypro_fo.time_col = 'time'
+config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
+config.eddypro_fo.date_col = 'date'
+config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d', '%Y-%m-%d']
 config.eddypro_fo.repair_time = True
 
-
-def my_datetime_converter(df: pd.DataFrame):
-    # required for serialization
-    import pandas as pd
-
-    date = df['date'].astype(str)
-    # date =  x['date'].dt.strftime('%d.%m.%Y') if is_datetime(x['date'].dtype) else x['date'].astype(str)
-    time = df['time'].astype(str)
-    # date =  x['time'].dt.strftime('%H:%M') if is_datetime(x['time'].dtype) else x['time'].astype(str)
-
-    df['tmp_datetime'] = date + " " + time
-    # Проверить формат даты-времени в FullOutput
-    format = "%d.%m.%Y %H:%M"
-    # format = "%d/%m/%Y %H:%M"
-    # format = "%Y-%m-%d %H:%M"
-    # format = "%d/%m/%Y %H:%M"
-    # format = "%Y-%m-%d %H:%M:%S"
-    return pd.to_datetime(df['tmp_datetime'], format=format)  # dayfirst=True)#, format=format)
-
-
-# TODO 1 fix
-config.eddypro_fo.time_converter = my_datetime_converter
 #####################
 
 # + [markdown] id="S2Qc-fltJLaF"
@@ -252,36 +229,23 @@ config.eddypro_fo.time_converter = my_datetime_converter
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
-# config.input_files += ['BiometFy4_2016.csv'] #'BiometNCT_2011-22.csv'
+# config.input_files += ['BiometFy4_2016.csv'] # ['BiometNCT_2011-22.csv']
 
 # derive files from path instead
 # TODO QOA 1 cancel mid-script biomet concept since multiple iport options are now avaliable?
 # i.e on ias of csf derive from path instead
 
-# замена -9999 на np.nan при импорте
 config.eddypro_biomet.missing_data_codes = ['-9999']
-
-# генерируем новые временные метки в случае ошибок
 config.eddypro_biomet.repair_time = True
 
-
-#####################
-# на случай сложных колонок времени
 # TODO QOA 1 join Параметры загрузки файлов full output и Параметры загрузки файла biomet
 # TODO QOA 1 auto time format? was actually function edit ever used?
 
-def my_datetime_converter(x):
-    # required for serialization
-    import pandas as pd
-
-    format = "%Y-%m-%d %H%M"  # "%d.%m.%Y %H:%M"  #yyyy-mm-dd HHMM
-    return pd.to_datetime(x["TIMESTAMP_1"], format=format)
-
-
-config.eddypro_biomet.time_converter = my_datetime_converter
+config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
+config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H:%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
 #####################
 
-# + [markdown] id="DtxFTNnEfENz"
+# + [markdown] id='DtxFTNnEfENz'
 # ## Выбор колонок для графиков и фильтраций
 
 # + id="nLnivFTtg9cu"

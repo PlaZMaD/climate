@@ -50,8 +50,9 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     unknown_cols = df.columns.difference(known_ias_cols)
     if len(unknown_cols) > 0:
         msg = 'Неизвестные ИАС переменные: \n', str(unknown_cols)
-        logging.exception(msg)
-        raise NotImplementedError(msg)
+        logging.critical(msg)
+        # TODO 1 QV error ot warning? OA: warning
+        # raise NotImplementedError(msg)
 
     unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
     if len(unsupported_cols) > 0:
@@ -135,6 +136,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
 
     # TODO QV 1 365, 366, 1 (current), check it's NOT 365, 366, 367 E: 95% must be 1, ask V
+    # TODO 1.021, 1.042 (specification: десятичной дроби номера дня года) or 1.000, 1.021, ...?
     day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
     df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
 

@@ -30,7 +30,7 @@ class TrackedConfig(ValidatedBaseModel):
 
     def restore_auto_values(self):
         if len(self._auto_values) > 0:
-            logging.info(f'Restoring values which originally were auto: {self._auto_values}')
+            logging.debug(f'Auto values summary: {self._auto_values}')
         for k, v in self._auto_values.items():
             prev = vars(self)[k]
             if isinstance(prev, Enum):
@@ -49,9 +49,16 @@ class InputFileConfig(ValidatedBaseModel):
     missing_data_codes: str | list[str] = ['-9999']
 
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
-    time_converter: Callable[[Any], Any] | None = None
+    # time_converter: Callable[[Any], Any] | None = None
     # TODO 3 str is used to support config save load, but it won't be safe in server mode (UI or Colab ok)
-    time_converter_str: str | None = None
+    # time_converter_str: str | None = None
+
+    time_col: str | None = None
+    try_time_formats: str | list[str] | None = None
+    date_col: str | None = None
+    try_date_formats: str | list[str] | None = None
+    datetime_col: str | None = None
+    try_datetime_formats: str | list[str] | None = None
 
 
 class RepConfig(ValidatedBaseModel):
@@ -151,7 +158,8 @@ def save_config(config: FFConfig, fpath: str | Path):
         logging.info(f'Config was loaded from {config._load_path}, saving same config into the same file is skipped.')
         return
 
-    # TODO 3 switch to auto type conversion if required?
+    '''
+    # save-load of function, avoid if possible (switch to auto type conversion if required?)
     if config.eddypro_fo.time_converter:
         if not config.eddypro_fo.time_converter_str:
             config.eddypro_fo.time_converter_str = func_to_str(config.eddypro_fo.time_converter)
@@ -161,6 +169,7 @@ def save_config(config: FFConfig, fpath: str | Path):
         if not config.eddypro_biomet.time_converter_str:
             config.eddypro_biomet.time_converter_str = func_to_str(config.eddypro_biomet.time_converter)
         config.eddypro_biomet.time_converter = None
+    '''
 
     save_basemodel(Path(fpath), config)
 
@@ -169,9 +178,12 @@ def load_config(fpath: Path) -> FFConfig:
     config: FFConfig = load_basemodel(fpath, FFConfig)
     config._load_path = str(fpath)
 
+    '''
+    # save-load of function, avoid if possible (switch to auto type conversion if required?)
     if config.eddypro_fo.time_converter_str:
         config.eddypro_fo.time_converter = str_to_func(config.eddypro_fo.time_converter_str)
     if config.eddypro_biomet.time_converter_str:
         config.eddypro_biomet.time_converter = str_to_func(config.eddypro_biomet.time_converter_str)
+    '''
 
     return config

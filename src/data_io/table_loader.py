@@ -42,7 +42,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
         raise
     except Exception as e:
         # TODO 2 change any to UnicodeDecodeError, <header err name>?
-        logging.error(f'Error when reading {fpath}: {e}, attempting error correction.')
+        logging.debug(f'When reading {fpath}: {e}, attempting other import mode.')
 
         if pd_read_kwargs['skiprows'] is None:
             pd_read_kwargs['skiprows'] = guess_inconsistent_csv_table_start(fpath, **fallback_io_kwargs)
