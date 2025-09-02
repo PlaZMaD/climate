@@ -36,5 +36,5 @@ config.reddyproc = RepConfig(
 )
 
 prepare_rg(config.reddyproc)
-ensure_empty_folder(config.reddyproc.output_dir)
+ensure_empty_dir(config.reddyproc.output_dir)
 gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc)

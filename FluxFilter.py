@@ -122,7 +122,7 @@ from src.data_io.fat_export import export_fat
 from src.data_io.rep_level3_export import export_rep_level3
 from src.ffconfig import FFConfig, RepConfig, FFGlobals, save_config, load_config
 from src.helpers.py_helpers import init_logging
-from src.helpers.io_helpers import ensure_empty_folder, create_archive
+from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env, ENV
 from src.data_io.data_import import try_auto_detect_input_files, import_data
 from src.data_io.ias_io import export_ias
@@ -135,7 +135,7 @@ from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly,
 # cur_dir = %pwd
 # assert cur_dir == '/content'
 gl = FFGlobals(out_dir=Path('output'), repo_dir=repo_dir)
-ensure_empty_folder(gl.out_dir)
+ensure_empty_dir(gl.out_dir)
 
 colab_no_scroll()
 colab_enable_custom_widget_manager()
@@ -1190,7 +1190,7 @@ config.reddyproc = RepConfig(
 )
 
 prepare_rg(config.reddyproc)
-ensure_empty_folder(config.reddyproc.output_dir)
+ensure_empty_dir(config.reddyproc.output_dir)
 gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc, gl.repo_dir)
 
 # + [markdown] id="0bed439c"
@@ -1229,7 +1229,7 @@ roh.prepare_images_safe()
 gl.rep_arc_exclude_files = roh.img_proc.raw_img_duplicates
 
 rep_arc_path = rep_out_dir / (gl.rep_out_info.fnames_prefix + '.zip')
-create_archive(arc_path=rep_arc_path, folders=rep_out_dir, top_folder=rep_out_dir,
+create_archive(arc_path=rep_arc_path, dirs=rep_out_dir, top_dir=rep_out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=roh.img_proc.raw_img_duplicates)
 
 colab_add_download_button(rep_arc_path, 'Download eddyproc outputs')
@@ -1249,6 +1249,6 @@ tag_handler.display_tag_info(roh.extended_tags())
 save_config(config, gl.out_dir / 'config.yaml')
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
-create_archive(arc_path=arc_path, folders=[gl.out_dir, config.reddyproc.output_dir], top_folder=gl.out_dir,
+create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt', '*.log', '*.yaml'], exclude_files=gl.rep_arc_exclude_files)
 colab_add_download_button(arc_path, 'Download outputs')

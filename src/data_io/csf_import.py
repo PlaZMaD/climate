@@ -10,7 +10,6 @@ from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
 from src.ffconfig import FFConfig
-from src.helpers.io_helpers import ensure_path
 from src.helpers.pd_helpers import df_ensure_cols_case
 
 

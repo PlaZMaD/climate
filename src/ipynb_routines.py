@@ -19,7 +19,7 @@ from plotly.io import renderers
 
 from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
-from src.helpers.io_helpers import ensure_empty_folder
+from src.helpers.io_helpers import ensure_empty_dir
 
 
 # TODO 2 create git readme and changelog for releases
@@ -120,7 +120,7 @@ def setup_plotly(out_dir):
         #     plotly==6.2.0
 
         local_dir = out_dir / 'local' / 'plots'
-        ensure_empty_folder(local_dir)
+        ensure_empty_dir(local_dir)
 
         go.Figure.show = lambda self, **args: _plotly_show_override(self, local_dir, **args)
         print(f"Pure py plotly renderer is set to: {renderers.default}.")

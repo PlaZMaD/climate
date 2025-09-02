@@ -31,7 +31,7 @@ roh.prepare_images_safe()
 gl.rep_arc_exclude_files = roh.img_proc.raw_img_duplicates
 
 rep_arc_path = rep_out_dir / (gl.rep_out_info.fnames_prefix + '.zip')
-create_archive(arc_path=rep_arc_path, folders=rep_out_dir, top_folder=rep_out_dir,
+create_archive(arc_path=rep_arc_path, dirs=rep_out_dir, top_dir=rep_out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=roh.img_proc.raw_img_duplicates)
 
 colab_add_download_button(rep_arc_path, 'Download eddyproc outputs')
