@@ -6,7 +6,7 @@ from typing import Any, Annotated, ClassVar
 from pydantic import BaseModel, ConfigDict, model_serializer
 from ruamel.yaml import YAML, CommentedSeq, CommentedMap
 
-from src.helpers.py_helpers import gen_enum_info, dict_remove_same, dict_replace
+from src.helpers.py_helpers import gen_enum_info, nested_dict_remove_same, nested_dict_replace
 
 METADATA_KEY = 'meta_description'
 
@@ -66,9 +66,6 @@ class ValidatedBaseModel(BaseModel):
     # pydantic basemodel options
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    store_mode: Annotated[ConfigStoreMode, gen_enum_info(ConfigStoreMode)] = ConfigStoreMode.ALL_OPTIONS
-    _default_model_values: ClassVar[BaseModel]
-
     def model_post_init(self, __context: Any) -> None:
         # Annotated[*, ["info"]] -> Annotated[*, {'desc': "info"}]
         for k, v in self.model_fields.items():
@@ -85,6 +82,12 @@ class ValidatedBaseModel(BaseModel):
             res[METADATA_KEY] = config_meta
         return res
 
+
+class ConfigModel(ValidatedBaseModel):
+    store_mode: Annotated[ConfigStoreMode, gen_enum_info(ConfigStoreMode)] = ConfigStoreMode.ALL_OPTIONS
+    _default_model_values: ClassVar[BaseModel]
+
+
     @classmethod
     def load_from_yaml(cls, fpath, default_fpath):
         """ default_fpath is required when store_mode=ONLY_CHANGES to set the missing values"""
@@ -100,7 +103,7 @@ class ValidatedBaseModel(BaseModel):
             loaded_yaml = YAML().load(fl)
 
         if 'store_mode' in loaded_yaml and loaded_yaml['store_mode'] == ConfigStoreMode.ONLY_CHANGES.value:
-            dict_replace(default_yaml, loaded_yaml)
+            nested_dict_replace(default_yaml, loaded_yaml)
             loaded_yaml = default_yaml
 
         return cls.model_validate(loaded_yaml)
@@ -110,7 +113,7 @@ class ValidatedBaseModel(BaseModel):
 
         if self.store_mode == ConfigStoreMode.ONLY_CHANGES:
             defaults_dict = self._default_model_values.model_dump(mode='json')
-            dict_remove_same(save_dict, defaults_dict)
+            nested_dict_remove_same(save_dict, defaults_dict)
 
         yaml = YAML()
         yaml.default_flow_style = False

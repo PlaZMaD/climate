@@ -4,14 +4,14 @@ from pathlib import Path
 from typing import Annotated
 
 from src.data_io.data_import_modes import ImportMode, InputFileType
-from src.helpers.config_io import ValidatedBaseModel, ConfigStoreMode
+from src.helpers.config_io import ValidatedBaseModel, ConfigStoreMode, ConfigModel
 from src.helpers.py_helpers import gen_enum_info
 
 AUTO_VALUES = ['auto', ImportMode.AUTO]
 DEFAULT_CONFIG = 'misc/default_config.yaml'
 
 
-class TrackedConfig(ValidatedBaseModel):
+class TrackedConfig(ConfigModel):
     _load_path: str = None
     _auto_values: dict = {}
 

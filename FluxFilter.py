@@ -118,7 +118,7 @@ import bglabutils.basic as bg
 # import textwrap
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
-from src.ffconfig import FFConfig, RepConfig, FFGlobals, save_config, load_config
+from src.ffconfig import FFConfig, RepConfig, FFGlobals
 from src.helpers.py_helpers import init_logging
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.config_io import ConfigStoreMode
@@ -146,8 +146,8 @@ setup_plotly(gl.out_dir)
 init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
-# Also an option to experiment with any function above directly in Colab:
-# ipython_edit_function(meteorological_night_filter)
+# To tweak any function directly in Colab: 1) run all cells above 2) uncomment and run 3) comment back:
+ipython_edit_function(meteorological_night_filter)
 
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
@@ -187,10 +187,10 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # %% id="tVJ_DRBrlpYd"
 
 # debug=True быстрый режим скрипта с обработкой только нескольких месяцев
-config = load_config('auto', repo_dir=repo_dir)
+config = FFConfig.load('auto', repo_dir=repo_dir)
 
-###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
-###через команду !gdown, то достаточно заменить название файла
+# ## Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
+# ## через команду !gdown, то достаточно заменить название файла
 config.input_files = 'auto'
 # config.input_files = ['tv_fy4_2019_v01.xlsx']
 # config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv']
@@ -203,7 +203,7 @@ config.eddypro_fo.missing_data_codes = ['-9999']
 config.eddypro_fo.time_col = 'time'
 config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
 config.eddypro_fo.date_col = 'date'
-config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d'] #, '%Y-%m-%d'
+config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']  #, '%Y-%m-%d'
 config.eddypro_fo.repair_time = True
 
 #####################
@@ -423,7 +423,8 @@ config.filters.madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # %% id="Xw5TapK10EhR"
-config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo = try_auto_detect_input_files(config)
+config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo = try_auto_detect_input_files(
+    config)
 data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
@@ -1246,7 +1247,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # %% id="E4rv4ucOX8Yz"
-save_config(config, gl.out_dir / 'config.yaml', mode=ConfigStoreMode.ONLY_CHANGES)
+config.save(gl.out_dir / 'config.yaml', mode=ConfigStoreMode.ONLY_CHANGES)
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

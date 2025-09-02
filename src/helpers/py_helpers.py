@@ -151,7 +151,7 @@ def gen_enum_info(enum_class) -> str:
     return ", ".join(m.name for m in enum_class)
 
 
-def dict_remove_same(inplace: dict, sames: dict):
+def nested_dict_remove_same(inplace: dict, sames: dict):
     for k in sames:
         if k not in inplace:
             continue
@@ -161,16 +161,16 @@ def dict_remove_same(inplace: dict, sames: dict):
             continue
 
         if isinstance(sames[k], dict):
-            dict_remove_same(inplace[k], sames[k])
+            nested_dict_remove_same(inplace[k], sames[k])
 
 
-def dict_replace(inplace: dict, replaces: dict):
+def nested_dict_replace(inplace: dict, replaces: dict):
     for k in inplace:
         if k not in replaces:
             continue
 
         if isinstance(inplace[k], dict):
-            dict_replace(inplace[k], replaces[k])
+            nested_dict_replace(inplace[k], replaces[k])
 
         if inplace[k] != replaces[k]:
             inplace[k] = replaces[k]
