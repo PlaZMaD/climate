@@ -107,8 +107,6 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
-from src.helpers.config_io import ConfigStoreMode
-
 # %load_ext autoreload
 # %autoreload 2
 
@@ -120,16 +118,17 @@ import bglabutils.basic as bg
 # import textwrap
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
-from src.data_io.data_import_modes import ImportMode
-from src.data_io.fat_export import export_fat
-from src.data_io.rep_level3_export import export_rep_level3
 from src.ffconfig import FFConfig, RepConfig, FFGlobals, save_config, load_config
 from src.helpers.py_helpers import init_logging
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
+from src.helpers.config_io import ConfigStoreMode
 from src.helpers.env_helpers import setup_r_env, ENV
+from src.data_io.data_import_modes import ImportMode
+from src.data_io.fat_export import export_fat
+from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import try_auto_detect_input_files, import_data
 from src.data_io.ias_io import export_ias
-from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
+from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
@@ -143,14 +142,12 @@ ensure_empty_dir(gl.out_dir)
 colab_no_scroll()
 colab_enable_custom_widget_manager()
 setup_plotly(gl.out_dir)
-
+# TODO 1 ensure no new lines anymore + spellcheck
 init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
 # Also an option to experiment with any function above directly in Colab:
-# import inspect
-# code = inspect.getsource(meteorological_night_filter)
-# get_ipython().set_next_input(code, replace=False)
+# ipython_edit_function(meteorological_night_filter)
 
 # + [markdown] id="WfWRVITABzrz"
 # #Задаем параметры для загрузки и обработки данных
@@ -158,7 +155,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # + [markdown] id="ox0UplWMe7wn"
 # ## Конфигурация загрузки данных
-# Здесь прописываются параметры входных файлов: названия, формат дат-времени и другие.
+# Здесь прописываются параметры входных файлов: названия, формат дат-времени и другие.  
 # **Необходимо поменять:**
 #
 # `###Запишите название Ваших файлов и путь к ним.`
@@ -768,7 +765,7 @@ if config.has_meteo:
 # ## по минимальным и максимальным допустимым значениям
 
 # + id="FyJaM1zC1DDg"
-# if config.eddypro_biomet ['use_biomet']:
+# if config.has_meteo:
 unroll_filters_db = filters_db.copy()
 plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min_max)
 
@@ -776,7 +773,7 @@ plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min
 # ## по квантилям
 
 # + id="aNQ4XDK01DME"
-# if config.eddypro_biomet ['use_biomet']:
+# if config.has_meteo:
 unroll_filters_db = filters_db.copy()
 plot_data, filters_db = quantile_filter(plot_data, filters_db, config.filters.quantile)
 
@@ -1145,7 +1142,7 @@ from src.reddyproc.preprocess_rg import prepare_rg
 # **Опции, изменение которых не предполагается в этой тетради:**
 #
 # В EddyProc доступен только метод подвижной точки `RTw` для определения порога uStar  
-# `u_star_method="RTw"`
+# `u_star_method="RTw"`  
 # Заполнение пробелов в 30-минутных потоках  
 # `is_to_apply_gap_filling=True`  
 #
@@ -1154,7 +1151,7 @@ from src.reddyproc.preprocess_rg import prepare_rg
 # Название станции, которое будет продублировано в названиях выходных файлов:    
 # `site_id=ias_output_prefix`  
 # Файл, из которого загружаются временные ряды:  
-# `input_file=str(rep_input_fpath)`
+# `input_file=str(rep_input_fpath)`  
 # Директория, в которую инструмент пишет контрольные изображения, базовую статистику по пропускам, заполненные ряды:  
 # `output_dir=str(out_dir / 'reddyproc')`
 # + id="278caec5"

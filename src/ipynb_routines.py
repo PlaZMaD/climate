@@ -7,6 +7,7 @@ if ENV.IPYNB:
     import matplotlib.pyplot as plt
 """
 import logging
+from inspect import getsource
 from pathlib import Path
 from warnings import warn
 
@@ -91,6 +92,14 @@ def _register_ipython_callback_once(event_name, cb):
 def ipython_enable_word_wrap():
     _register_ipython_callback_once('pre_run_cell', _css_enable_word_wrap)
     print("Word wrap in output is enabled.")
+
+
+@ipython_only
+def ipython_edit_function(func):
+    code = getsource(func)
+    # TODO 2 get_next_input?
+    get_ipython().set_next_input(code, replace=False)
+    print('Reminder: disable ipython_edit_function() after using once.')
 
 
 def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
