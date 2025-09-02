@@ -2,9 +2,13 @@
 library(REddyProc)
 cat('REddyProc version: ', paste(packageVersion('REddyProc')), '\n')
 
-source('src/reddyproc/web_tool_sources_adapted.r')
-source('src/reddyproc/postprocess_calc_means.r')
-source('src/reddyproc/r_helpers.r')
+# must be preset be caller env, script-wide routine
+stopifnot(file.exists(repo_dir))
+repo_path <- function(src_path) {file.path(repo_dir, src_path)}
+
+source('src/reddyproc/web_tool_sources_adapted.r' %>% repo_path)
+source('src/reddyproc/postprocess_calc_means.r' %>% repo_path)
+source('src/reddyproc/r_helpers.r' %>% repo_path)
 
 
 EDDY_IMAGES_EXT <- '.png'

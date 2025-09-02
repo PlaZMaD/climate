@@ -99,6 +99,7 @@
 # + id="Ywv5kp0rzanK"
 import logging
 import re
+import sys
 from pathlib import Path
 
 import matplotlib.pylab as plt
@@ -107,6 +108,9 @@ import pandas as pd
 
 # %load_ext autoreload
 # %autoreload 2
+
+repo_dir = Path('ff_files')
+sys.path.append(str(repo_dir))
 
 import bglabutils.basic as bg
 # import bglabutils.boosting as bb
@@ -130,7 +134,7 @@ from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly,
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
-gl = FFGlobals(out_dir=Path('output'))
+gl = FFGlobals(out_dir=Path('output'), repo_dir=repo_dir)
 ensure_empty_folder(gl.out_dir)
 
 colab_no_scroll()
@@ -1187,7 +1191,7 @@ config.reddyproc = RepConfig(
 
 prepare_rg(config.reddyproc)
 ensure_empty_folder(config.reddyproc.output_dir)
-gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc)
+gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc, gl.repo_dir)
 
 # + [markdown] id="0bed439c"
 # ## Контрольные графики

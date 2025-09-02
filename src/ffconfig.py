@@ -143,6 +143,7 @@ class RepOutInfo(ValidatedBaseModel):
 class FFGlobals(ValidatedBaseModel):
     # not yet clear if to include in user config or not
     out_dir: Path
+    repo_dir: Path
 
     points_per_day: int = None
 

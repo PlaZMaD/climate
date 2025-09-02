@@ -38,7 +38,7 @@ def r_converter():
     return conversion.localconverter(default_converter + none_converter)
 
 
-def reddyproc_and_postprocess(rep_cfg: RepConfig):
+def reddyproc_and_postprocess(rep_cfg: RepConfig, repo_dir: Path):
     cfg_vars = copy(vars(rep_cfg))
     cfg_vars['partitioning_methods'] = ro.StrVector(rep_cfg.partitioning_methods)
     with r_converter():
@@ -48,7 +48,9 @@ def reddyproc_and_postprocess(rep_cfg: RepConfig):
     draft_log_name = Path(rep_cfg.output_dir) / (err_prefix + rep_cfg.log_fname_end)
 
     with open(draft_log_name, 'w') as f, capture_r_output(f):
-        ro.r.source('src/reddyproc/reddyproc_wrapper.r')
+        warpper_fpath = repo_dir / 'src/reddyproc/reddyproc_wrapper.r'
+        ro.r(f'repo_dir <- "{repo_dir}"')
+        ro.r.source(str(warpper_fpath))
         func_run_web_tool = ro.globalenv['reddyproc_and_postprocess']
 
         r_res = func_run_web_tool(user_options=rep_options)
