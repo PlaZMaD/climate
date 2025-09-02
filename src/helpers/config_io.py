@@ -68,7 +68,7 @@ def config_to_yaml(x, path, max_len=5):
                 res[k] = config_to_yaml(v, path + [str(k)], max_len)
     elif isinstance(x, list):
         types = {type(v) for v in x}
-        if len(x) <= max_len and types <= {str, int, float}:
+        if types <= {str, int, float}: # and len(x) <= max_len
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:
@@ -86,7 +86,7 @@ def save_basemodel(fpath: Path, config: ValidatedBaseModel) -> None:
     yaml.default_flow_style = False
     yaml.indent(mapping=4, sequence=4, offset=4)
 
-    config_yaml = config_to_yaml(config_dict, max_len=2, path=[])
+    config_yaml = config_to_yaml(config_dict, path=[])
 
     with open(fpath, "w") as fl:
         yaml.dump(config_yaml, fl)

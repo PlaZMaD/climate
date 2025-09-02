@@ -1,0 +1,114 @@
+version: '1.0'
+input_files: auto  # last: {'Ckd_2015_v01.csv': 'IAS'}
+eddypro_fo:
+    repair_time: true
+    missing_data_codes: ['-9999']
+    time_col: time
+    try_time_formats: ['%H:%M', '%H:%M:%S']
+    date_col: date
+    try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d', '%Y-%m-%d']
+    datetime_col:
+    try_datetime_formats:
+eddypro_biomet:
+    repair_time: true
+    missing_data_codes: ['-9999']
+    time_col:
+    try_time_formats:
+    date_col:
+    try_date_formats:
+    datetime_col: TIMESTAMP_1
+    try_datetime_formats: ['%Y-%m-%d %H:%M', '%d.%m.%Y %H:%M']
+site_name: auto  # last: Ckd
+ias_output_version: auto # last: v01
+has_meteo: true
+qc:
+    h: 1
+    le: 1
+    co2_flux: 1
+    ch4_flux: 1
+    nee: 1
+filters:
+    meteo:
+        CO2SS_min: 80.0
+        p_rain_limit: 0.1
+        rain_forward_flag: 2
+        use_day_filter: true
+        use_night_filter: true
+        day_nee_max: 5
+        night_nee_min: -5
+        day_swin_limit: 10
+        night_h_limits: [-50, 20]
+        night_le_limits: [-50, 20]
+        winter_nee_limits: [0, 5]
+        winter_ch4_flux_limits: [-1, 1]
+        CH4SS_min: 20.0
+    quantile:
+        co2_flux: [0.01, 0.99]
+        ch4_flux: [0.01, 0.99]
+        co2_strg: [0.01, 0.99]
+        nee: [0.01, 0.99]
+    madhampel:
+        co2_flux: {z: 5.5, hampel_window: 10}
+        ch4_flux: {z: 5.5, hampel_window: 10}
+        le: {z: 5.5, hampel_window: 10}
+        h: {z: 5.5, hampel_window: 10}
+        co2_strg: {z: 5.5, hampel_window: 10}
+        ta_1_1_1: {z: 5.5, hampel_window: 10}
+        rh_1_1_1: {z: 5.5, hampel_window: 10}
+        vpd_1_1_1: {z: 5.5, hampel_window: 10}
+        swin_1_1_1: {z: 8.0, hampel_window: 10}
+        ppfd_1_1_1: {z: 8.0, hampel_window: 10}
+        nee: {z: 5.5, hampel_window: 10}
+    window:
+        co2_flux: {sigmas: 2, window: 10, min_periods: 4}
+        ch4_flux: {sigmas: 2, window: 10, min_periods: 4}
+        ta_1_1_1: {sigmas: 4, window: 10, min_periods: 4}
+        u_star: {sigmas: 4, window: 10, min_periods: 4}
+        h: {sigmas: 7, window: 10, min_periods: 4}
+        le: {sigmas: 7, window: 10, min_periods: 4}
+        rh_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
+        vpd_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
+        swin_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
+        ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
+        nee: {sigmas: 2, window: 10, min_periods: 4}
+    min_max:
+        co2_flux: [-40, 40]
+        co2_strg: [-20, 20]
+        h: [-100, 800]
+        le: [-100, 1000]
+        u_star: [0, 10]
+        ta_1_1_1: [-50, 50]
+        p_1_1_1: [0, 100]
+        vpd_1_1_1: [0, 50]
+        rh_1_1_1: [0, 100]
+        swin_1_1_1: [0, 1200]
+        ppfd_1_1_1: [0, 2400]
+        rg_1_1_1: [0, 2400]
+        ch4_flux: [-10, 10]
+        nee: [-40, 40]
+    man_ranges: []
+calc_nee: true
+calc_with_strg: false
+reddyproc:
+    site_id: Ckd
+    is_to_apply_u_star_filtering: true
+    ustar_threshold_fallback: 0.01
+    ustar_rg_source: Rg  # Rg_th_Py, Rg_th_REP, Rg, ""
+    is_bootstrap_u_star: false
+    u_star_seasoning: Continuous  # WithinYear, Continuous, User
+    is_to_apply_partitioning: true
+    partitioning_methods: [Reichstein05, Lasslop10]  # Reichstein05, Lasslop10
+    latitude: 56.5
+    longitude: 32.6
+    timezone: 3.0
+    temperature_data_variable: Tair
+    u_star_method: RTw
+    is_to_apply_gap_filling: true
+    input_file: output\REddyProc_Ckd_2015.txt
+    output_dir: output\reddyproc
+    log_fname_end: _log.txt
+    meta_description:
+time_col: datetime
+debug: false
+import_mode: AUTO  # last: IAS # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, AUTO
+meta_description:

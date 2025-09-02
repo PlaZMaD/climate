@@ -109,7 +109,7 @@ import pandas as pd
 # %load_ext autoreload
 # %autoreload 2
 
-repo_dir = Path('ff_files')
+repo_dir = Path('.')
 sys.path.append(str(repo_dir))
 
 import bglabutils.basic as bg
@@ -189,9 +189,9 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # debug=True быстрый режим скрипта с обработкой только нескольких месяцев
 cfg_fpath = Path('config.yaml')
 if cfg_fpath.exists():
-    config = load_config(Path('config.yaml'))
+    config = load_config('config.yaml', lock_user_changes=True)
 else:
-    config = FFConfig(debug=False, version='1.0')
+    config = load_config(repo_dir / 'misc/default_config.yaml', lock_user_changes=False)
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
@@ -433,7 +433,7 @@ config.filters.madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
 # + id="Xw5TapK10EhR"
-config = try_auto_detect_input_files(config)
+config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo = try_auto_detect_input_files(config)
 data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
@@ -1154,7 +1154,6 @@ from src.reddyproc.preprocess_rg import prepare_rg
 # Директория, в которую инструмент пишет контрольные изображения, базовую статистику по пропускам, заполненные ряды:  
 # `output_dir=str(out_dir / 'reddyproc')`
 # + id="278caec5"
-from src.ipynb_globals import *
 
 config.reddyproc = RepConfig(
     site_id=config.site_name,
@@ -1246,7 +1245,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # + id="E4rv4ucOX8Yz"
-save_config(config, gl.out_dir / 'config.yaml')
+save_config(config, gl.out_dir / 'config.yaml', mode='only_changes')
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

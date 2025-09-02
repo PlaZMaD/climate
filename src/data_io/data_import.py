@@ -169,7 +169,7 @@ def auto_detect_input_files(config: FFConfig):
                                                ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
 
     config.has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
-    return config
+    return config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo
 
 
 def try_auto_detect_input_files(*args, **kwargs):

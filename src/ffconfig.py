@@ -13,6 +13,7 @@ AUTO_VALUES = ['auto', ImportMode.AUTO]
 
 class TrackedConfig(ValidatedBaseModel):
     _load_path: str = None
+    _io_mode: bool
     _auto_values: dict = {}
 
     def __setattr__(self, name, new_value):
@@ -152,8 +153,14 @@ class FFGlobals(ValidatedBaseModel):
     rep_level3_fpath: Path = None
 
 
-def save_config(config: FFConfig, fpath: str | Path):
+def ConfgStoreMode(Enum):
+    ONLY_CHANGES = 'ONLY_CHANGES'
+    FULL = 'FULL'
+
+
+def save_config(config: FFConfig, fpath: str | Path, mode: ConfgStoreMode):
     config.restore_auto_values()
+    config._io_mode = mode
 
     if config._load_path:
         logging.info(f'Config was loaded from {config._load_path}, saving same config into the same file is skipped.')
@@ -175,9 +182,14 @@ def save_config(config: FFConfig, fpath: str | Path):
     save_basemodel(Path(fpath), config)
 
 
-def load_config(fpath: Path) -> FFConfig:
-    config: FFConfig = load_basemodel(fpath, FFConfig)
-    config._load_path = str(fpath)
+def load_default_config() -> FFConfig:
+    return load_config(repo_dir / 'misc/default_config.yaml', lock_user_changes=False)
+    
+
+def load_config(fpath: str | Path, lock_user_changes) -> FFConfig:
+    config: FFConfig = load_basemodel(Path(fpath), FFConfig)
+    if lock_user_changes:
+        config._load_path = str(fpath)
 
     '''
     # save-load of function, avoid if possible (switch to auto type conversion if required?)
