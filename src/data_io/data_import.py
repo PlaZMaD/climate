@@ -17,6 +17,27 @@ from src.helpers.py_helpers import ensure_list
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
 
+# info on all imports:
+
+# - full output, csf, ias = always 30 min
+#   biomet - must be resampled, can not match at all
+
+# TODO 1 test if only WARNING for unknows
+# - OA: logging.critical() for unknown cols, don't error
+#   V: but in IAS, require by specification (due to check instrument)
+
+# - mid-script biomet is replaced with "meteo params" or just col set OA & V:ok
+# - OA: 2-4 levels = biomet, eddy (are dupes are possible which damage that way to define specification?)
+
+
+# TODO 3 consider a table with all simple col ops instead of just untransparent import and export transforms
+# problem: Excel vs VCS, use yaml table? csv? ...?
+# handling unit/str conversions between import and export if name is same?
+# ias check, ias export, ias import, initial script renames, renames during script run (required for export)
+# E: unclear if table will help, people may damage it on edits
+# Чем меньше дублирования - тем меньше шансов забыть где-то подправить. Можно таблицы, или мега-конфиг-темплейт?
+
+
 class AutoImportException(Exception):
     pass
 
@@ -93,16 +114,17 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
             possible_input_modes += [ImportMode.EDDYPRO_FO]
         else:
-            # TODO QOA 1 is multiple supported?
-            # if input_ftypes.count(InputFileType.EDDYPRO_BIOMET) > 1:
-            #     raise AutoImportException('More than 2 biomet files detected')
+            # TODO 1 QOA test if multiple biomets are still supported
             possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
 
     if InputFileType.IAS in input_ftypes:
         possible_input_modes += [ImportMode.IAS]
 
     if InputFileType.CSF in input_ftypes:
-        possible_input_modes += [ImportMode.CSF]
+        if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
+            possible_input_modes += [ImportMode.CSF]
+        else:
+            possible_input_modes += [ImportMode.CSF_AND_BIOMET]
 
     if len(possible_input_modes) == 0:
         raise AutoImportException(

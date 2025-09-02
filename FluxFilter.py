@@ -200,7 +200,6 @@ config.input_files = 'auto'
 # 'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO}]#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
 # config.input_files = {'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO_FO}
 
-# TODO QOA 1 config['time']['column_name'] was never used?
 config.time_col = 'datetime'
 
 config.eddypro_fo.missing_data_codes = ['-9999']
@@ -234,15 +233,10 @@ config.eddypro_fo.repair_time = True
 ###через команду !gdown, то достаточно заменить название файла
 # config.input_files += ['BiometFy4_2016.csv'] # ['BiometNCT_2011-22.csv']
 
-# derive files from path instead
-# TODO QOA 1 QV cancel mid-script biomet concept since multiple iport options are now avaliable?
-# i.e on ias of csf derive from path instead
-
 config.eddypro_biomet.missing_data_codes = ['-9999']
 config.eddypro_biomet.repair_time = True
 
-# TODO QOA 1 join Параметры загрузки файлов full output и Параметры загрузки файла biomet
-# TODO QOA 1 auto time format? was actually function edit ever used?
+# TODO 1 OA:ok join all Параметры загрузки файлов full output и Параметры загрузки файла biomet
 
 config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
 config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H:%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
@@ -421,8 +415,8 @@ config.filters.madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 # `#Загрузка файла biomet`
 # Здесь нужно прописать символы из ссылки на файл biomet
 
-# TODO QOA 1 move above load configuraion?
 # + id="KMu4IqY45HG6"
+# TODO 1 try move above load? OA:+
 # Загрузка файла full output
 # https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
 # !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
@@ -447,13 +441,21 @@ if not config.has_meteo:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # + id="8LawdKUbB1_m"
-# TODO 1 QOA ppfd_in_1_1_1 is renamed to ppfd_1_1_1 on import
-#  i.e. should be different name instead in this list? E: ask OA
+# TODO 1 ppfd_in_1_1_1 is renamed to ppfd_1_1_1 on import; (exports?) OA: 2-4 specification is ppfd_1_1_1
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
                 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
                 'ch4_signal_strength_7500_mean', 'ch4SS'.lower(), 'ch4_signal_strength',
                 'p_1_1_1', 'ta_1_1_1', 'co2_strg', 'le', 'h']
+
+'''
+TODO 1 repair
+0.9.2
+0.9.3
+0.9.4
+0.9.5
+0.9.5en восстановить рабоатоспособность
+'''
 
 data_type_error_flag = False
 for col in cols_2_check:
@@ -477,6 +479,7 @@ if data_type_error_flag:
 #
 
 # + id="mAdYXJFdSRbJ"
+# TODO 1 cleanup main file
 # TODO 3 dictionary + optional transform lambda instead? useful to view cols flow,
 # flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
 # E: ok, requires prev section edits too, but low benefit
@@ -520,7 +523,7 @@ for col_name in data.columns:
     if "rh_1_1_1" in col_name:
         have_rh_flag = True
     if "vpd_1_1_1" in col_name:
-        # TODO QOA 1 data['vpd'] (not data['vpd_1_1_1']) may exist in FO, what is relation?  script uses both?
+        # TODO OA: 1 data['vpd'] (not data['vpd_1_1_1']) may exist in FO, what is relation? script uses both? (check other todos)
         # E: task was to use 'vpd_1_1_1'
         have_vpd_flag = True
     if 'swin' in col_name or 'sw_in' in col_name:
@@ -579,8 +582,9 @@ else:
         print("calculating vpd_1_1_1 from rh_1_1_1 and air temperature")
         data['vpd_1_1_1'] = ehpa - (ehpa * data['rh_1_1_1'] / 100)
     if not have_rh_flag:
-        # TODO QOA 1 is it ok from temperature only?
+        # TODO QOA 1 possibly an error
         # E: seems, do edit print
+        # OA: check telegram for the formula
         print("calculating rh_1_1_1 from vpd_1_1_1 and air temperature")
         data['rh_1_1_1'] = ehpa
 
@@ -940,6 +944,7 @@ if config.has_meteo:
 
     # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1'
     #  check eddypro specification, also 'nee'  'par' 'rg_1_1_1'
+    #  V: _PI are generated, lvl+ (don't export, but import?)
 
     export_ias(gl.out_dir, config.site_name, config.ias_output_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])

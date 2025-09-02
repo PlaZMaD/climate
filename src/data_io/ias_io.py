@@ -19,7 +19,8 @@ from src.helpers.py_helpers import sort_fixed, intersect_list
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
-    # TODO QV 1 appeared to be bugfix of bug introduced in 0.9.3, which skipped last year of IAS export
+    # TODO QOA 1 appeared to be bugfix of bug introduced in 0.9.3, which skipped last year of IAS export
+    # V: possible bug, probably no data should be lost and just filled with empty
     # E: ias should have 1 extra day and export should not export if not a full year
     # after bug fixed, extending year on import won't be nessesary anymore, remove whole func
 
@@ -50,8 +51,6 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     if len(unknown_cols) > 0:
         msg = 'Неизвестные ИАС переменные: \n', str(unknown_cols)
         logging.critical(msg)
-        # TODO 1 QV error ot warning? OA: warning
-        # raise NotImplementedError(msg)
 
     unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
     if len(unsupported_cols) > 0:
@@ -63,7 +62,7 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
 
-    # TODO QOA 2 prob remove whole biomet_cols_index from the script E: ok
+    # TODO 2 remove whole biomet_cols_index from the script E, OA: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     return df, biomet_cols_index
@@ -73,7 +72,8 @@ def import_ias(config: FFConfig):
     # TODO 2 move to ipynb?
     set_lang('ru')
 
-    # TODO QV 1 implement merge for iases if necessary
+    # TODO 1 implement merge for iases (1-2) V: todo priority merge 1, split 1-2
+    # TODO 2 implement custom split of ias on export (month, year, all years)
     if len(config.input_files) != 1:
         raise NotImplemented('Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
     ias_fpath = list(config.input_files.keys())[0]
@@ -122,7 +122,8 @@ def import_ias(config: FFConfig):
 def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     # possibly will be applied later to each year separately
 
-    # TODO QOA QV 1 years is skipped if IAS data does not contain next year extra row E: intentionally
+    # TODO 1 QOA years is skipped if IAS data does not contain next year extra row
+    # V: could be necessary to fix bug E: intentionally, E: Вопрос к Вадиму. Я не знаю, совпадает определение полного года дя ИАС и остальных данных
     new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
                                    end=f'01.01.{df[time_col].dt.year.max()}',
                                    freq=df.index.freq, inclusive='left')
@@ -134,8 +135,9 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     time_end = df[time_col] + pd.Timedelta(0.5, 'h')
     df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
 
-    # TODO QV 1 365, 366, 1 (current), check it's NOT 365, 366, 367 E: 95% must be 1, ask V
-    # TODO 1.021, 1.042 (specification: десятичной дроби номера дня года) or 1.000, 1.021, ...?
+    # TODO 1 1.021, 1.042 or 1.000, 1.021, ...?
+    # 1 365, 366, 1 (current), check it's NOT 365, 366, 367
+    # V: not a big deal, but better 1.021 and 367 (by TIMESTAMP_END)
     day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
     df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
 
@@ -148,7 +150,8 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
 
 
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
-    # TODO 2 check if attr/mark can be avoided and no info nessesary to attach to cols E: no info approach was intentional
+    # TODO 2 check if attr/mark can be avoided and no info nessesary to attach to cols
+    # E: no attrs approach was kinda intentional
 
     # think about abstraction, i.e. how much script-aware should be ias import and export?
     # may be even merge some import and export routines?
@@ -162,7 +165,9 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
     df = export_ias_prepare_time_cols(df, time_col)
 
-    # TODO QOA 1 why they were separate ifs? moved to COLS_IAS_EXPORT_MAP
+    # TODO 1 why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
+    #  OA: not important cols
+    # were they modified during run?
     # E: probably no special reason, unless cols above all nust be presented
     '''
     if 'h_strg' in df.columns:
@@ -173,9 +178,9 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
         var_cols.append('SLE_1_1_1')
     '''
 
-    # TODO QOA 1 why SW_IN_1_1_1 was not added to var_cols? why data col?
+    # TODO 1 SW_IN_1_1_1 was data col because:
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
-    # E: possibly simply mistake and could be used without data_swin_1_1_1
+    # OA: RH_1_1_1 - must be exported raw, not filtered (SW_IN_1_1_1 must be exported unchanged)
     if 'SW_IN_1_1_1' in df.columns:
         # assert df['SW_IN_1_1_1'] == data_swin_1_1_1
         df['SW_IN_1_1_1'] = data_swin_1_1_1

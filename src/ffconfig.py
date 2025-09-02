@@ -150,6 +150,8 @@ class FiltersConfig(ValidatedBaseModel):
     man_ranges: list[tuple[str, str]] = []
 
 
+# TODO 1 yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
+# all settings by default, partial mode optional (or commented out?) if not default, comment?
 class FFConfig(TrackedConfig):
     # TODO 3 auto read (from env?) in FluxFilter.py
     version: str

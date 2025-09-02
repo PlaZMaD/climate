@@ -24,6 +24,8 @@ from src.helpers.io_helpers import ensure_empty_dir
 
 # TODO 2 create git readme and changelog for releases
 # TODO 1 QOA QV have you shared 0.9.5? move to 0.9.4en + edit 0.9.2 source carefully?
+# TODO 1 QV have you shared 0.9.5? move to 0.9.4en + edit 0.9.2 source carefully? OA: not shared
+# TODO 1 QE: why drag to colab was not approved
 
 
 if ENV.LOCAL:

@@ -47,7 +47,7 @@ def config_to_yaml(x, path, max_len=5):
                 res[k] = config_to_yaml(v, path + [str(k)], max_len)
     elif isinstance(x, list):
         types = {type(v) for v in x}
-        if types <= {str, int, float}: # and len(x) <= max_len
+        if types <= {str, int, float}:  # and len(x) <= max_len
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:

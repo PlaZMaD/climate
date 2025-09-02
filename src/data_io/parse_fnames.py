@@ -34,7 +34,6 @@ def try_parse_ias_fname(fname: str):
 
 
 def try_parse_csf_fname(fname: str):
-    # TODO QOA 2 any csf patterns?
     '''
     examples = {'tv_fy4_2023_v01.xlsx': 'tv_fy4'}
     txt_examples = examples_to_text(examples)
@@ -53,6 +52,7 @@ def try_parse_csf_fname(fname: str):
         ias_output_prefix = 'unknown_site'
         ias_output_version = 'vNN'
     '''
+    # TODO 1 update cell description, add patterns OA:ok
     logging.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
     ias_output_prefix = 'unknown_site'
     ias_output_version = 'vNN'

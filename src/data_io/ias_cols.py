@@ -1,8 +1,3 @@
-# TODO 3 consider a table with all simple col ops instead of just untransparent import and export transforms
-# problem: Excel files are not ransparent for VCS, use yaml? csv? ...?
-# handling unit/str conversions between import and export if name is same?
-# E: unclear if table will help
-#  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
 
 '''
 current renames EDDYPRO? -> SCRIPT to check
@@ -15,6 +10,12 @@ current renames EDDYPRO? -> SCRIPT to check
 # currently 4 column names variations are possible:
 # IAS file, EddyPro file, notebook import, export (after all the processing)
 
+# V: import all possible, even if it may prevent expected calculations
+# OA: imported cols for ias must be exported same way (except ones which are generated) (existed on import and generated cases?)
+
+# TODO 1 all new generated cols will still be exported to ias OA:ok V:ok
+# test P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
+
 from src.helpers.py_helpers import invert_dict
 
 COLS_IAS_USED_NORENAME_IMPORT = [
@@ -22,19 +23,17 @@ COLS_IAS_USED_NORENAME_IMPORT = [
     'WD_1_1_1',
     'TS_1_1_1', 'TS_2_1_1', 'TS_3_1_1',
 
-    # TODO 1 QOA QV all new generated cols will still be exported to ias, is this desired?
-    #  for example, P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
     'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
     'P_1_1_1',  # 'P_1_1_1' <- 'P_1_1_1' or 'P_RAIN_1_1_1'
-
-    # TODO 1 QV QOA was not in the original import list, I added
-    'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
     'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
     'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
 
+    # TODO 1 OA: ALB_1_1_1 must be ignored (WARNING) (vs V: import all possible)
+    'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
 
-    # TODO 1 QV QOA was in instruction list, but not in IAS specification, only VPD_PI_* is
+    # TODO 1 OA, V: import VPD_PI and convert (via generalised rename lambda function though)
     # 'VPD_1_1_1',
+    # TODO 2 ias: import other _PI cols or not? V: skip, _PI are cols of level > 2 vs OA: import
 ]
 COLS_IAS_UNUSED_NORENAME_IMPORT = [
     # Script does not use, but may requre on export or import, for example:
@@ -109,10 +108,12 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
 
     # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
+
+    # TODO QOA 1 ch4_signal_strength not in eddy or any specification? E: -> OA
     # IAS: CH4_RSSI_1_1_1 (%) CH4 Received Signal Strength Indicator
     # IAS: CO2_STR (-) СО2 signal strength
     # FF manual: CH42SS (CH4 Signal Strength или RSSI)	(-) <- does not match
-    # TODO QOA ch4_signal_strength not in eddy or any specification?
+
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 

@@ -27,8 +27,9 @@ def check_csf_col_names(df: pd.DataFrame):
 
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)
     if len(unused_cols) > 0:
-        # TODO 1 QOA log - english only? (print may be too?)
-        # TODO 1 localize properly, remove prints (logging.* goes to stdout too)
+        # TODO 2 localize properly, remove prints (logging.* goes to stdout too)
+        # log - english only? OA: ok
+        # TODO QOA 2 print may be too?
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
         logging.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))

@@ -1,3 +1,5 @@
+# OA: only warn for unknown cols, don't stop
+
 COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES = {
     'CO2SS'.lower(): 'co2_signal_strength',
     # 'co2_signal_strength_7500_mean': 'co2_signal_strength',
@@ -7,11 +9,7 @@ COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES = {
     # 'ch4_signal_strength_7700_mean': 'ch4_signal_strength',
     'ch4_signal_strength.{1,}': 'ch4_signal_strength'
 }
-# TODO 1 variables of interest only loaded; only WARNING
-# TODO 1 QE: why drag to colab was not approved
 
-# TODO 1 QOA try to use import and export table
-# can you say that 2-4 levels are done on unique set of cols, no duplicates or dupe cols from formats (biomet vs eddy vpd)?
 COLS_CSF_TO_SCRIPT_U_RENAMES = {
     'FC': 'co2_flux', 'FC_QC': 'qc_co2_flux', 'LE_QC': 'qc_LE', 'H_QC': 'qc_H', 'TAU': 'Tau', 'TAU_QC': 'qc_Tau',
     'USTAR': 'u*', 'TA_1_1_1': 'Ta_1_1_1', 'RH_1_1_1': 'RH_1_1_1', 'T_SONIC': 'sonic_temperature',
@@ -24,8 +22,8 @@ COLS_CSF_USED_NORENAME_IMPORT = [
     'co2_signal_strength', 'ch4_signal_strength' # not raw, check COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 ]
 COLS_CSF_UNUSED_NORENAME_IMPORT = [
-    # TODO 1 QOA only warn for unknown cols, don't stop? import them or skip?
-    # biomet is already part of CSF, right?
+    # TODO 1 biomet + CSF (NOT just CSF)
+    # nessesacry to experiment
     'FC_mass', 'FC_samples', 'ET', 'ET_QC', 'ET_samples', 'LE', 'LE_samples', 'H', 'H_samples', 'Bowen_ratio', 'TSTAR',
     'TKE', 'e', 'e_sat', 'PA', 'PA_SIGMA', 'VPD', 'U', 'U_SIGMA', 'V', 'V_SIGMA', 'W', 'W_SIGMA', 'T_SONIC_SIGMA',
     'sonic_azimuth', 'WS', 'WD_SONIC', 'WD_SIGMA', 'WD', 'WS_MAX', 'CO2_SIGMA', 'CO2_mixratio', 'CO2_mixratio_SIGMA',

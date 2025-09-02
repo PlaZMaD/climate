@@ -16,9 +16,10 @@ def export_rep_level3(fpath: Path, df: pd.DataFrame, time_col: str, output_templ
     else:
         print("WARNING! No swin_1_1_1!")
 
-    # TODO 1 QOA does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose? (Q about import, not on export)
+    # TODO 1 does switching name 'vpd' <-> 'vpd_1_1_1' have any purpose?
+    # OA: 'vpd' from biomet is priority, if missing, from rh_1_1_1, 'vpd_1_1_1' from FO is last chance
     # introduces nasty complications, requires fix on ias export?
-    # E: export goal was to match rep
+    # E: Унификация названий, иначе приходится дополнительно помнить, где суффиксы есть, а где нет. А так без суффиксов были только потоки на тот момент.
 
     # TODO 2 if biomet, 'air_temperature' contains derivation from 'ta_1_1_1'
     # E: because they are different, 'air_temperature' is worse backup plan if 'ta_1_1_1' is missing
