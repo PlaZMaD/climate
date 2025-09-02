@@ -1459,7 +1459,7 @@ if calc_nee and 'co2_strg' in data.columns:
       filter_config['nee'] = filter_config['co2_flux']
 
 # %% [markdown] id="mUgwuaFYribB"
-# #Overview of statistics for the columns of interest
+# # Overview of statistics for the columns of interest
 
 # %% id="dhcplCMbXtkK"
 cols_to_investigate = [p for p in cols_to_investigate if p in data.columns]
