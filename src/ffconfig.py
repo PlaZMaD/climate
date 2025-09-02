@@ -5,7 +5,7 @@ from typing import Annotated
 
 from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.helpers.config_io import ValidatedBaseModel, ConfigStoreMode, ConfigModel
-from src.helpers.py_helpers import gen_enum_info
+from src.helpers.py_helpers import gen_enum_info, ensure_list, is_protected_method
 
 AUTO_VALUES = ['auto', ImportMode.AUTO]
 DEFAULT_CONFIG = 'misc/default_config.yaml'
@@ -16,11 +16,14 @@ class TrackedConfig(ConfigModel):
     _auto_values: dict = {}
 
     def __setattr__(self, name, new_value):
+        if is_protected_method(name):
+            super().__setattr__(name, new_value)
+        
         cur_value = getattr(self, name)
 
         if self._load_path and cur_value not in AUTO_VALUES and cur_value != new_value:
-            logging.warning(f"Option for **{name}** in ipynb does not match option in configuration file: "
-                            f"ipynb (skipped): {new_value}"
+            logging.warning(f"Option for **{name}** in ipynb does not match option in configuration file: \n"
+                            f"ipynb (skipped): {new_value} \n"
                             f"config (used): {cur_value}")
             return
 
@@ -47,7 +50,7 @@ class TrackedConfig(ConfigModel):
         self.store_mode = mode
 
         if self._load_path:
-            logging.info(f'Config was loaded from {self._load_path}, saving same config into the same file is skipped.')
+            logging.info(f'Config was loaded from {self._load_path}, saving skipped.')
             return
 
         '''
@@ -70,7 +73,8 @@ class TrackedConfig(ConfigModel):
         if fpath == 'auto':
             matches = list(Path(repo_dir).glob('*.yaml'))
             if len(matches) > 1:
-                raise Exception(f'Found more than 2 configs: {matches}'
+                msg_matches = ensure_list(matches, transform_func=str)
+                raise Exception(f'Found more than 2 configs: {msg_matches} '
                                 'remove excessive or specify config name to load instead of auto.')
             elif len(matches) == 1:
                 fpath = matches[0]

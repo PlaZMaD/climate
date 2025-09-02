@@ -174,3 +174,7 @@ def nested_dict_replace(inplace: dict, replaces: dict):
 
         if inplace[k] != replaces[k]:
             inplace[k] = replaces[k]
+
+
+def is_protected_method(name):
+    return name.startswith("_")
