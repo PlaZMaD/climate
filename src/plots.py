@@ -27,7 +27,14 @@ def get_column_filter(data, filters_db_in, column_name):
         return np.array([1] * len(data.index))
 
 
-def basic_plot(data, col2plot, ias_output_prefix, filters_db=None, min_days=8, window_days=10, steps_per_day=2 * 24, use_resample=False):
+def basic_plot(data,
+               col2plot,
+               ias_output_prefix,
+               filters_db=None,
+               min_days=8,
+               window_days=10,
+               steps_per_day=2 * 24,
+               use_resample=False):
     multiplot = isinstance(col2plot, list)
 
     window_days = window_days  # дней в окне

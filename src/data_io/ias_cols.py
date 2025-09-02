@@ -1,4 +1,3 @@
-
 '''
 current renames EDDYPRO? -> SCRIPT to check
 'u*' -> u_star"
@@ -40,7 +39,7 @@ COLS_IAS_UNUSED_NORENAME_IMPORT = [
     # IAS import (rename to lower) -> script processing -> IAS export (rename back to upper)
     # note: _1_1_1 can be dynamic, but will make occurence search bad
     'H2O_STR_1_1_1', 'FH2O_1_1_1',
-    'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1', 
+    'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1',
     'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'V_SIGMA_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1',
     'FCH4_CMB_1_1_1', 'SPEC_PRI_REF_OUT_1_1_1', 'SPEC_PRI_TGT_IN_1_1_1', 'THROUGHFALL_1_1_1', 'MTCI_1_1_1',
     'FO3_1_1_1',
@@ -66,7 +65,6 @@ COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
 
 # COLS_IAS_UNUSED_NORENAME_IMPORT_DICT = {k: k.lower() for k in COLS_IAS_NORENAME_EXPORT}
 COLS_IAS_NORENAME_EXPORT_DICT = {k.lower(): k for k in COLS_IAS_NORENAME_EXPORT}
-
 
 # TODO 3 possible data integrity check to implement - from old ias instructions
 # во входных биометах "Rg_1_1_1" должно быть тождествено равно "Swin_1_1_1", это то же самое.

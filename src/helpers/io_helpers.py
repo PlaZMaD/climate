@@ -6,6 +6,18 @@ from zipfile import ZipFile
 from src.helpers.py_helpers import ensure_list
 
 
+# Naming reminder: fpath (= file), dpath (= dir or folder)
+
+def find_unique_file(dpath: Path, mask: str) -> Path | None:
+    fpaths = list(dpath.glob(mask))
+    if len(fpaths) > 1:
+        raise Exception(f'Excepted none or one, but multiple files matching {mask} found: {fpaths}')
+    if len(fpaths) == 1:
+        return fpaths[0]
+    else:
+        return None
+
+
 def ensure_path(arg: Path | str) -> Path:
     return arg if isinstance(arg, Path) else Path(arg)
 

@@ -75,7 +75,8 @@ def import_ias(config: FFConfig):
     # TODO 1 implement merge for iases (1-2) V: todo priority merge 1, split 1-2
     # TODO 2 implement custom split of ias on export (month, year, all years)
     if len(config.input_files) != 1:
-        raise NotImplemented('Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
+        raise NotImplemented(
+            'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
     ias_fpath = list(config.input_files.keys())[0]
     draft_check_ias(ias_fpath)
     df = load_table_logged(ias_fpath)
@@ -209,4 +210,3 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     # fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
     # ias_df.to_csv(os.path.join('output',fname), index=False)
     # logging.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')
-

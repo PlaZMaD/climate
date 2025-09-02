@@ -67,7 +67,8 @@ def datetime_converter(df: pd.DataFrame,
     has_datetime_col = datetime_col is not None
 
     if has_date_and_time_cols == has_datetime_col:
-        raise Exception('Unexpected time and date column options: specify time_col and date_col or datetime_col in import options.')
+        raise Exception(
+            'Unexpected time and date column options: specify time_col and date_col or datetime_col in import options.')
 
     if has_date_and_time_cols:
         date = df[date_col].astype(str)
@@ -98,7 +99,8 @@ def load_eddypro(config: FFConfig):
 
     bg_fo_config = {
         'path': fo_paths,
-        'debug': config.debug,
+        # reddyproc requires 90 days, see this function below
+        'debug': False,
         '-9999_to_nan': '-9999' in c_fo.missing_data_codes,
         'time': {
             'column_name': config.time_col,
@@ -119,18 +121,19 @@ def load_eddypro(config: FFConfig):
     if has_meteo:
         bg_bm_config = {
             'path': bm_paths,
-            'debug': config.debug,
+            'debug': False,
             '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
             'time': {
                 'column_name': config.time_col,
-                'converter': lambda x: datetime_converter(x, datetime_col=c_bm.datetime_col, datetime_formats=c_fo.try_datetime_formats)
+                'converter': lambda x: datetime_converter(x, datetime_col=c_bm.datetime_col,
+                                                          datetime_formats=c_bm.try_datetime_formats)
             },
             'repair_time': c_bm.repair_time,
         }
         data_meteo = load_biomet(bg_bm_config, data_freq)
     else:
         data_meteo = None
-
+        
     print("Колонки в FullOutput \n", df.columns.to_list())
     if has_meteo:
         print("Колонки в метео \n", data_meteo.columns.to_list())
@@ -143,6 +146,10 @@ def load_eddypro(config: FFConfig):
         if df[data_meteo.columns[-1]].isna().sum() == len(df.index):
             print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
             has_meteo = False
+
+    # reddyproc requires 3 months
+    if config.debug:
+        df = df[0: min(31*3 * 24*2, len(df))]
 
     biomet_columns = []
     if has_meteo:

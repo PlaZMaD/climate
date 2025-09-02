@@ -19,7 +19,7 @@ COLS_CSF_TO_SCRIPT_U_RENAMES = {
 
 COLS_CSF_USED_NORENAME_IMPORT = [
     'LE', 'H',
-    'co2_signal_strength', 'ch4_signal_strength' # not raw, check COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
+    'co2_signal_strength', 'ch4_signal_strength'  # not raw, check COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 ]
 COLS_CSF_UNUSED_NORENAME_IMPORT = [
     # TODO 1 biomet + CSF (NOT just CSF)

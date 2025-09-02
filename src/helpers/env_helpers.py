@@ -54,10 +54,15 @@ def setup_r_env():
 
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
+
+        # PATH warning unsolvable, but goes from:
+        # %R_HOME%/etc/Rcmd_environ
+        # PATH=... -> # PATH=...
         # bin1_path = "%RTOOLS44_HOME%/x86_64-w64-mingw32.static.posix/bin;"
         # bin2_path = "%RTOOLS44_HOME%/usr/bin;"
-        # assert bin1_path in os.environ['PATH'] ?
-        # assert bin2_path in os.environ['PATH'] ?
+        # assert bin1_path in os.environ['PATH']
+        # assert bin2_path in os.environ['PATH']
+        # os.environ['PATH'] = bin1_path + bin2_path + "%RTOOLS44_HOME%;" + os.environ['PATH']
 
         # for pip rpy2 on W10, just set R_HOME correctly
         pass

@@ -186,8 +186,9 @@ ipython_edit_function(meteorological_night_filter)
 
 # %% id="tVJ_DRBrlpYd"
 
-# debug=True быстрый режим скрипта с обработкой только нескольких месяцев
-config = FFConfig.load('auto', repo_dir=repo_dir)
+# new_debug=True быстрый режим скрипта с обработкой только нескольких месяцев
+config = FFConfig.load_or_init(load_path='auto', repo_dir=repo_dir,
+                               init_debug=False, init_version='1.0.0')
 
 # ## Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 # ## через команду !gdown, то достаточно заменить название файла
@@ -203,7 +204,7 @@ config.eddypro_fo.missing_data_codes = ['-9999']
 config.eddypro_fo.time_col = 'time'
 config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
 config.eddypro_fo.date_col = 'date'
-config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']  #, '%Y-%m-%d'
+config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
 config.eddypro_fo.repair_time = True
 
 #####################
@@ -236,7 +237,7 @@ config.eddypro_biomet.repair_time = True
 # TODO 1 OA:ok join all Параметры загрузки файлов full output и Параметры загрузки файла biomet
 
 config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
-config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H:%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
+config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
 #####################
 
 # %% [markdown] id="DtxFTNnEfENz"
@@ -281,10 +282,12 @@ config.ias_output_version = 'auto'
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные с значением флага больше порога будут исключены.
 
 # %% id="ukl734CBblay"
-config.qc['h'] = 1  # Если система флагов была 1-9, поправить
-config.qc['le'] = 1  # Если система флагов была 1-9, поправить
-config.qc['co2_flux'] = 1  # Если система флагов была 1-9, поправить
-config.qc['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
+qc = {}
+qc['h'] = 1  # Если система флагов была 1-9, поправить
+qc['le'] = 1  # Если система флагов была 1-9, поправить
+qc['co2_flux'] = 1  # Если система флагов была 1-9, поправить
+qc['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
+config.qc = qc
 
 # %% [markdown] id="QPIFpLN_-8Uf"
 # Параметры фильтрации по метеорологическим переменным, возможные опции:
@@ -306,28 +309,31 @@ config.qc['ch4_flux'] = 1  # Если система флагов была 1-9, 
 # При отсутствии в настройках какого-либо из параметров фильтрация не применяется.
 
 # %% id="vxpiAbWk2yYr"
-config.filters.meteo['CO2SS_min'] = 80.
+filters_meteo = {}
+filters_meteo['CO2SS_min'] = 80.
 
 # Фильтры могут не понадобиться для систем закрытого типа
-config.filters.meteo['p_rain_limit'] = .1
-config.filters.meteo['rain_forward_flag'] = 2
+filters_meteo['p_rain_limit'] = .1
+filters_meteo['rain_forward_flag'] = 2
 # Фильтр влажности ниже: применять только тогда, когда нет CO2SS (образование конденсата) и диагностики анемометра
 # и данные не были отфильтрованы по этим показателям на этапе расчета в EddyPro
 # meteo_filter_config['RH_max'] = 98
 
 # Какие значения допускаются днем/ночью
-config.filters.meteo['use_day_filter'] = True
-config.filters.meteo['use_night_filter'] = True
-config.filters.meteo['day_nee_max'] = 5
-config.filters.meteo['night_nee_min'] = -5
-config.filters.meteo['day_swin_limit'] = 10
-config.filters.meteo['night_h_limits'] = [-50, 20]
-config.filters.meteo['night_le_limits'] = [-50, 20]
+filters_meteo['use_day_filter'] = True
+filters_meteo['use_night_filter'] = True
+filters_meteo['day_nee_max'] = 5
+filters_meteo['night_nee_min'] = -5
+filters_meteo['day_swin_limit'] = 10
+filters_meteo['night_h_limits'] = [-50, 20]
+filters_meteo['night_le_limits'] = [-50, 20]
 
 # Какие значения допускаются зимой. Для травянистых экосистем правый порог обычно ниже
-config.filters.meteo['winter_nee_limits'] = [0, 5]
-config.filters.meteo['winter_ch4_flux_limits'] = [-1, 1]
-config.filters.meteo['CH4SS_min'] = 20.
+filters_meteo['winter_nee_limits'] = [0, 5]
+filters_meteo['winter_ch4_flux_limits'] = [-1, 1]
+filters_meteo['CH4SS_min'] = 20.
+config.filters.meteo = filters_meteo
+ 
 
 # %% [markdown] id="utUX7SA4qA_I"
 # ### Фильтрация статистическая
@@ -337,19 +343,21 @@ config.filters.meteo['CH4SS_min'] = 20.
 # Для `rh_1_1_1` значения выше границы не отбрасываются, а заменяются на пограничные. Для `ppfd_1_1_1`, `swin_1_1_1` аналогично обрабатываются минимальные значения.
 
 # %% id="HQfIYFOd9uzi"
-config.filters.min_max['co2_flux'] = [-40, 40]
-config.filters.min_max['co2_strg'] = [-20, 20]
-config.filters.min_max['h'] = [-100, 800]
-config.filters.min_max['le'] = [-100, 1000]
-config.filters.min_max['u_star'] = [0, 10]
-config.filters.min_max['ta_1_1_1'] = [-50, 50]
-config.filters.min_max['p_1_1_1'] = [0, 100]
-config.filters.min_max['vpd_1_1_1'] = [0, 50]
-config.filters.min_max['rh_1_1_1'] = [0, 100]  # max
-config.filters.min_max['swin_1_1_1'] = [0, 1200]  # min
-config.filters.min_max['ppfd_1_1_1'] = [0, 2400]  # min
-config.filters.min_max['rg_1_1_1'] = [0, 2400]  # min
-config.filters.min_max['ch4_flux'] = [-10, 10]
+filters_min_max = {}
+filters_min_max['co2_flux'] = [-40, 40]
+filters_min_max['co2_strg'] = [-20, 20]
+filters_min_max['h'] = [-100, 800]
+filters_min_max['le'] = [-100, 1000]
+filters_min_max['u_star'] = [0, 10]
+filters_min_max['ta_1_1_1'] = [-50, 50]
+filters_min_max['p_1_1_1'] = [0, 100]
+filters_min_max['vpd_1_1_1'] = [0, 50]
+filters_min_max['rh_1_1_1'] = [0, 100]  # max
+filters_min_max['swin_1_1_1'] = [0, 1200]  # min
+filters_min_max['ppfd_1_1_1'] = [0, 2400]  # min
+filters_min_max['rg_1_1_1'] = [0, 2400]  # min
+filters_min_max['ch4_flux'] = [-10, 10]
+config.filters.min_max = filters_min_max
 
 # %% [markdown] id="vmyTKbV1RdjD"
 # Параметры фильтрации по отклонению от среднего суточного хода.
@@ -358,42 +366,48 @@ config.filters.min_max['ch4_flux'] = [-10, 10]
 # * `min_periods` - минимальное число точек в окне. Если меньше - оценка скользящего будет отсутствовать, фильтр не применится.
 
 # %% id="xfRVNYbFYzG3"
+filters_window = {}
 # Для систем закрытого типа фильтр может быть мягче (например, 3 sigma)
-config.filters.window['co2_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
-config.filters.window['ch4_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
+filters_window['co2_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
+filters_window['ch4_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
 
 # Если удаляются надежные значения - нужно увеличить 'sigmas'
-config.filters.window['ta_1_1_1'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
-config.filters.window['u_star'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
+filters_window['ta_1_1_1'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
+filters_window['u_star'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
 for col in ['h', 'le', 'rh_1_1_1', 'vpd_1_1_1']:
-    config.filters.window[col] = {'sigmas': 7, 'window': 10, 'min_periods': 4}
+    filters_window[col] = {'sigmas': 7, 'window': 10, 'min_periods': 4}
 for col in ['swin_1_1_1', 'ppfd_1_1_1']:
-    config.filters.window[col] = {'sigmas': 8, 'window': 10, 'min_periods': 4}
+    filters_window[col] = {'sigmas': 8, 'window': 10, 'min_periods': 4}
+config.filters.window = filters_window
 
 # %% [markdown] id="KF_MGD7pSGre"
 # Параметры фильтрации выше-ниже порога по квантилям (выпадающие строки отфильтровываются)
 
 # %% id="asO_t2tZmiD0"
-config.filters.quantile['co2_flux'] = [0.01, 0.99]
-config.filters.quantile['ch4_flux'] = [0.01, 0.99]
-config.filters.quantile['co2_strg'] = [0.01, 0.99]
+filters_quantile = {}
+filters_quantile['co2_flux'] = [0.01, 0.99]
+filters_quantile['ch4_flux'] = [0.01, 0.99]
+filters_quantile['co2_strg'] = [0.01, 0.99]
+config.filters.quantile = filters_quantile
 
 # %% [markdown] id="cPiTN288UaP3"
 # Параметры для фильтрации по отклонению от соседних точек, фильтры MAD и Hampel.
 
 # %% id="2b3eBVFUq3AU"
-# config.filters.madhampel = {i:{'z': 5.5, 'hampel_window': 10} for i in cols_to_investigate if 'p_1_1_1' not in i}
+filters_madhampel = {}
+# filters_madhampel = {i:{'z': 5.5, 'hampel_window': 10} for i in cols_to_investigate if 'p_1_1_1' not in i}
 # Более жесткая фильтрация: 'z'=4. Более мягкая: 'z'=7
-config.filters.madhampel['co2_flux'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['ch4_flux'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['le'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['h'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['co2_strg'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['ta_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['rh_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['vpd_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
-config.filters.madhampel['swin_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
-config.filters.madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
+filters_madhampel['co2_flux'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['ch4_flux'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['le'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['h'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['co2_strg'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['ta_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['rh_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['vpd_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
+filters_madhampel['swin_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
+filters_madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
+config.filters.madhampel = filters_madhampel
 
 # %% [markdown] id="wVF1vDm4EauW"
 # # Загружаем данные
@@ -445,15 +459,6 @@ cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
                 'ch4_signal_strength_7500_mean', 'ch4SS'.lower(), 'ch4_signal_strength',
                 'p_1_1_1', 'ta_1_1_1', 'co2_strg', 'le', 'h']
-
-'''
-TODO 1 repair
-0.9.2
-0.9.3
-0.9.4
-0.9.5
-0.9.5en восстановить рабоатоспособность
-'''
 
 data_type_error_flag = False
 for col in cols_2_check:
@@ -510,7 +515,7 @@ for col_name in data.columns:
         print(f"renaming {col_name} to ch4_signal_strength")
         data = data.rename(columns={col_name: 'ch4_signal_strength'})
 
-    # Bomet renames
+    # Biomet renames
     if 'ppfd_in_1_1_1' in col_name:
         print(f"renaming {col_name} to ppfd_1_1_1")
         data = data.rename(columns={col_name: 'ppfd_1_1_1'})
@@ -652,11 +657,13 @@ if config.calc_nee and 'co2_strg' in data.columns:
     del tmp_data
     if 'nee' not in cols_to_investigate:
         cols_to_investigate.append('nee')
-    for filter_config in [config.qc, config.filters.meteo, config.filters.min_max, config.filters.window,
-                          config.filters.quantile,
-                          config.filters.madhampel]:
-        if 'co2_flux' in filter_config:
-            filter_config['nee'] = filter_config['co2_flux']
+        
+    if not config._load_path:
+        for filter_config in [config.qc, config.filters.meteo, config.filters.min_max, config.filters.window,
+                              config.filters.quantile,
+                              config.filters.madhampel]:
+            if 'co2_flux' in filter_config:
+                filter_config['nee'] = filter_config['co2_flux']
 
 # %% [markdown] id="mUgwuaFYribB"
 # # Обзор статистики по интересующим колонкам
@@ -745,13 +752,13 @@ if ('winter_nee_limits' in config.filters.meteo.keys()) or ('winter_ch4_flux_lim
 # %% id="Z_RAYINf67PO"
 if config.has_meteo:
     unroll_filters_db = filters_db.copy()
-    date_ranges = [
+    config.filters.winter_date_ranges = [
         ['01.01.2023 00:00', '26.03.2023 00:00'],
         ['13.11.2023 00:00', '31.12.2023 00:00'],
     ]
     # date_ranges = []
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
-    plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo, date_ranges)
+    plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo, config.filters.winter_date_ranges)
 
 # %% [markdown] id="iipFLxf6fu5Y"
 # Фильтрация по футпринту
@@ -1246,7 +1253,9 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # %% id="E4rv4ucOX8Yz"
-config.save(gl.out_dir / 'config.yaml', mode=ConfigStoreMode.ONLY_CHANGES)
+FFConfig.save(config, gl.out_dir / f'config_{config.site_name}_all.yaml', mode=ConfigStoreMode.ALL_OPTIONS)
+# TODO 1 remove
+FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml', mode=ConfigStoreMode.ONLY_CHANGES)
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

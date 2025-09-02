@@ -94,7 +94,7 @@ def sort_fixed(items: list[str], fix_underscore: bool):
     items.sort(key=key)
 
 
-def ensure_list(items: list, transform_func=None) -> list:
+def ensure_list(items, transform_func=None) -> list:
     if not isinstance(items, list):
         ret = [items]
     else:
@@ -151,24 +151,26 @@ def gen_enum_info(enum_class) -> str:
     return ", ".join(m.name for m in enum_class)
 
 
-def nested_dict_remove_same(inplace: dict, sames: dict):   
-    for k in sames:
+def dict_remove_matches(inplace: dict, match: dict, keep_keys: list[str]):
+    for k in match:
         if k not in inplace:
             continue
-        elif inplace[k] == sames[k]:
-            del inplace[k]
-        elif isinstance(sames[k], dict):
-            nested_dict_remove_same(inplace[k], sames[k])
-
-
-def nested_dict_replace(inplace: dict, replaces: dict):
-    for k in inplace:
-        if k not in replaces:
+        if k in keep_keys:
             continue
-        elif isinstance(inplace[k], dict):
-            nested_dict_replace(inplace[k], replaces[k])
-        elif inplace[k] != replaces[k]:
-            inplace[k] = replaces[k]
+            
+        if inplace[k] == match[k]:
+            del inplace[k]
+
+
+def dict_replace(inplace: dict, replace: dict, skip_keys: list[str]):
+    for k in inplace:
+        if k not in replace:
+            continue
+        if k in skip_keys:
+            continue
+            
+        if inplace[k] != replace[k]:
+            inplace[k] = replace[k]
 
 
 def is_protected_method(name):
