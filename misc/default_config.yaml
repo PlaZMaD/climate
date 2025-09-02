@@ -91,7 +91,6 @@ filters:
 calc_nee: true
 calc_with_strg: false
 reddyproc:
-    site_id: 
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01
     ustar_rg_source: Rg  # Rg_th_Py, Rg_th_REP, Rg, ""
@@ -103,13 +102,13 @@ reddyproc:
     longitude: 32.6
     timezone: 3.0
     temperature_data_variable: Tair
+
+    site_id: ''
     u_star_method: RTw
     is_to_apply_gap_filling: true
-    input_file: 
-    output_dir: output\reddyproc
+    input_file: ''
+    output_dir: ''
     log_fname_end: _log.txt
-    meta_description:
 time_col: datetime
 debug: false
 import_mode: AUTO  
-meta_description:

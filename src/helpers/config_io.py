@@ -8,7 +8,9 @@ from ruamel.yaml import YAML, CommentedSeq, CommentedMap
 
 from src.helpers.py_helpers import gen_enum_info, nested_dict_remove_same, nested_dict_replace
 
-METADATA_KEY = 'meta_description'
+METADATA_KEY = '_meta_description'
+# TODO 1 +.toml vs ?.py (vs .yaml)?
+# comments io support, import defaults, diff export, time conversion function vs safety 
 
 
 class ConfigStoreMode(Enum):
@@ -16,11 +18,11 @@ class ConfigStoreMode(Enum):
     ONLY_CHANGES = 'ONLY_CHANGES'
 
 
-def add_yaml_metadata(d: dict) -> CommentedMap:
+def dict_to_yaml_with_comments(d: dict) -> CommentedMap:    
     d = CommentedMap(d)
     if METADATA_KEY in d:
         meta = d[METADATA_KEY]
-        d[METADATA_KEY] = None
+        del d[METADATA_KEY]
         for k, v in meta.items():
             eol = []
             if 'dynamic value' in v:
@@ -37,7 +39,7 @@ def config_to_yaml(x, path, max_len=5):
     """ Nested metadata processing and improves yaml items wrapping """
 
     if isinstance(x, dict):
-        res = add_yaml_metadata(x)
+        res = dict_to_yaml_with_comments(x)
 
         v_types = {type(v) for v in res.values()}
         if v_types <= {str, int, float} and len(path) > 1:

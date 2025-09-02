@@ -49,12 +49,14 @@ class TrackedConfig(ConfigModel):
         self.restore_auto_values()
         self.store_mode = mode
 
+        '''
         if self._load_path:
             logging.info(f'Config was loaded from {self._load_path}, saving skipped.')
             return
+        '''
 
         '''
-        # save-load of function, avoid if possible (switch to auto type conversion if required?)
+        # save-load of function, avoid if possible
         if config.eddypro_fo.time_converter:
             if not config.eddypro_fo.time_converter_str:
                 config.eddypro_fo.time_converter_str = func_to_str(config.eddypro_fo.time_converter)
@@ -89,7 +91,7 @@ class TrackedConfig(ConfigModel):
             config._load_path = None
 
         '''
-        # save-load of function, avoid if possible (switch to auto type conversion if required?)
+        # save-load of function, avoid if possible
         if config.eddypro_fo.time_converter_str:
             config.eddypro_fo.time_converter = str_to_func(config.eddypro_fo.time_converter_str)
         if config.eddypro_biomet.time_converter_str:
@@ -119,8 +121,6 @@ class InputFileConfig(ValidatedBaseModel):
 
 
 class RepConfig(ValidatedBaseModel):
-    site_id: str = None
-
     is_to_apply_u_star_filtering: bool = None
     ustar_threshold_fallback: float = None
     ustar_rg_source: Annotated[str, 'Rg_th_Py, Rg_th_REP, Rg, ""'] = None
@@ -138,6 +138,7 @@ class RepConfig(ValidatedBaseModel):
 
     temperature_data_variable: str = None
 
+    site_id: str = None
     u_star_method: str = 'RTw'
     is_to_apply_gap_filling: bool = True
     input_file: str = None
