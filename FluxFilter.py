@@ -1158,8 +1158,6 @@ from src.reddyproc.preprocess_rg import prepare_rg
 # %% id="278caec5"
 
 config.reddyproc = RepConfig(
-    site_id=config.site_name,
-
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
     ustar_threshold_fallback=0.01,
@@ -1184,6 +1182,7 @@ config.reddyproc = RepConfig(
     temperature_data_variable="Tair",
 
     # do not change
+    site_id=config.site_name,
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
     input_file=str(gl.rep_level3_fpath),

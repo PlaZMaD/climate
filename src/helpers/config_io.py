@@ -84,6 +84,9 @@ class ValidatedBaseModel(BaseModel):
 
 
 class ConfigModel(ValidatedBaseModel):
+    # TODO 3 auto read (from env?) in FluxFilter.py
+    version: str
+
     store_mode: Annotated[ConfigStoreMode, gen_enum_info(ConfigStoreMode)] = ConfigStoreMode.ALL_OPTIONS
     _default_model_values: ClassVar[BaseModel]
 

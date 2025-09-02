@@ -1,6 +1,6 @@
 version: '1.0'
 store_mode: ALL_OPTIONS
-input_files: auto  # last: {'Ckd_2015_v01.csv': 'IAS'}
+input_files: auto 
 eddypro_fo:
     repair_time: true
     missing_data_codes: ['-9999']
@@ -19,8 +19,8 @@ eddypro_biomet:
     try_date_formats:
     datetime_col: TIMESTAMP_1
     try_datetime_formats: ['%Y-%m-%d %H:%M', '%d.%m.%Y %H:%M']
-site_name: auto  # last: Ckd
-ias_output_version: auto # last: v01
+site_name: auto 
+ias_output_version: auto 
 has_meteo: true
 qc:
     h: 1
@@ -91,7 +91,7 @@ filters:
 calc_nee: true
 calc_with_strg: false
 reddyproc:
-    site_id: Ckd
+    site_id: 
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01
     ustar_rg_source: Rg  # Rg_th_Py, Rg_th_REP, Rg, ""
@@ -105,11 +105,11 @@ reddyproc:
     temperature_data_variable: Tair
     u_star_method: RTw
     is_to_apply_gap_filling: true
-    input_file: output\REddyProc_Ckd_2015.txt
+    input_file: 
     output_dir: output\reddyproc
     log_fname_end: _log.txt
     meta_description:
 time_col: datetime
 debug: false
-import_mode: AUTO  # last: IAS # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, AUTO
+import_mode: AUTO  
 meta_description:

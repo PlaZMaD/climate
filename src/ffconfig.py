@@ -14,7 +14,7 @@ DEFAULT_CONFIG = 'misc/default_config.yaml'
 class TrackedConfig(ConfigModel):
     _load_path: str = None
     _auto_values: dict = {}
-
+    
     def __setattr__(self, name, new_value):
         if is_protected_method(name):
             super().__setattr__(name, new_value)
@@ -157,9 +157,9 @@ class FiltersConfig(ValidatedBaseModel):
 # TODO 1 yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
 # all settings by default, partial mode optional (or commented out?) if not default, comment?
 class FFConfig(TrackedConfig):
-    # TODO 3 auto read (from env?) in FluxFilter.py
-    version: str
-
+    # super().version: str
+    # super().store_mode: ConfigStoreMode
+    
     input_files: str | list[str] | dict[str | Path, InputFileType] = 'auto'
     # flexible, but too complicated to edit for user?
     # files: dict[str, InputFileConfig]
