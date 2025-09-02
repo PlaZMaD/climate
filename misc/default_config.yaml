@@ -1,4 +1,5 @@
 version: '1.0'
+store_mode: ALL_OPTIONS
 input_files: auto  # last: {'Ckd_2015_v01.csv': 'IAS'}
 eddypro_fo:
     repair_time: true

@@ -152,7 +152,7 @@ def auto_detect_input_files(config: FFConfig):
     config.import_mode = detect_input_mode(config.input_files)
     logging.info(f'Detected import mode: {config.import_mode}')
 
-    # TODO 2 update cells descs to match exact config naming after updating config options
+    # TODO 2 update cells desc to match exact config naming after updating config options
     if config.import_mode == IM.IAS:
         res = detect_auto_config_ias(config.input_files)
     elif config.import_mode == IM.CSF:

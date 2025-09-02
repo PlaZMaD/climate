@@ -83,6 +83,7 @@
 
 # %pip install pysolar
 # %pip install ruamel.yaml
+# %pip install deepdiff
 # %pip install plotly-resampler dateparser >> /dev/null
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
@@ -105,6 +106,8 @@ from pathlib import Path
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
+
+from src.helpers.config_io import ConfigStoreMode
 
 # %load_ext autoreload
 # %autoreload 2
@@ -187,11 +190,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # + id="tVJ_DRBrlpYd"
 
 # debug=True быстрый режим скрипта с обработкой только нескольких месяцев
-cfg_fpath = Path('config.yaml')
-if cfg_fpath.exists():
-    config = load_config('config.yaml', lock_user_changes=True)
-else:
-    config = load_config(repo_dir / 'misc/default_config.yaml', lock_user_changes=False)
+config = load_config('auto', repo_dir=repo_dir)
 
 ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
 ###через команду !gdown, то достаточно заменить название файла
@@ -208,7 +207,7 @@ config.eddypro_fo.missing_data_codes = ['-9999']
 config.eddypro_fo.time_col = 'time'
 config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
 config.eddypro_fo.date_col = 'date'
-config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d', '%Y-%m-%d']
+config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d'] #, '%Y-%m-%d'
 config.eddypro_fo.repair_time = True
 
 #####################
@@ -1245,7 +1244,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # + id="E4rv4ucOX8Yz"
-save_config(config, gl.out_dir / 'config.yaml', mode='only_changes')
+save_config(config, gl.out_dir / 'config.yaml', mode=ConfigStoreMode.ONLY_CHANGES)
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

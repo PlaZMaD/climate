@@ -145,3 +145,32 @@ def str_to_func(code: str) -> Callable:
     func = list(ns.values())[1]
     assert callable(func)
     return func
+
+
+def gen_enum_info(enum_class) -> str:
+    return ", ".join(m.name for m in enum_class)
+
+
+def dict_remove_same(inplace: dict, sames: dict):
+    for k in sames:
+        if k not in inplace:
+            continue
+
+        if inplace[k] == sames[k]:
+            del inplace[k]
+            continue
+
+        if isinstance(sames[k], dict):
+            dict_remove_same(inplace[k], sames[k])
+
+
+def dict_replace(inplace: dict, replaces: dict):
+    for k in inplace:
+        if k not in replaces:
+            continue
+
+        if isinstance(inplace[k], dict):
+            dict_replace(inplace[k], replaces[k])
+
+        if inplace[k] != replaces[k]:
+            inplace[k] = replaces[k]

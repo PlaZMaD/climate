@@ -1,19 +1,18 @@
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Any, Annotated
+from typing import Annotated
 
 from src.data_io.data_import_modes import ImportMode, InputFileType
-from src.helpers.config_io import ValidatedBaseModel, save_basemodel, load_basemodel
-from src.helpers.py_helpers import func_to_str, str_to_func
-
+from src.helpers.config_io import ValidatedBaseModel, ConfigStoreMode
+from src.helpers.py_helpers import gen_enum_info
 
 AUTO_VALUES = ['auto', ImportMode.AUTO]
+DEFAULT_CONFIG = 'misc/default_config.yaml'
 
 
 class TrackedConfig(ValidatedBaseModel):
     _load_path: str = None
-    _io_mode: bool
     _auto_values: dict = {}
 
     def __setattr__(self, name, new_value):
@@ -21,7 +20,8 @@ class TrackedConfig(ValidatedBaseModel):
 
         if self._load_path and cur_value not in AUTO_VALUES and cur_value != new_value:
             logging.warning(f"Option for **{name}** in ipynb does not match option in configuration file: "
-                            f"ipynb: {new_value}, config (used): {cur_value}")
+                            f"ipynb (skipped): {new_value}"
+                            f"config (used): {cur_value}")
             return
 
         if cur_value != new_value and cur_value in AUTO_VALUES:
@@ -41,6 +41,58 @@ class TrackedConfig(ValidatedBaseModel):
                 self.model_fields[k].metadata = {}
             self.model_fields[k].metadata |= {'dynamic value': prev}
             vars(self)[k] = v
+
+    def save(self, fpath: str | Path, mode: ConfigStoreMode):
+        self.restore_auto_values()
+        self.store_mode = mode
+
+        if self._load_path:
+            logging.info(f'Config was loaded from {self._load_path}, saving same config into the same file is skipped.')
+            return
+
+        '''
+        # save-load of function, avoid if possible (switch to auto type conversion if required?)
+        if config.eddypro_fo.time_converter:
+            if not config.eddypro_fo.time_converter_str:
+                config.eddypro_fo.time_converter_str = func_to_str(config.eddypro_fo.time_converter)
+            config.eddypro_fo.time_converter = None
+    
+        if config.eddypro_biomet.time_converter:
+            if not config.eddypro_biomet.time_converter_str:
+                config.eddypro_biomet.time_converter_str = func_to_str(config.eddypro_biomet.time_converter)
+            config.eddypro_biomet.time_converter = None
+        '''
+
+        super().save_to_yaml(Path(fpath))
+
+    @classmethod
+    def load(cls, fpath: str | Path | None, repo_dir: Path):
+        if fpath == 'auto':
+            matches = list(Path(repo_dir).glob('*.yaml'))
+            if len(matches) > 1:
+                raise Exception(f'Found more than 2 configs: {matches}'
+                                'remove excessive or specify config name to load instead of auto.')
+            elif len(matches) == 1:
+                fpath = matches[0]
+            elif len(matches) == 0:
+                fpath = None
+
+        if fpath:
+            config: cls = cls.load_from_yaml(Path(fpath), default_fpath=repo_dir / DEFAULT_CONFIG)
+            config._load_path = str(fpath)
+        else:
+            config: cls = cls.load_from_yaml(fpath=None, default_fpath=repo_dir / DEFAULT_CONFIG)
+            config._load_path = None
+
+        '''
+        # save-load of function, avoid if possible (switch to auto type conversion if required?)
+        if config.eddypro_fo.time_converter_str:
+            config.eddypro_fo.time_converter = str_to_func(config.eddypro_fo.time_converter_str)
+        if config.eddypro_biomet.time_converter_str:
+            config.eddypro_biomet.time_converter = str_to_func(config.eddypro_biomet.time_converter_str)
+        '''
+
+        return config
 
 
 class InputFileConfig(ValidatedBaseModel):
@@ -67,7 +119,7 @@ class RepConfig(ValidatedBaseModel):
 
     is_to_apply_u_star_filtering: bool = None
     ustar_threshold_fallback: float = None
-    ustar_rg_source:  Annotated[str, 'Rg_th_Py, Rg_th_REP, Rg, ""'] = None
+    ustar_rg_source: Annotated[str, 'Rg_th_Py, Rg_th_REP, Rg, ""'] = None
     is_bootstrap_u_star: bool = None
     # TODO 2 add enums?
     u_star_seasoning: Annotated[str, 'WithinYear, Continuous, User'] = None
@@ -96,10 +148,6 @@ class FiltersConfig(ValidatedBaseModel):
     window: dict = {}
     min_max: dict = {}
     man_ranges: list[tuple[str, str]] = []
-
-
-def gen_enum_info(enum_class) -> str:
-    return ", ".join(m.name for m in enum_class)
 
 
 class FFConfig(TrackedConfig):
@@ -151,52 +199,3 @@ class FFGlobals(ValidatedBaseModel):
     rep_arc_exclude_files: list[Path] = None
     rep_out_info: RepOutInfo = None
     rep_level3_fpath: Path = None
-
-
-def ConfgStoreMode(Enum):
-    ONLY_CHANGES = 'ONLY_CHANGES'
-    FULL = 'FULL'
-
-
-def save_config(config: FFConfig, fpath: str | Path, mode: ConfgStoreMode):
-    config.restore_auto_values()
-    config._io_mode = mode
-
-    if config._load_path:
-        logging.info(f'Config was loaded from {config._load_path}, saving same config into the same file is skipped.')
-        return
-
-    '''
-    # save-load of function, avoid if possible (switch to auto type conversion if required?)
-    if config.eddypro_fo.time_converter:
-        if not config.eddypro_fo.time_converter_str:
-            config.eddypro_fo.time_converter_str = func_to_str(config.eddypro_fo.time_converter)
-        config.eddypro_fo.time_converter = None
-
-    if config.eddypro_biomet.time_converter:
-        if not config.eddypro_biomet.time_converter_str:
-            config.eddypro_biomet.time_converter_str = func_to_str(config.eddypro_biomet.time_converter)
-        config.eddypro_biomet.time_converter = None
-    '''
-
-    save_basemodel(Path(fpath), config)
-
-
-def load_default_config() -> FFConfig:
-    return load_config(repo_dir / 'misc/default_config.yaml', lock_user_changes=False)
-    
-
-def load_config(fpath: str | Path, lock_user_changes) -> FFConfig:
-    config: FFConfig = load_basemodel(Path(fpath), FFConfig)
-    if lock_user_changes:
-        config._load_path = str(fpath)
-
-    '''
-    # save-load of function, avoid if possible (switch to auto type conversion if required?)
-    if config.eddypro_fo.time_converter_str:
-        config.eddypro_fo.time_converter = str_to_func(config.eddypro_fo.time_converter_str)
-    if config.eddypro_biomet.time_converter_str:
-        config.eddypro_biomet.time_converter = str_to_func(config.eddypro_biomet.time_converter_str)
-    '''
-
-    return config
