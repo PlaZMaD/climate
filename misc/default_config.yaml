@@ -1,7 +1,6 @@
 version: 1.0.0
-store_mode: ALL_OPTIONS
 debug: false
-input_files: ''
+input_files: auto
 eddypro_fo:
     repair_time: true
     missing_data_codes: ['-9999']

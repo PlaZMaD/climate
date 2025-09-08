@@ -121,7 +121,6 @@ from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manag
 from src.ffconfig import FFConfig, RepConfig, FFGlobals
 from src.helpers.py_helpers import init_logging
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
-from src.helpers.config_io import ConfigStoreMode
 from src.helpers.env_helpers import setup_r_env, ENV
 from src.data_io.data_import_modes import ImportMode
 from src.data_io.fat_export import export_fat
@@ -187,25 +186,26 @@ ipython_edit_function(meteorological_night_filter)
 # %% id="tVJ_DRBrlpYd"
 
 # new_debug=True быстрый режим скрипта с обработкой только нескольких месяцев
-config = FFConfig.load_or_init(load_path='auto', repo_dir=repo_dir,
+config = FFConfig.load_or_init(load_path='auto', 
                                init_debug=False, init_version='1.0.0')
 
-# ## Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
-# ## через команду !gdown, то достаточно заменить название файла
-config.input_files = 'auto'
-# config.input_files = ['tv_fy4_2019_v01.xlsx']
-# config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv']
-# 'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO}]#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
-# config.input_files = {'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO_FO}
-
-config.time_col = 'datetime'
-
-config.eddypro_fo.missing_data_codes = ['-9999']
-config.eddypro_fo.time_col = 'time'
-config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
-config.eddypro_fo.date_col = 'date'
-config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
-config.eddypro_fo.repair_time = True
+if not config.from_file:
+    # ## Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
+    # ## через команду !gdown, то достаточно заменить название файла
+    config.input_files = 'auto'
+    # config.input_files = ['tv_fy4_2019_v01.xlsx']
+    # config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv']
+    # 'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO}]#['/content/eddypro_NCT_GHG_22-23dry_full_output.xlsx', '/content/eddypro_NCT_GHG_22wet_full_output.xlsx', '/content/eddypro_NCT_GHG_23wet_full output.xlsx']#'/content/new.csv'
+    # config.input_files = {'eddypro_noHMP_full_output_2014_5-12.csv': InputFileType.EDDYPRO_FO}
+    
+    config.time_col = 'datetime'
+    
+    config.eddypro_fo.missing_data_codes = ['-9999']
+    config.eddypro_fo.time_col = 'time'
+    config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
+    config.eddypro_fo.date_col = 'date'
+    config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    config.eddypro_fo.repair_time = True
 
 #####################
 
@@ -226,18 +226,18 @@ config.eddypro_fo.repair_time = True
 
 # %% id="H7E5LGx1DVsA"
 
-
-###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
-###через команду !gdown, то достаточно заменить название файла
-# config.input_files += ['BiometFy4_2016.csv'] # ['BiometNCT_2011-22.csv']
-
-config.eddypro_biomet.missing_data_codes = ['-9999']
-config.eddypro_biomet.repair_time = True
-
-# TODO 1 OA:ok join all Параметры загрузки файлов full output и Параметры загрузки файла biomet
-
-config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
-config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
+if not config.from_file:
+    ###Запишите название Ваших файлов и путь к ним. Если файлы будут импортированы с google-диска
+    ###через команду !gdown, то достаточно заменить название файла
+    # config.input_files += ['BiometFy4_2016.csv'] # ['BiometNCT_2011-22.csv']
+    
+    config.eddypro_biomet.missing_data_codes = ['-9999']
+    config.eddypro_biomet.repair_time = True
+    
+    # TODO 1 OA:ok join all Параметры загрузки файлов full output и Параметры загрузки файла biomet
+    
+    config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
+    config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
 #####################
 
 # %% [markdown] id="DtxFTNnEfENz"
@@ -272,11 +272,12 @@ cols_to_investigate = [k.lower() for k in cols_to_investigate]
 # ### Фильтрация физическая
 
 # %% id="pPemVdWVbq2E"
-config.calc_nee = True
-
-# Индекс станции для названий выходных файлов, рисунков
-config.site_name = 'auto'
-config.ias_output_version = 'auto'
+if not config.from_file:
+    config.calc_nee = True
+    
+    # Индекс станции для названий выходных файлов, рисунков
+    config.site_name = 'auto'
+    config.ias_output_version = 'auto'
 
 # %% [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные с значением флага больше порога будут исключены.
@@ -287,7 +288,8 @@ qc['h'] = 1  # Если система флагов была 1-9, поправи
 qc['le'] = 1  # Если система флагов была 1-9, поправить
 qc['co2_flux'] = 1  # Если система флагов была 1-9, поправить
 qc['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
-config.qc = qc
+if not config.from_file:
+    config.qc = qc
 
 # %% [markdown] id="QPIFpLN_-8Uf"
 # Параметры фильтрации по метеорологическим переменным, возможные опции:
@@ -332,7 +334,9 @@ filters_meteo['night_le_limits'] = [-50, 20]
 filters_meteo['winter_nee_limits'] = [0, 5]
 filters_meteo['winter_ch4_flux_limits'] = [-1, 1]
 filters_meteo['CH4SS_min'] = 20.
-config.filters.meteo = filters_meteo
+
+if not config.from_file:
+    config.filters.meteo = filters_meteo
  
 
 # %% [markdown] id="utUX7SA4qA_I"
@@ -357,7 +361,9 @@ filters_min_max['swin_1_1_1'] = [0, 1200]  # min
 filters_min_max['ppfd_1_1_1'] = [0, 2400]  # min
 filters_min_max['rg_1_1_1'] = [0, 2400]  # min
 filters_min_max['ch4_flux'] = [-10, 10]
-config.filters.min_max = filters_min_max
+
+if not config.from_file:
+    config.filters.min_max = filters_min_max
 
 # %% [markdown] id="vmyTKbV1RdjD"
 # Параметры фильтрации по отклонению от среднего суточного хода.
@@ -378,7 +384,9 @@ for col in ['h', 'le', 'rh_1_1_1', 'vpd_1_1_1']:
     filters_window[col] = {'sigmas': 7, 'window': 10, 'min_periods': 4}
 for col in ['swin_1_1_1', 'ppfd_1_1_1']:
     filters_window[col] = {'sigmas': 8, 'window': 10, 'min_periods': 4}
-config.filters.window = filters_window
+    
+if not config.from_file:
+    config.filters.window = filters_window
 
 # %% [markdown] id="KF_MGD7pSGre"
 # Параметры фильтрации выше-ниже порога по квантилям (выпадающие строки отфильтровываются)
@@ -388,7 +396,9 @@ filters_quantile = {}
 filters_quantile['co2_flux'] = [0.01, 0.99]
 filters_quantile['ch4_flux'] = [0.01, 0.99]
 filters_quantile['co2_strg'] = [0.01, 0.99]
-config.filters.quantile = filters_quantile
+
+if not config.from_file:
+    config.filters.quantile = filters_quantile
 
 # %% [markdown] id="cPiTN288UaP3"
 # Параметры для фильтрации по отклонению от соседних точек, фильтры MAD и Hampel.
@@ -407,7 +417,9 @@ filters_madhampel['rh_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
 filters_madhampel['vpd_1_1_1'] = {'z': 5.5, 'hampel_window': 10}
 filters_madhampel['swin_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
 filters_madhampel['ppfd_1_1_1'] = {'z': 8.0, 'hampel_window': 10}
-config.filters.madhampel = filters_madhampel
+
+if not config.from_file:
+    config.filters.madhampel = filters_madhampel
 
 # %% [markdown] id="wVF1vDm4EauW"
 # # Загружаем данные
@@ -644,7 +656,8 @@ if config.calc_nee and 'co2_strg' in data.columns:
 
 # %% id="2IQ7W6pslYF-"
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
-config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
+if not config.from_file:
+    config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
 logging.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
 # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
@@ -658,7 +671,7 @@ if config.calc_nee and 'co2_strg' in data.columns:
     if 'nee' not in cols_to_investigate:
         cols_to_investigate.append('nee')
         
-    if not config._load_path:
+    if not config.from_file:
         for filter_config in [config.qc, config.filters.meteo, config.filters.min_max, config.filters.window,
                               config.filters.quantile,
                               config.filters.madhampel]:
@@ -752,10 +765,11 @@ if ('winter_nee_limits' in config.filters.meteo.keys()) or ('winter_ch4_flux_lim
 # %% id="Z_RAYINf67PO"
 if config.has_meteo:
     unroll_filters_db = filters_db.copy()
-    config.filters.winter_date_ranges = [
-        ['01.01.2023 00:00', '26.03.2023 00:00'],
-        ['13.11.2023 00:00', '31.12.2023 00:00'],
-    ]
+    if not config.from_file:
+        config.filters.winter_date_ranges = [
+            ['01.01.2023 00:00', '26.03.2023 00:00'],
+            ['13.11.2023 00:00', '31.12.2023 00:00'],
+        ]
     # date_ranges = []
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
     plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo, config.filters.winter_date_ranges)
@@ -807,10 +821,11 @@ plot_data, tmp_filter = mad_hampel_filter(plot_data, filters_db, config.filters.
 
 # %% id="ADy534At0_fN"
 #  фильтр уберет значения от первого до второго включительно
-config.filters.man_ranges = [
-    # ['1.5.2023 00:00', '1.6.2023 00:00'],
-    # ['25.8.2023 12:00', '25.8.2023 12:00'],
-]
+if not config.from_file:
+    config.filters.man_ranges = [
+        # ['1.5.2023 00:00', '1.6.2023 00:00'],
+        # ['25.8.2023 12:00', '25.8.2023 12:00'],
+    ]
 for man_range in config.filters.man_ranges:
     plot_data, tmp_filter = manual_filter(plot_data, filters_db, col_name="nee", man_range=man_range, value=0,
                                           manual_config=man_range)
@@ -1164,7 +1179,7 @@ from src.reddyproc.preprocess_rg import prepare_rg
 # `output_dir=str(out_dir / 'reddyproc')`
 # %% id="278caec5"
 
-config.reddyproc = RepConfig(
+config_reddyproc = RepConfig(
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
     ustar_threshold_fallback=0.01,
@@ -1195,6 +1210,9 @@ config.reddyproc = RepConfig(
     input_file=str(gl.rep_level3_fpath),
     output_dir=str(gl.out_dir / 'reddyproc'),
 )
+
+if not config.from_file:
+    config.reddyproc = config_reddyproc 
 
 prepare_rg(config.reddyproc)
 ensure_empty_dir(config.reddyproc.output_dir)
@@ -1253,9 +1271,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # %% id="E4rv4ucOX8Yz"
-FFConfig.save(config, gl.out_dir / f'config_{config.site_name}_all.yaml', mode=ConfigStoreMode.ALL_OPTIONS)
-# TODO 1 remove
-FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml', mode=ConfigStoreMode.ONLY_CHANGES)
+FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml')
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,
