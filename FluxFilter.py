@@ -107,8 +107,8 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
-# %load_ext autoreload
-# %autoreload 2
+# #%load_ext autoreload
+# #%autoreload 2
 
 repo_dir = Path('.')
 sys.path.append(str(repo_dir))

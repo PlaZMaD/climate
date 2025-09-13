@@ -5,6 +5,8 @@ During local runs, all functions here are to be mocked or cancelled.
 
 from src.helpers.env_helpers import colab_only, ENV
 
+# TODO 3 %autoreload stopped to work in colab, any replacement?
+
 if ENV.COLAB:
     from google.colab import output
     from google.colab import files
