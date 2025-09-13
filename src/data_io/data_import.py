@@ -38,6 +38,20 @@ SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 # Чем меньше дублирования - тем меньше шансов забыть где-то подправить. Можно таблицы, или мега-конфиг-темплейт?
 
 
+# FluxFiler.py:
+# O: check cell description for logic
+# have_* flags:
+# were not originally a way to store info which col is generated
+# TODO 3 dictionary + optional transform lambda instead? useful to view cols flow,
+# flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
+# E: ok, requires prev section edits too, but low benefit
+
+# TODO 1 0.9.4 problem: vpd imported from FO, but ignored?
+# ['vpd'] in FO (Pa?) have other units from ['vpd_1_1_1'] in biomet (kPa), but script L2-L4 specs is FO name with biomet units?
+# E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
+# DONE OA, V: ias: import VPD_PI and convert (via generalised rename lambda function though)
+
+
 class AutoImportException(Exception):
     pass
 

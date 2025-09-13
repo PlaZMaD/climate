@@ -121,8 +121,7 @@ from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manag
 from src.ffconfig import FFConfig, RepConfig, FFGlobals
 from src.helpers.py_helpers import init_logging
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
-from src.helpers.env_helpers import setup_r_env, ENV
-from src.data_io.data_import_modes import ImportMode
+from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
 from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import try_auto_detect_input_files, import_data
@@ -458,8 +457,8 @@ gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 # %% id="C8lLDYOWzH2d"
 data.columns = data.columns.str.lower()
 if not config.has_meteo:
-    for col in ['rh', 'vpd']:
-        data[col + "_1_1_1"] = data[col]
+    data["rh_1_1_1"] = data['rh']
+    data["vpd_1_1_1"] = data['vpd']
 
 # %% [markdown] id="ipknrLaeByCT"
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
@@ -495,11 +494,7 @@ if data_type_error_flag:
 
 # %% id="mAdYXJFdSRbJ"
 # TODO 1 cleanup main file
-# TODO 3 dictionary + optional transform lambda instead? useful to view cols flow,
-# flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
-# E: ok, requires prev section edits too, but low benefit
-# O: check cell description for logic
-# TODO QE 3 wait, flags were a way to store info which col is not real?
+
 have_rh_flag = False
 have_vpd_flag = False
 have_par_flag = False
@@ -538,8 +533,6 @@ for col_name in data.columns:
     if "rh_1_1_1" in col_name:
         have_rh_flag = True
     if "vpd_1_1_1" in col_name:
-        # TODO OA: 1 data['vpd'] (not data['vpd_1_1_1']) may exist in FO, what is relation? script uses both? (check other todos)
-        # E: task was to use 'vpd_1_1_1'
         have_vpd_flag = True
     if 'swin' in col_name or 'sw_in' in col_name:
         have_swin_flag = True
@@ -1110,7 +1103,7 @@ install_if_missing <- function(package, version, repos) {
 }
 # sink redirect is required to improve ipynb output
 sink(stdout(), type = "message")
-install_if_missing("REddyProc", "1.3.3", repos = 'http://cran.rstudio.com/')
+install_if_missing("REddyProc", "1.3.3", repos = 'https://cran.rstudio.com/')
 sink()
 """
 setup_r_env()

@@ -30,9 +30,9 @@ COLS_IAS_USED_NORENAME_IMPORT = [
     # TODO 1 OA: ALB_1_1_1 must be ignored (WARNING) (vs V: import all possible)
     'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
 
-    # TODO 1 OA, V: import VPD_PI and convert (via generalised rename lambda function though)
-    # 'VPD_1_1_1',
-    # TODO 2 ias: import other _PI cols or not? V: skip, _PI are cols of level > 2 vs OA: import
+    # moved to COLS_IAS_CONVERSION_IMPORT
+    # 'VPD_PI_1_1_1'
+    # TODO QOA 2 ias: import other _PI cols or not? V: skip, _PI are cols of level > 2 vs OA: import
 ]
 COLS_IAS_UNUSED_NORENAME_IMPORT = [
     # Script does not use, but may requre on export or import, for example:
@@ -56,9 +56,6 @@ COLS_IAS_UNUSED_NORENAME_IMPORT = [
     'DBH_1_1_1', 'GPP_PI_1_1_1', 'FNO2_CMB_1_1_1',
     'SR_1_1_1', 'O3_1_1_1', 'REP_1_1_1',
     'PA_1_1_1', 'SG_1_1_1', 'SB_1_1_1',
-
-    # TODO 1 QOA QV what to do
-    'VPD_PI_1_1_1'
 ]
 COLS_IAS_NORENAME_IMPORT = COLS_IAS_UNUSED_NORENAME_IMPORT + COLS_IAS_USED_NORENAME_IMPORT
 COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
@@ -101,8 +98,6 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     '(z-d)/L': 'ZL_1_1_1',
     'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
-    # TODO 1 test - WRONG cols added, not checked (REMOVE? other file?)
-    'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
 
     # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
@@ -120,22 +115,28 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
     'u_star': 'USTAR_1_1_1',
 
-    # TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!! (export - convert back or store?)
-    # E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
-    # previously it was 'VPD_1_1_1': 'VPD_1_1_1',
-    # 'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
+    # TODO QOA 1 seems these were csf cols added, but they are not supposed to be imported from IAS, are they?
+    # 'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
 
     # only case changed, moved to COLS_IAS_NORENAME
     # 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1',
     # 'Pa_1_1_1': 'PA_1_1_1',
     # 'Ts_2_1_1': 'TS_2_1_1', 'Ts_3_1_1': 'TS_3_1_1',
+    
+    # moved to COLS_IAS_CONVERSION_IMPORT
+    # 'VPD_1_1_1': 'VPD_PI_1_1_1'
 }
+
+COLS_IAS_CONVERSION_IMPORT = {'VPD_PI_1_1_1': 'vpd_1_1_1'}
 
 COLS_SCRIPT_TO_IAS_RENAMES = {k.lower(): v for k, v in COLS_SCRIPT_E_TO_IAS_RENAMES.items()}
 COLS_IAS_EXPORT_MAP = COLS_SCRIPT_TO_IAS_RENAMES | COLS_IAS_NORENAME_EXPORT_DICT
+COLS_IAS_CONVERSION_EXPORT = invert_dict(COLS_IAS_CONVERSION_IMPORT)
+
 COLS_IAS_IMPORT_MAP = invert_dict(COLS_IAS_EXPORT_MAP)
+
 
 COLS_IAS_TIME = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 
-COLS_IAS_KNOWN = list(COLS_IAS_IMPORT_MAP.keys()) + COLS_IAS_TIME
+COLS_IAS_KNOWN = list(COLS_IAS_IMPORT_MAP.keys()) + list(COLS_IAS_CONVERSION_IMPORT.keys()) + COLS_IAS_TIME
 IAS_HEADER_DETECTION_COLS = COLS_IAS_KNOWN

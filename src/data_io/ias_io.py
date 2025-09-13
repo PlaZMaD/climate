@@ -6,7 +6,8 @@ import pandas as pd
 
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
-    COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT
+    COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
+    COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, draft_check_ias
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
@@ -41,7 +42,32 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
     return df
 
 
-def process_ias_col_names(df: pd.DataFrame, time_col):
+def import_ias_cols_conversions(df: pd.DataFrame) -> pd.DataFrame:
+    # this is a mess, but expected to be moved to proper class or import table later
+    
+    col = 'VPD_PI_1_1_1' 
+    if col in df.columns:
+        converted_col = COLS_IAS_CONVERSION_IMPORT[col]
+        df[converted_col] = df[col] * 0.1  # hPa to kPa
+        print(f'{col} was imported to {converted_col}')
+        
+    return df
+
+
+def export_ias_cols_conversions(df: pd.DataFrame) -> (pd.DataFrame, [str]):
+    new_cols = []
+    
+    col = 'vpd_1_1_1'
+    if col in df.columns:
+        converted_col = COLS_IAS_CONVERSION_EXPORT[col]
+        df[converted_col] = df[col] * 10
+        new_cols += [converted_col]
+        print(f'{col} was exported to {converted_col}')
+
+    return df, new_cols
+
+
+def import_ias_cols(df: pd.DataFrame, time_col):
     print('Переменные в IAS: \n', df.columns.to_list())
 
     known_ias_cols = COLS_IAS_KNOWN + [time_col]
@@ -58,6 +84,8 @@ def process_ias_col_names(df: pd.DataFrame, time_col):
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unsupported_cols.to_list())
         logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
+
+    df = import_ias_cols_conversions(df)
 
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
@@ -114,7 +142,7 @@ def import_ias(config: FFConfig):
     print('Replacing -9999 to np.nan')
     df.replace(-9999, np.nan, inplace=True)
 
-    df, biomet_cols_index = process_ias_col_names(df, time_col)
+    df, biomet_cols_index = import_ias_cols(df, time_col)
 
     has_meteo = True
     return df, time_col, biomet_cols_index, df.index.freq, has_meteo
@@ -136,9 +164,9 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     time_end = df[time_col] + pd.Timedelta(0.5, 'h')
     df['TIMESTAMP_END'] = time_end.dt.strftime('%Y%m%d%H%M')
 
-    # TODO 1 1.021, 1.042 or 1.000, 1.021, ...?
-    # 1 365, 366, 1 (current), check it's NOT 365, 366, 367
-    # V: not a big deal, but better 1.021 and 367 (by TIMESTAMP_END)
+    # 1 365, 366, 1 or 1 365, 366, 367 ?
+    # V: not a big deal, but better 1.021 and 367 (by TIMESTAMP_END) 
+    # TODO 3 QV from file start or from year start?
     day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
     df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
 
@@ -158,11 +186,15 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     # may be even merge some import and export routines?
     # TODO 3 may be add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
 
-    df = df.fillna(-9999)
-
+    df, new_cols = export_ias_cols_conversions(df)
     df = df.rename(columns=COLS_IAS_EXPORT_MAP)
-    var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values())
-    sort_fixed(var_cols, fix_underscore=True)
+
+    df = df.fillna(-9999)
+    
+    var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
+    # TODO 1 enable back after comparing finished
+    # sort_fixed(var_cols, fix_underscore=True)
+    var_cols.sort()
 
     df = export_ias_prepare_time_cols(df, time_col)
 

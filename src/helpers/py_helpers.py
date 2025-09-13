@@ -95,10 +95,10 @@ def sort_fixed(items: list[str], fix_underscore: bool):
 
 
 def ensure_list(items, transform_func=None) -> list:
-    if not isinstance(items, list):
-        ret = [items]
-    else:
+    if isinstance(items, list):
         ret = items
+    else:
+        ret = [items]
 
     if transform_func:
         return [transform_func(el) for el in ret]
