@@ -145,7 +145,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
 # To tweak any function directly in Colab: 1) run all cells above 2) uncomment and run 3) comment back:
-ipython_edit_function(meteorological_night_filter)
+# ipython_edit_function(meteorological_night_filter)
 
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
@@ -706,25 +706,21 @@ print(plot_data.columns.to_list())
 # ## по флагам качества
 
 # %% id="GGwe7_uU1C8U"
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = qc_filter(plot_data, filters_db, config.qc)
 
 # %% [markdown] id="M_gKSTNYyzjS"
 # ## по порогу CO2SS и CH4SS
 
 # %% id="viq7BZue9Ett"
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = meteorological_co2ss_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% id="5RrPfxfiJGhN"
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = meteorological_ch4ss_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="qwqVDeH6y73_"
 # ## по допустимым значениям RH
 
 # %% id="11isfvNZ9FGu"
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = meteorological_rh_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="oSX2h9QzzFkT"
@@ -732,7 +728,6 @@ plot_data, filters_db = meteorological_rh_filter(plot_data, filters_db, config.f
 
 # %% id="jz696mc09FlB"
 if config.has_meteo:
-    unroll_filters_db = filters_db.copy()
     plot_data, filters_db = meteorological_rain_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="Xy2y00P1zJtZ"
@@ -740,12 +735,10 @@ if config.has_meteo:
 
 # %% id="ED_Qh6TS0Qkc"
 if config.has_meteo:
-    unroll_filters_db = filters_db.copy()
     plot_data, filters_db = meteorological_night_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% id="X3Vguu8MK635"
 if config.has_meteo:
-    unroll_filters_db = filters_db.copy()
     plot_data, filters_db = meteorological_day_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="fzfTJdNe68Eu"
@@ -781,7 +774,6 @@ if config.has_meteo:
 
 # %% id="FyJaM1zC1DDg"
 # if config.has_meteo:
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min_max)
 
 # %% [markdown] id="j62U1dw8sTEm"
@@ -789,14 +781,12 @@ plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min
 
 # %% id="aNQ4XDK01DME"
 # if config.has_meteo:
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = quantile_filter(plot_data, filters_db, config.filters.quantile)
 
 # %% [markdown] id="7Sg76Bwasnb4"
 # ## по отклонению от среднего хода
 
 # %% id="uoDvHhoQ2MMe"
-unroll_filters_db = filters_db.copy()
 plot_data, filters_db = std_window_filter(plot_data, filters_db, config.filters.window)
 
 # %% [markdown] id="iXl5RdINss9D"
@@ -822,13 +812,6 @@ if not config.from_file:
 for man_range in config.filters.man_ranges:
     plot_data, tmp_filter = manual_filter(plot_data, filters_db, col_name="nee", man_range=man_range, value=0,
                                           manual_config=man_range)
-
-# %% [markdown] id="APyqyqSEHx3K"
-# ## На случай необходимости откатить последний фильтр
-# Не работает с повторно-запущенными несколько раз
-
-# %% id="IYmSC2gpH4zo"
-# filters_db = unroll_filters_db.copy()
 
 # %% [markdown] id="quGbtDaJ_gID"
 # ## Сводная таблица результатов фильтрации

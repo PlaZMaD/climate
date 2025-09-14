@@ -8,6 +8,8 @@ from src.plots import get_column_filter
 
 
 def min_max_filter(data_in, filters_db_in, config):
+    # #@unroll_filters_db
+    
     data = data_in.copy()
     filters_db = filters_db_in.copy()
     for col, limits in config.items():
@@ -43,6 +45,8 @@ def min_max_filter(data_in, filters_db_in, config):
 
 
 def qc_filter(data_in, filters_db_in, config):
+    # #@unroll_filters_db
+    
     data = data_in.copy()
     filters_db = filters_db_in.copy()
 
@@ -73,6 +77,8 @@ def qc_filter(data_in, filters_db_in, config):
 
 
 def std_window_filter(data_in, filters_db_in, config):
+    # #@unroll_filters_db
+    
     data = data_in.copy()
     filters_db = filters_db_in.copy()
     for col, lconfig in config.items():
@@ -171,6 +177,8 @@ def meteorological_rh_filter(
         data_in, filters_db_in, config
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
+    # #@unroll_filters_db
+    
     file_freq = data_in.index.freq
     data = data_in.copy()
     filters_db = filters_db_in.copy()
@@ -206,6 +214,8 @@ def meteorological_night_filter(
         data_in, filters_db_in, config
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
+    # #@unroll_filters_db
+    
     if "swin_1_1_1" not in data_in.columns:
         logging.info(f"meteorological_night_filter not applied, no SWIN found  \n")
         return data_in, filters_db_in
@@ -260,6 +270,8 @@ def meteorological_night_filter(
 
 
 def meteorological_day_filter(data_in, filters_db_in, config):  # , file_freq='30T'):
+    # #@unroll_filters_db
+    
     if "swin_1_1_1" not in data_in.columns:
         logging.info(f"meteorological_day_filter not applied, no SWIN found  \n")
         return data_in, filters_db_in
@@ -299,6 +311,7 @@ def meteorological_co2ss_filter(
         data_in, filters_db_in, config
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
+    # #@unroll_filters_db
     file_freq = data_in.index.freq
     if 'CO2SS_min' not in config.keys():
         return data_in, filters_db_in
@@ -336,6 +349,8 @@ def meteorological_ch4ss_filter(
         data_in, filters_db_in, config
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
+    # #@unroll_filters_db
+    
     file_freq = data_in.index.freq
     if 'CH4SS_min' not in config.keys():
         return data_in, filters_db_in
@@ -372,6 +387,8 @@ def meteorological_rain_filter(
         data_in, filters_db_in, config
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
+    # #@unroll_filters_db
+    
     file_freq = data_in.index.freq
     data = data_in.copy()
     filters_db = filters_db_in.copy()
@@ -427,6 +444,8 @@ def meteorological_rain_filter(
 
 
 def quantile_filter(data_in, filters_db_in, config):
+    # #@unroll_filters_db
+    
     if len(config) == 0:
         return data_in, filters_db_in
 

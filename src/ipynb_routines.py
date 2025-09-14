@@ -26,7 +26,17 @@ from src.helpers.io_helpers import ensure_empty_dir
 # TODO 1 refactor: keep empty lines
 
 # Fluxfilter.py:
-# TODO 1 QOA unroll_filters_db = filters_db.copy() how this was used (why not simply return to previous cell)?
+# TODO 2 QE unroll_filters_db = filters_db.copy() how this was used (why not re-run cell)? 
+# OA: remove (wrap into @unroll_filters_db if used)
+
+# TODO 2 QOA commas?
+'''
+filters_min_max = {
+    'co2_flux': [-40, 40],
+    'co2_strg': [-20, 20],
+    ...
+}
+'''
 
 # DONE repair 0.9.2 - 0.9.5
 
