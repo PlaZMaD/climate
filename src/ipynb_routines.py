@@ -43,6 +43,9 @@ filters_min_max = {
 # TODO 2 cuts print middle part on 0.9.4 Chr
 # print("Какая часть данных от общего количества (в %) была отфильтрована:")
 
+# TODO 1 QV add ias description in the intro (or idea was to cut more, not to expand?)
+# TODO 1 QOA add csf description in the intro
+
 
 # DONE repair 0.9.2 - 0.9.5
 # DONE ensure no new lines anymore + spellcheck
