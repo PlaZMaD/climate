@@ -23,8 +23,10 @@ SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 #   biomet - must be resampled, can not match at all
 
 # TODO 1 test if only WARNING for unknows
-# - OA: logging.critical() for unknown cols, don't error
+# - OA, V: logging.critical() for unknown cols, don't error
 #   V: but in IAS, require by specification (due to check instrument)
+
+# V: newly generated cols can be considered same as if imported for simplicity
 
 # - mid-script biomet is replaced with "meteo params" or just col set OA & V:ok
 # - OA: 2-4 levels = biomet, eddy (are dupes are possible which damage that way to define specification?)
@@ -147,7 +149,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         mode = possible_input_modes[0]
     else:
         raise AutoImportException(f'Multiple input modes possible: {possible_input_modes}, cannot auto pick.\n'
-                                  "Remove some files or specify manually config['path'].")
+                                  "Remove some files or specify manually config.input_files = {...} .")
 
     return mode
 

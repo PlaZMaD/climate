@@ -140,7 +140,6 @@ ensure_empty_dir(gl.out_dir)
 colab_no_scroll()
 colab_enable_custom_widget_manager()
 setup_plotly(gl.out_dir)
-# TODO 1 ensure no new lines anymore + spellcheck
 init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
@@ -464,7 +463,6 @@ if not config.has_meteo:
 # Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
 
 # %% id="8LawdKUbB1_m"
-# TODO 1 ppfd_in_1_1_1 is renamed to ppfd_1_1_1 on import; (exports?) OA: 2-4 specification is ppfd_1_1_1
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
                 'rh_1_1_1', 'vpd_1_1_1', 'rg_1_1_1', 'p_rain_1_1_1',
                 'co2_signal_strength_7500_mean', 'CO2SS'.lower(), 'co2_signal_strength',
@@ -493,8 +491,6 @@ if data_type_error_flag:
 #
 
 # %% id="mAdYXJFdSRbJ"
-# TODO 1 cleanup main file
-
 have_rh_flag = False
 have_vpd_flag = False
 have_par_flag = False
@@ -504,48 +500,44 @@ have_p_flag = False
 have_pr_flag = False
 have_ppfd_flag = False
 
-for col_name in data.columns:
-    # TODO 2 which renames are specific for eddypro load and should not be part of main script anymore?
-    # if moved, check ias import-export handling
-    # or to generalised preprocess check?
+for col in data.columns:
     # Eddypro renames
-    if 'u*' in col_name:
-        print(f"renaming {col_name} to u_star")
-        data = data.rename(columns={col_name: 'u_star'})
-    if 'co2_signal_strength' in col_name:
-        print(f"renaming {col_name} to co2_signal_strength")
-        data = data.rename(columns={col_name: 'co2_signal_strength'})
-    if col_name in ['co2_signal_strength_7500_mean', 'CO2SS'.lower()] or 'co2_signal_strength' in col_name:
-        print(f"renaming {col_name} to co2_signal_strength")
-        data = data.rename(columns={col_name: 'co2_signal_strength'})
-    if col_name in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()] or 'ch4_signal_strength' in col_name:
-        print(f"renaming {col_name} to ch4_signal_strength")
-        data = data.rename(columns={col_name: 'ch4_signal_strength'})
+    if col == 'u*':
+        print(f"renaming {col} to u_star")
+        data = data.rename(columns={col: 'u_star'})
+    if 'co2_signal_strength' in col:
+        print(f"renaming {col} to co2_signal_strength")
+        data = data.rename(columns={col: 'co2_signal_strength'})
+    if col in ['co2_signal_strength_7500_mean', 'CO2SS'.lower()] or 'co2_signal_strength' in col:
+        print(f"renaming {col} to co2_signal_strength")
+        data = data.rename(columns={col: 'co2_signal_strength'})
+    if col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()] or 'ch4_signal_strength' in col:
+        print(f"renaming {col} to ch4_signal_strength")
+        data = data.rename(columns={col: 'ch4_signal_strength'})
 
     # Biomet renames
-    if 'ppfd_in_1_1_1' in col_name:
-        print(f"renaming {col_name} to ppfd_1_1_1")
-        data = data.rename(columns={col_name: 'ppfd_1_1_1'})
-    if 'sw_in_1_1_1' in col_name:
-        print(f"renaming {col_name} to swin_1_1_1")
-        data = data.rename(columns={col_name: 'swin_1_1_1'})
+    if col == 'ppfd_in_1_1_1':
+        print(f"renaming {col} to ppfd_1_1_1")
+        data = data.rename(columns={col: 'ppfd_1_1_1'})
+    if col == 'sw_in_1_1_1':
+        print(f"renaming {col} to swin_1_1_1")
+        data = data.rename(columns={col: 'swin_1_1_1'})
 
-    if "rh_1_1_1" in col_name:
+    if col == "rh_1_1_1":
         have_rh_flag = True
-    if "vpd_1_1_1" in col_name:
+    if col == "vpd_1_1_1":
         have_vpd_flag = True
-    if 'swin' in col_name or 'sw_in' in col_name:
+    if col in ['swin_1_1_1', 'sw_in_1_1_1']:
         have_swin_flag = True
-    if 'par' in col_name:
+    if col == 'par':
         have_par_flag = True
-    if 'rg_1_1_1' in col_name:
+    if col == 'rg_1_1_1':
         have_rg_flag = True
-    # TODO QE 1 false fired on 't_dp_1_1_1', was <'p_1_1_1' in col_name> instead of <'p_1_1_1' == col_name> in some cases intentional?
-    if 'p_1_1_1' == col_name:
+    if col == 'p_1_1_1':
         have_p_flag = True
-    if 'p_rain_1_1_1' in col_name:
+    if col == 'p_rain_1_1_1':
         have_pr_flag = True
-    if 'ppfd_1_1_1' in col_name:
+    if col == 'ppfd_1_1_1':
         have_ppfd_flag = True
 
 if not (have_ppfd_flag or have_swin_flag):
@@ -591,8 +583,7 @@ else:
         data['vpd_1_1_1'] = ehpa - (ehpa * data['rh_1_1_1'] / 100)
     if not have_rh_flag:
         # TODO QOA 1 possibly an error
-        # E: seems, do edit print
-        # OA: check telegram for the formula
+        # OA: check tg for the formula
         print("calculating rh_1_1_1 from vpd_1_1_1 and air temperature")
         data['rh_1_1_1'] = ehpa
 
@@ -604,17 +595,17 @@ else:
     if not have_swin_flag:
         data['swin_1_1_1'] = 0.47 * data['par']
 
-for col_name in ['co2_signal_strength_7500_mean', 'CO2SS'.lower()]:
+for col in ['co2_signal_strength_7500_mean', 'CO2SS'.lower()]:
     # print(data.columns.to_list())
-    if col_name in data.columns.to_list():
-        print(f"renaming {col_name} to co2_signal_strength")
-        data = data.rename(columns={col_name: 'co2_signal_strength'})
+    if col in data.columns.to_list():
+        print(f"renaming {col} to co2_signal_strength")
+        data = data.rename(columns={col: 'co2_signal_strength'})
 
-for col_name in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
+for col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
     # print(data.columns.to_list())
-    if col_name in data.columns.to_list():
-        print(f"renaming {col_name} to ch4_signal_strength")
-        data = data.rename(columns={col_name: 'ch4_signal_strength'})
+    if col in data.columns.to_list():
+        print(f"renaming {col} to ch4_signal_strength")
+        data = data.rename(columns={col: 'ch4_signal_strength'})
 
 if not config.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
@@ -830,7 +821,7 @@ for key, filters in filters_db.items():
             pl_data = pl_data.query(f"{filter_name}==1")
             # print(filter_name, filtered_amount, len(pl_data.index) - old_val)
 fdf_df = pd.DataFrame(all_filters)
-# TODO 2 cuts print middle part on 0.9.4 Chr
+
 print("Какая часть данных от общего количества (в %) была отфильтрована:")
 print(fdf_df.iloc[1] / len(plot_data) * 100)
 logging.info("Какая часть данных от общего количества (в %) была отфильтрована:")
@@ -936,11 +927,6 @@ if config.has_meteo:
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-    # TODO 1 test more comparisons after 1y fixed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
-
-    # TODO 1 QV QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1' be exported here? 'rg_1_1_1'
-    #  check eddypro specification, also 'nee'  'par' 'rg_1_1_1'
-    #  V: _PI are generated, lvl+ (don't export, but import?)
 
     export_ias(gl.out_dir, config.site_name, config.ias_output_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])
@@ -1009,8 +995,8 @@ for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
     if not any(col_pos):
         continue
     else:
-        real_col_name = basic_df.columns[np.argmax(col_pos)]
-        basic_df[col] = basic_df[real_col_name]
+        real_col = basic_df.columns[np.argmax(col_pos)]
+        basic_df[col] = basic_df[real_col]
 
 # Фильтрованные потоки
 for col in ['nee', 'h', 'le', 'co2_strg', 'ch4_flux']:

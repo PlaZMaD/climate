@@ -29,6 +29,8 @@ from src.helpers.io_helpers import ensure_empty_dir
 # TODO 2 QE unroll_filters_db = filters_db.copy() how this was used (why not re-run cell)? 
 # OA: remove (wrap into @unroll_filters_db if used)
 
+# TODO 1 test more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+
 # TODO 2 QOA commas?
 '''
 filters_min_max = {
@@ -38,7 +40,12 @@ filters_min_max = {
 }
 '''
 
+# TODO 2 cuts print middle part on 0.9.4 Chr
+# print("Какая часть данных от общего количества (в %) была отфильтрована:")
+
+
 # DONE repair 0.9.2 - 0.9.5
+# DONE ensure no new lines anymore + spellcheck
 
 if ENV.LOCAL:
     # reducing plotly log spam

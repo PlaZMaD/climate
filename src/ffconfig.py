@@ -69,7 +69,7 @@ class FiltersConfig(FFBaseModel):
     man_ranges: list[list[str]] = None
 
 
-# TODO 1 yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
+# TODO 1 V: yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
 # all settings by default, partial mode optional (or commented out?) if not default, comment?
 class FFConfig(BaseConfig):
     version: str = None

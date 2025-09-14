@@ -5,15 +5,18 @@ current renames EDDYPRO? -> SCRIPT to check
 'sw_in_1_1_1' -> swin_1_1_1"
 '''
 
-# specifically mark cols used in the script and unused?
+# which cols used in the script and unused?
 # currently 4 column names variations are possible:
 # IAS file, EddyPro file, notebook import, export (after all the processing)
 
-# V: import all possible, even if it may prevent expected calculations
+# V: import all possible, even if it may prevent expected calculations (add warning on extra cols)
 # OA: imported cols for ias must be exported same way (except ones which are generated) (existed on import and generated cases?)
 
 # TODO 1 all new generated cols will still be exported to ias OA:ok V:ok
 # test P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
+
+# TODO 2 QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1', 'par' be imported from ias?
+#  V: _PI are generated, lvl+ (don't export, but import?)
 
 from src.helpers.py_helpers import invert_dict
 
@@ -27,7 +30,7 @@ COLS_IAS_USED_NORENAME_IMPORT = [
     'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
     'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
 
-    # TODO 1 OA: ALB_1_1_1 must be ignored (WARNING) (vs V: import all possible)
+    # TODO 1 OA: ALB_1_1_1 must be ignored (WARNING) (opposite of V: import it)
     'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
 
     # moved to COLS_IAS_CONVERSION_IMPORT

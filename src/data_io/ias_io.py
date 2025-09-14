@@ -100,8 +100,8 @@ def import_ias(config: FFConfig):
     # TODO 2 move to ipynb?
     set_lang('ru')
 
-    # TODO 1 implement merge for iases (1-2) V: todo priority merge 1, split 1-2
-    # TODO 2 implement custom split of ias on export (month, year, all years)
+    # TODO 1 V: implement merge for any amount of iases
+    # TODO 2 V: implement custom split of ias on export (month, year, all years)
     if len(config.input_files) != 1:
         raise NotImplemented(
             'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')

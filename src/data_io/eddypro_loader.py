@@ -86,7 +86,12 @@ def datetime_converter(df: pd.DataFrame,
 
     return res
 
+# TODO 1 in the ipynb, u_star is not yet renamed at the next line?
+# cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
+# ppfd_in_1_1_1 will be renamed to ppfd_1_1_1, 
 
+# TODO 2 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
+# if moved, check ias import-export handling stands (or solve with generalised col names preprocess check?)
 def load_eddypro(config: FFConfig):
     c_fo = config.eddypro_fo
     c_bm = config.eddypro_biomet
