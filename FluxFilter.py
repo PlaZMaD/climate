@@ -155,6 +155,41 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # To tweak any function directly in Colab: 1) run all cells above 2) uncomment and run 3) comment back:
 # ipython_edit_function(meteorological_night_filter)
 
+
+# %% [markdown] id="wVF1vDm4EauW"
+# # Загружаем данные
+
+# %% [markdown] id="LV9FvvtnVqdN"
+# **Необходимо поменять:**
+#
+# Возможны два основных варианта загрузки файлов:  
+# - перетаскиванием или загрузкой через меню браузера  
+# - загрузкой с google-диска по ссылке  
+# 
+# В режиме браузера этот раздел не используется. Необходимо закомментировать или отключить две команды по умолчанию: поменять  
+# `!gdown ...` на `# !gdown ...`.  
+# 
+# При загрузке с google-диска после !gdown вставьте символы после d/ и до следующего / из публичной ссылки на файл, лежащий на google-диске. К примеру, если ссылка
+# https://drive.google.com/file/d/1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB/view?usp=sharing,
+# то команда будет записана как  
+# `!gdown 1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB`
+#
+# `#Загрузка файла full output`
+# Здесь нужно прописать символы из ссылки на файл full output
+#
+# `#Загрузка файла biomet`
+# Здесь нужно прописать символы из ссылки на файл biomet
+
+# %% id="KMu4IqY45HG6"
+
+# Загрузка файла full output
+# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
+# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
+
+# Загрузка файла biomet
+# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
+# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 
@@ -406,31 +441,7 @@ if not config.from_file:
     config.filters.madhampel = filters_madhampel
 
 # %% [markdown] id="wVF1vDm4EauW"
-# # Загружаем данные
-
-# %% [markdown] id="LV9FvvtnVqdN"
-# **Необходимо поменять:**
-#
-# После !gdown вставьте символы после d/ и до следующего / из публичной ссылки на файл, лежащий на google-диске. К примеру, если ссылка
-# https://drive.google.com/file/d/1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB/view?usp=sharing,
-# то команда будет записана как  
-# `!gdown 1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB`
-#
-# `#Загрузка файла full output`
-# Здесь нужно прописать символы из ссылки на файл full output
-#
-# `#Загрузка файла biomet`
-# Здесь нужно прописать символы из ссылки на файл biomet
-
-# %% id="KMu4IqY45HG6"
-# TODO 1 try move above load? OA:+
-# Загрузка файла full output
-# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
-# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
-
-# Загрузка файла biomet
-# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
-# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+# # Импорт и проверка данных
 
 # %% id="Xw5TapK10EhR"
 config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo = try_auto_detect_input_files(
