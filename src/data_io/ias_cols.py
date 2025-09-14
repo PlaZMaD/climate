@@ -1,9 +1,3 @@
-# TODO 3 consider a table with all simple col ops instead of just untransparent import and export transforms
-# problem: Excel files are not ransparent for VCS, use yaml? csv? ...?
-# handling unit/str conversions between import and export if name is same?
-# E: unclear if table will help
-#  ias check, ias export, ias import, initial script renames, renames during script run (required for export)
-
 '''
 current renames EDDYPRO? -> SCRIPT to check
 'u*' -> u_star"
@@ -11,9 +5,18 @@ current renames EDDYPRO? -> SCRIPT to check
 'sw_in_1_1_1' -> swin_1_1_1"
 '''
 
-# specifically mark cols used in the script and unused?
+# which cols used in the script and unused?
 # currently 4 column names variations are possible:
 # IAS file, EddyPro file, notebook import, export (after all the processing)
+
+# V: import all possible, even if it may prevent expected calculations (add warning on extra cols)
+# OA: imported cols for ias must be exported same way (except ones which are generated) (existed on import and generated cases?)
+
+# TODO 1 all new generated cols will still be exported to ias OA:ok V:ok
+# test P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
+
+# TODO 2 QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1', 'par' be imported from ias?
+#  V: _PI are generated, lvl+ (don't export, but import?)
 
 from src.helpers.py_helpers import invert_dict
 
@@ -22,26 +25,24 @@ COLS_IAS_USED_NORENAME_IMPORT = [
     'WD_1_1_1',
     'TS_1_1_1', 'TS_2_1_1', 'TS_3_1_1',
 
-    # TODO 1 QOA QV all new generated cols will still be exported to ias, is this desired?
-    #  for example, P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
     'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
     'P_1_1_1',  # 'P_1_1_1' <- 'P_1_1_1' or 'P_RAIN_1_1_1'
-
-    # TODO 1 QV QOA was not in the original import list, I added
-    'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
     'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
     'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
 
+    # TODO 1 OA: ALB_1_1_1 must be ignored (WARNING) (opposite of V: import it)
+    'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
 
-    # TODO 1 QV QOA was in instruction list, but not in IAS specification, only VPD_PI_* is
-    # 'VPD_1_1_1',
+    # moved to COLS_IAS_CONVERSION_IMPORT
+    # 'VPD_PI_1_1_1'
+    # TODO QOA 2 ias: import other _PI cols or not? V: skip, _PI are cols of level > 2 vs OA: import
 ]
 COLS_IAS_UNUSED_NORENAME_IMPORT = [
     # Script does not use, but may requre on export or import, for example:
     # IAS import (rename to lower) -> script processing -> IAS export (rename back to upper)
     # note: _1_1_1 can be dynamic, but will make occurence search bad
     'H2O_STR_1_1_1', 'FH2O_1_1_1',
-    'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1', 
+    'TS_1_2_1', 'TS_1_3_1', 'TS_1_4_1',
     'T_DP_1_1_1', 'U_SIGMA_1_1_1', 'V_SIGMA_1_1_1', 'WTD_1_1_1', 'W_SIGMA_1_1_1',
     'FCH4_CMB_1_1_1', 'SPEC_PRI_REF_OUT_1_1_1', 'SPEC_PRI_TGT_IN_1_1_1', 'THROUGHFALL_1_1_1', 'MTCI_1_1_1',
     'FO3_1_1_1',
@@ -58,16 +59,12 @@ COLS_IAS_UNUSED_NORENAME_IMPORT = [
     'DBH_1_1_1', 'GPP_PI_1_1_1', 'FNO2_CMB_1_1_1',
     'SR_1_1_1', 'O3_1_1_1', 'REP_1_1_1',
     'PA_1_1_1', 'SG_1_1_1', 'SB_1_1_1',
-
-    # TODO 1 QOA QV what to do
-    'VPD_PI_1_1_1'
 ]
 COLS_IAS_NORENAME_IMPORT = COLS_IAS_UNUSED_NORENAME_IMPORT + COLS_IAS_USED_NORENAME_IMPORT
 COLS_IAS_NORENAME_EXPORT = COLS_IAS_NORENAME_IMPORT
 
 # COLS_IAS_UNUSED_NORENAME_IMPORT_DICT = {k: k.lower() for k in COLS_IAS_NORENAME_EXPORT}
 COLS_IAS_NORENAME_EXPORT_DICT = {k.lower(): k for k in COLS_IAS_NORENAME_EXPORT}
-
 
 # TODO 3 possible data integrity check to implement - from old ias instructions
 # во входных биометах "Rg_1_1_1" должно быть тождествено равно "Swin_1_1_1", это то же самое.
@@ -104,15 +101,15 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     '(z-d)/L': 'ZL_1_1_1',
     'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
-    # TODO 1 test - cols added, not checked
-    'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
 
     # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
+
+    # TODO QOA 1 ch4_signal_strength not in eddy or any specification? E: -> OA
     # IAS: CH4_RSSI_1_1_1 (%) CH4 Received Signal Strength Indicator
     # IAS: CO2_STR (-) СО2 signal strength
     # FF manual: CH42SS (CH4 Signal Strength или RSSI)	(-) <- does not match
-    # TODO QOA ch4_signal_strength not in eddy or any specification?
+
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
 
@@ -121,22 +118,28 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
     'u_star': 'USTAR_1_1_1',
 
-    # TODO QV QOA 1 is VPD in script same as VPD_PI in IAS? different units !!! (export - convert back or store?)
-    # E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
-    # previously it was 'VPD_1_1_1': 'VPD_1_1_1',
-    # 'VPD_1_1_1': 'VPD_PI_1_1_1'  # 'VPD_1_1_1' <- 'RH_1_1_1' or ~'air_temperature'
+    # TODO QOA 1 seems these were csf cols added, but they are not supposed to be imported from IAS, are they?
+    # 'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
 
     # only case changed, moved to COLS_IAS_NORENAME
     # 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1',
     # 'Pa_1_1_1': 'PA_1_1_1',
     # 'Ts_2_1_1': 'TS_2_1_1', 'Ts_3_1_1': 'TS_3_1_1',
+    
+    # moved to COLS_IAS_CONVERSION_IMPORT
+    # 'VPD_1_1_1': 'VPD_PI_1_1_1'
 }
+
+COLS_IAS_CONVERSION_IMPORT = {'VPD_PI_1_1_1': 'vpd_1_1_1'}
 
 COLS_SCRIPT_TO_IAS_RENAMES = {k.lower(): v for k, v in COLS_SCRIPT_E_TO_IAS_RENAMES.items()}
 COLS_IAS_EXPORT_MAP = COLS_SCRIPT_TO_IAS_RENAMES | COLS_IAS_NORENAME_EXPORT_DICT
+COLS_IAS_CONVERSION_EXPORT = invert_dict(COLS_IAS_CONVERSION_IMPORT)
+
 COLS_IAS_IMPORT_MAP = invert_dict(COLS_IAS_EXPORT_MAP)
+
 
 COLS_IAS_TIME = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 
-COLS_IAS_KNOWN = list(COLS_IAS_IMPORT_MAP.keys()) + COLS_IAS_TIME
+COLS_IAS_KNOWN = list(COLS_IAS_IMPORT_MAP.keys()) + list(COLS_IAS_CONVERSION_IMPORT.keys()) + COLS_IAS_TIME
 IAS_HEADER_DETECTION_COLS = COLS_IAS_KNOWN

@@ -94,11 +94,11 @@ def sort_fixed(items: list[str], fix_underscore: bool):
     items.sort(key=key)
 
 
-def ensure_list(items: list, transform_func=None) -> list:
-    if not isinstance(items, list):
-        ret = [items]
-    else:
+def ensure_list(items, transform_func=None) -> list:
+    if isinstance(items, list):
         ret = items
+    else:
+        ret = [items]
 
     if transform_func:
         return [transform_func(el) for el in ret]
@@ -145,3 +145,33 @@ def str_to_func(code: str) -> Callable:
     func = list(ns.values())[1]
     assert callable(func)
     return func
+
+
+def gen_enum_info(enum_class) -> str:
+    return ", ".join(m.name for m in enum_class)
+
+
+def dict_remove_matches(inplace: dict, match: dict, keep_keys: list[str]):
+    for k in match:
+        if k not in inplace:
+            continue
+        if k in keep_keys:
+            continue
+            
+        if inplace[k] == match[k]:
+            del inplace[k]
+
+
+def dict_replace(inplace: dict, replace: dict, skip_keys: list[str]):
+    for k in inplace:
+        if k not in replace:
+            continue
+        if k in skip_keys:
+            continue
+            
+        if inplace[k] != replace[k]:
+            inplace[k] = replace[k]
+
+
+def is_protected_method(name):
+    return name.startswith("_")

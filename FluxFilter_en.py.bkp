@@ -1459,7 +1459,7 @@ if calc_nee and 'co2_strg' in data.columns:
       filter_config['nee'] = filter_config['co2_flux']
 
 # %% [markdown] id="mUgwuaFYribB"
-# #Overview of statistics for the columns of interest
+# # Overview of statistics for the columns of interest
 
 # %% id="dhcplCMbXtkK"
 cols_to_investigate = [p for p in cols_to_investigate if p in data.columns]
@@ -2180,7 +2180,7 @@ eio.prepare_images_safe()
 ig.arc_exclude_files = eio.img_proc.raw_img_duplicates
 
 eproc_arc_path = Path('output/reddyproc') / Path(ig.eddyproc.out_info.fnames_prefix + '.zip')
-create_archive(arc_path=eproc_arc_path, folders='output/reddyproc', top_folder='output/reddyproc',
+create_archive(arc_path=eproc_arc_path, dirs='output/reddyproc', top_dir='output/reddyproc',
                include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=eio.img_proc.raw_img_duplicates)
 
 colab_add_download_button(eproc_arc_path, 'Download eddyproc outputs')
@@ -2203,6 +2203,6 @@ from pathlib import Path
 import src.ipynb_globals as ig
 
 arc_path=Path('output') / 'FluxFilter_output.zip'
-create_archive(arc_path=arc_path, folders=['output', 'output/reddyproc'], top_folder='output',
+create_archive(arc_path=arc_path, dirs=['output', 'output/reddyproc'], top_dir='output',
                include_fmasks=['*.png', '*.csv', '*.txt', '*.log'], exclude_files=ig.arc_exclude_files)
 colab_add_download_button(arc_path, 'Download outputs')

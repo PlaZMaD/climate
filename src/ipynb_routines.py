@@ -7,6 +7,7 @@ if ENV.IPYNB:
     import matplotlib.pyplot as plt
 """
 import logging
+from inspect import getsource
 from pathlib import Path
 from warnings import warn
 
@@ -19,12 +20,35 @@ from plotly.io import renderers
 
 from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
-from src.helpers.io_helpers import ensure_empty_folder
-
+from src.helpers.io_helpers import ensure_empty_dir
 
 # TODO 2 create git readme and changelog for releases
-# TODO 1 QOA QV have you shared 0.9.5? move to 0.9.4en + edit 0.9.2 source carefully?
+# TODO 1 refactor: keep empty lines
 
+# Fluxfilter.py:
+# TODO 2 QE unroll_filters_db = filters_db.copy() how this was used (why not re-run cell)? 
+# OA: remove (wrap into @unroll_filters_db if used)
+
+# TODO 1 test more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
+
+# TODO 2 QOA commas?
+'''
+filters_min_max = {
+    'co2_flux': [-40, 40],
+    'co2_strg': [-20, 20],
+    ...
+}
+'''
+
+# TODO 2 cuts print middle part on 0.9.4 Chr
+# print("Какая часть данных от общего количества (в %) была отфильтрована:")
+
+# TODO 1 QV add ias description in the intro (or idea was to cut more, not to expand?)
+# TODO 1 QOA add csf description in the intro
+
+
+# DONE repair 0.9.2 - 0.9.5
+# DONE ensure no new lines anymore + spellcheck
 
 if ENV.LOCAL:
     # reducing plotly log spam
@@ -91,6 +115,14 @@ def ipython_enable_word_wrap():
     print("Word wrap in output is enabled.")
 
 
+@ipython_only
+def ipython_edit_function(func):
+    code = getsource(func)
+    # TODO 2 get_next_input?
+    get_ipython().set_next_input(code, replace=False)
+    print('Reminder: disable ipython_edit_function() after using once.')
+
+
 def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
     if ENV.IPYNB:
         svg_text = self.to_image(format='svg')
@@ -120,7 +152,7 @@ def setup_plotly(out_dir):
         #     plotly==6.2.0
 
         local_dir = out_dir / 'local' / 'plots'
-        ensure_empty_folder(local_dir)
+        ensure_empty_dir(local_dir)
 
         go.Figure.show = lambda self, **args: _plotly_show_override(self, local_dir, **args)
         print(f"Pure py plotly renderer is set to: {renderers.default}.")

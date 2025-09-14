@@ -10,7 +10,6 @@ from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
 from src.ffconfig import FFConfig
-from src.helpers.io_helpers import ensure_path
 from src.helpers.pd_helpers import df_ensure_cols_case
 
 
@@ -28,8 +27,9 @@ def check_csf_col_names(df: pd.DataFrame):
 
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)
     if len(unused_cols) > 0:
-        # TODO 1 QOA log - english only? (print may be too?)
-        # TODO 1 localize properly, remove prints (logging.* goes to stdout too)
+        # TODO 2 localize properly, remove prints (logging.* goes to stdout too)
+        # log - english only? OA: ok
+        # TODO QOA 2 print may be too?
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
         logging.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))

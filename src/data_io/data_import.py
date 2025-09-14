@@ -17,6 +17,43 @@ from src.helpers.py_helpers import ensure_list
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
 
+# info on all imports:
+
+# - full output, csf, ias = always 30 min
+#   biomet - must be resampled, can not match at all
+
+# TODO 1 test if only WARNING for unknows
+# - OA, V: logging.critical() for unknown cols, don't error
+#   V: but in IAS, require by specification (due to check instrument)
+
+# V: newly generated cols can be considered same as if imported for simplicity
+
+# - mid-script biomet is replaced with "meteo params" or just col set OA & V:ok
+# - OA: 2-4 levels = biomet, eddy (are dupes are possible which damage that way to define specification?)
+
+
+# TODO 3 consider a table with all simple col ops instead of just untransparent import and export transforms
+# problem: Excel vs VCS, use yaml table? csv? ...?
+# handling unit/str conversions between import and export if name is same?
+# ias check, ias export, ias import, initial script renames, renames during script run (required for export)
+# E: unclear if table will help, people may damage it on edits
+# Чем меньше дублирования - тем меньше шансов забыть где-то подправить. Можно таблицы, или мега-конфиг-темплейт?
+
+
+# FluxFiler.py:
+# O: check cell description for logic
+# have_* flags:
+# were not originally a way to store info which col is generated
+# TODO 3 dictionary + optional transform lambda instead? useful to view cols flow,
+# flags seems not nessesary or at some places var instead of const fits too, like p_rain = rain
+# E: ok, requires prev section edits too, but low benefit
+
+# TODO 1 0.9.4 problem: vpd imported from FO, but ignored?
+# ['vpd'] in FO (Pa?) have other units from ['vpd_1_1_1'] in biomet (kPa), but script L2-L4 specs is FO name with biomet units?
+# E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
+# DONE OA, V: ias: import VPD_PI and convert (via generalised rename lambda function though)
+
+
 class AutoImportException(Exception):
     pass
 
@@ -93,16 +130,17 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
             possible_input_modes += [ImportMode.EDDYPRO_FO]
         else:
-            # TODO QOA 1 is multiple supported?
-            # if input_ftypes.count(InputFileType.EDDYPRO_BIOMET) > 1:
-            #     raise AutoImportException('More than 2 biomet files detected')
+            # TODO 1 QOA test if multiple biomets are still supported
             possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
 
     if InputFileType.IAS in input_ftypes:
         possible_input_modes += [ImportMode.IAS]
 
     if InputFileType.CSF in input_ftypes:
-        possible_input_modes += [ImportMode.CSF]
+        if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
+            possible_input_modes += [ImportMode.CSF]
+        else:
+            possible_input_modes += [ImportMode.CSF_AND_BIOMET]
 
     if len(possible_input_modes) == 0:
         raise AutoImportException(
@@ -111,7 +149,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         mode = possible_input_modes[0]
     else:
         raise AutoImportException(f'Multiple input modes possible: {possible_input_modes}, cannot auto pick.\n'
-                                  "Remove some files or specify manually config['path'].")
+                                  "Remove some files or specify manually config.input_files = {...} .")
 
     return mode
 
@@ -152,7 +190,7 @@ def auto_detect_input_files(config: FFConfig):
     config.import_mode = detect_input_mode(config.input_files)
     logging.info(f'Detected import mode: {config.import_mode}')
 
-    # TODO 2 update cells descs to match exact config naming after updating config options
+    # TODO 2 update cells desc to match exact config naming after updating config options
     if config.import_mode == IM.IAS:
         res = detect_auto_config_ias(config.input_files)
     elif config.import_mode == IM.CSF:
@@ -168,8 +206,8 @@ def auto_detect_input_files(config: FFConfig):
     config.ias_output_version = change_if_auto(config.ias_output_version, ias_output_version_auto,
                                                ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
 
-    config.has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
-    return config
+    config._has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
+    return config.input_files, config.import_mode, config.site_name, config.ias_output_version, config._has_meteo
 
 
 def try_auto_detect_input_files(*args, **kwargs):

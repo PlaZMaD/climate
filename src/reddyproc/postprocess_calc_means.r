@@ -2,7 +2,7 @@ library(dplyr)
 library(lubridate)
 library(tibble)
 
-source('src/reddyproc/r_helpers.r')
+source('src/reddyproc/r_helpers.r' %>% repo_path)
 
 
 .aggregate_df <- function(df, by_col, FUN) {

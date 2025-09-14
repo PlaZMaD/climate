@@ -1,18 +1,23 @@
 # this file allows running cell_reddyproc_process directly without rpy2
 # which enables RStudio interactive debug
+library(dplyr)
 
-setwd(dirname(dirname(dirname(rstudioapi::getSourceEditorContext()$path))))
 debugSource('test/reddyproc/helpers/init_test_env.r')
+
+setwd(rstudioapi::getSourceEditorContext()$path %>% dirname %>% dirname %>% dirname)
+
+repo_dir <- '.'
+repo_path_test <- function(src_path) {file.path(repo_dir, src_path)}
 
 # uninstall REddyProc package and enable this for the full debug
 # devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
 
-debugSource('test/reddyproc/helpers/io.r')
-debugSource('src/reddyproc/postprocess_calc_means.r')
-debugSource('src/reddyproc/web_tool_sources_adapted.r')
-debugSource('src/reddyproc/reddyproc_wrapper.r')
-debugSource('src/reddyproc/reddyproc_extensions.r')
-debugSource('src/reddyproc/r_helpers.r')
+debugSource('test/reddyproc/helpers/io.r' %>% repo_path_test)
+debugSource('src/reddyproc/postprocess_calc_means.r' %>% repo_path_test)
+debugSource('src/reddyproc/web_tool_sources_adapted.r' %>% repo_path_test)
+debugSource('src/reddyproc/reddyproc_wrapper.r' %>% repo_path_test)
+debugSource('src/reddyproc/reddyproc_extensions.r' %>% repo_path_test)
+debugSource('src/reddyproc/r_helpers.r' %>% repo_path_test)
 
 # duplicates cell code to run from pure R
 # avoiding R dupe here can be too complicated

@@ -48,6 +48,7 @@ def set_simple_user_warnings():
     default_show_warning = warnings.showwarning
 
     logging.captureWarnings(True)
+
     # not used yet - replaced with logging.warning for ipynb
 
     def custom_show_warning(message, category, filename, lineno, file=None, line=None):

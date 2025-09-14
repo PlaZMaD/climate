@@ -7,7 +7,6 @@ from IPython.core.display import Markdown
 from IPython.display import display
 from PIL import Image
 
-import src.helpers.os_helpers  # noqa: F401
 from src.ffconfig import RepConfig
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image

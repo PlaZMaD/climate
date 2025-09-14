@@ -1,56 +1,28 @@
 from pathlib import Path
-from typing import Any
+from typing import Self, Any, Annotated
+from pydantic import BaseModel, ConfigDict, model_serializer, Field
+from ruamel.yaml import CommentedSeq, CommentedMap, YAML
 
-from pydantic import BaseModel, ConfigDict, model_serializer
-from ruamel.yaml import YAML, CommentedSeq, CommentedMap
+from src.helpers.env_helpers import ENV
+from src.helpers.io_helpers import find_unique_file
 
-METADATA_KEY = 'meta_description'
+# TODO 1 +.toml vs ?.py (vs .yaml)?
+# comments io support, import defaults, diff export, time conversion function vs safety 
 
-
-class ValidatedBaseModel(BaseModel):
-    # def __dir__(self):
-    #     # hide [model_computed_fields, model_config, model_extra] from debugger
-    #     return [k for k in super().__dir__() if not k.startswith('model_')]
-
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-
-    def model_post_init(self, __context: Any) -> None:
-        # Annotated[*, ["info"]] -> Annotated[*, {'desc': "info"}]
-        for k, v in self.model_fields.items():
-            if v.metadata and isinstance(v.metadata, list):
-                self.model_fields[k].metadata = {'desc': v.metadata[0]}
-
-    @model_serializer(mode="wrap")
-    def include_field_meta(self, nxt):
-        res = nxt(self)
-
-        assert METADATA_KEY not in self
-        config_meta = {k: v.metadata for k, v in self.model_fields.items() if v.metadata}
-        if len(config_meta) > 0:
-            res[METADATA_KEY] = config_meta
-        return res
+METADATA_KEY = '_meta_description'
 
 
-def load_basemodel(fpath, load_model_class: type[ValidatedBaseModel]):
-    with open(fpath, 'r') as fl:
-        yaml = YAML().load(fl)
-    return load_model_class.model_validate(yaml)
-
-
-def add_yaml_metadata(d: dict) -> CommentedMap:
+def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
     d = CommentedMap(d)
     if METADATA_KEY in d:
         meta = d[METADATA_KEY]
-        d[METADATA_KEY] = None
+        del d[METADATA_KEY]
         for k, v in meta.items():
-            eol = []
-            if 'dynamic value' in v:
-                eol += ['last: ' + str(v['dynamic value'])]
-
+            eol = []  # or smth else
             if 'desc' in v:
-                eol += [v['desc']]
-
-            d.yaml_add_eol_comment(comment=' # '.join(eol), key=k)
+                eol += [v['desc']]                
+            comment = ' # '.join(eol)
+            d.yaml_add_eol_comment(key=k, comment=comment)
     return d
 
 
@@ -58,7 +30,7 @@ def config_to_yaml(x, path, max_len=5):
     """ Nested metadata processing and improves yaml items wrapping """
 
     if isinstance(x, dict):
-        res = add_yaml_metadata(x)
+        res = dict_to_yaml_with_comments(x)
 
         v_types = {type(v) for v in res.values()}
         if v_types <= {str, int, float} and len(path) > 1:
@@ -68,7 +40,7 @@ def config_to_yaml(x, path, max_len=5):
                 res[k] = config_to_yaml(v, path + [str(k)], max_len)
     elif isinstance(x, list):
         types = {type(v) for v in x}
-        if len(x) <= max_len and types <= {str, int, float}:
+        if types <= {str, int, float}:  # and len(x) <= max_len
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:
@@ -79,15 +51,69 @@ def config_to_yaml(x, path, max_len=5):
     return res
 
 
-def save_basemodel(fpath: Path, config: ValidatedBaseModel) -> None:
-    config_dict = config.model_dump(mode='json')
+class AnnotatedBaseModel(BaseModel):
+    def model_post_init(self, __context: Any) -> None:
+        # Annotated[*, ["info"]] -> Annotated[*, {'desc': "info"}]
+        for k, v in self.model_fields.items():
+            if v.metadata and isinstance(v.metadata, list):
+                self.model_fields[k].metadata = {'desc': v.metadata[0]}
 
-    yaml = YAML()
-    yaml.default_flow_style = False
-    yaml.indent(mapping=4, sequence=4, offset=4)
+    @model_serializer(mode="wrap")
+    def include_field_meta(self, nxt):
+        """ required to generate yaml comments from annotations """
+        res = nxt(self)
 
-    config_yaml = config_to_yaml(config_dict, max_len=2, path=[])
+        assert METADATA_KEY not in self
+        config_meta = {k: v.metadata for k, v in self.model_fields.items() if v.metadata}
+        if len(config_meta) > 0:
+            res[METADATA_KEY] = config_meta
+        return res
 
-    with open(fpath, "w") as fl:
-        yaml.dump(config_yaml, fl)
-    pass
+
+class FFBaseModel(AnnotatedBaseModel):
+    # pydantic basemodel options
+    model_config = ConfigDict(validate_assignment=True, revalidate_instances="always", use_attribute_docstrings=True)
+
+
+class BaseConfig(FFBaseModel):
+    from_file: Annotated[bool, Field(exclude=True)] = None
+    
+    @classmethod
+    def load_from_yaml(cls, fpath: Path):
+        with open(fpath, 'r') as fl:
+            loaded_yaml = YAML().load(fl)
+        return cls.model_validate(loaded_yaml)
+
+    @classmethod
+    def save_to_yaml(cls, config: BaseModel, fpath: Path):
+        save_dict = config.model_dump(mode='json')
+
+        yaml = YAML()
+        yaml.default_flow_style = False
+        yaml.indent(mapping=4, sequence=4, offset=4)
+
+        config_yaml = config_to_yaml(save_dict, path=[])       
+        with open(fpath, "w") as fl:
+            yaml.dump(config_yaml, fl)
+
+    @classmethod
+    def save(cls: Self, config, fpath: str | Path):
+        cls.save_to_yaml(config, Path(fpath))
+
+    @classmethod
+    def load_or_init(cls, load_path: str | Path | None, init_debug: bool, init_version: str) -> Self:
+        if load_path == 'auto':
+            load_path = find_unique_file(Path('.'), '*config*.yaml')
+
+        if load_path:
+            config = cls.load_from_yaml(Path(load_path))
+            config.from_file = True
+        else:
+            # if ENV.LOCAL:
+            #     init_debug = True
+
+            config = cls.model_construct(debug=init_debug, version=init_version)
+            config.from_file = False
+
+        return config
+    

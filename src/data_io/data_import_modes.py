@@ -7,6 +7,7 @@ class ImportMode(Enum):
     EDDYPRO_FO_AND_BIOMET = 'EDDYPRO_FO_AND_BIOMET'
     IAS = 'IAS'
     CSF = 'CSF'
+    CSF_AND_BIOMET = 'CSF_AND_BIOMET'
     AUTO = 'AUTO'
 
 

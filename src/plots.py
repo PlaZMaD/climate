@@ -27,7 +27,14 @@ def get_column_filter(data, filters_db_in, column_name):
         return np.array([1] * len(data.index))
 
 
-def basic_plot(data, col2plot, ias_output_prefix, filters_db=None, min_days=8, window_days=10, steps_per_day=2 * 24, use_resample=False):
+def basic_plot(data,
+               col2plot,
+               ias_output_prefix,
+               filters_db=None,
+               min_days=8,
+               window_days=10,
+               steps_per_day=2 * 24,
+               use_resample=False):
     multiplot = isinstance(col2plot, list)
 
     window_days = window_days  # дней в окне
@@ -183,8 +190,8 @@ def plot_albedo(plot_data, filters_db):
     # consider units conversions on import when same name
     # consider difference between _1_1_1 instrument code and actual data col
 
-    # TODO QOA 1 ALB_1_1_1 will be used now (check load renames), ok?
-    # priority use of ALB_1_1_1 from ias was not approved by V
+    # TODO 1 remove ALB_1_1_1 will be used now (check load renames), ok? OA: ALB_1_1_1 must be ignored (WARNING) (dupe)
+    # V: ALB_1_1_1 have lower priority than calc from ias was not approved by
 
     # basic.py: def add_albedo(dataT, out_sw, in_sw)
 
@@ -196,7 +203,8 @@ def plot_albedo(plot_data, filters_db):
         if can_use:
             print("alb_1_1_1 is available, but will be calculated instead")
     elif can_use:
-        # TODO 1 QOA should not be here, nor conversion is correct here, must be on import?
+        # TODO 1 should not be here, nor conversion is correct here, must be on import?
+        # OA: ~don't use ? (dupe)
         pl_data['albedo'] = pl_data['alb_1_1_1'] / 100.0
     else:
         print("No swin_1_1_1/sout_1_1_1, nor alb_1_1_1")

@@ -4,8 +4,8 @@
 # https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php
 
 
-source('src/reddyproc/r_helpers.r')
-source('src/reddyproc/reddyproc_extensions.r')
+source('src/reddyproc/r_helpers.r' %>% repo_path)
+source('src/reddyproc/reddyproc_extensions.r' %>% repo_path)
 
 
 readInputData <- function(dataFileName, input_format) {

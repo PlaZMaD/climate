@@ -47,17 +47,22 @@ def colab_only(func):
 def setup_r_env():
     if ENV.LOCAL:
         # only for conda rpy2: (bundled with embedded R which should go without default R_HOME):
-        # env_folder = Path(sys.executable).parent
-        # r_folder = env_folder / 'Lib/R'
-        # assert r_folder.exists()
-        # os.environ['R_HOME'] = str(r_folder)
+        # env_dir = Path(sys.executable).parent
+        # r_dir = env_dir / 'Lib/R'
+        # assert r_dir.exists()
+        # os.environ['R_HOME'] = str(r_dir)
 
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
+
+        # PATH warning unsolvable, but goes from:
+        # %R_HOME%/etc/Rcmd_environ
+        # PATH=... -> # PATH=...
         # bin1_path = "%RTOOLS44_HOME%/x86_64-w64-mingw32.static.posix/bin;"
         # bin2_path = "%RTOOLS44_HOME%/usr/bin;"
-        # assert bin1_path in os.environ['PATH'] ?
-        # assert bin2_path in os.environ['PATH'] ?
+        # assert bin1_path in os.environ['PATH']
+        # assert bin2_path in os.environ['PATH']
+        # os.environ['PATH'] = bin1_path + bin2_path + "%RTOOLS44_HOME%;" + os.environ['PATH']
 
         # for pip rpy2 on W10, just set R_HOME correctly
         pass

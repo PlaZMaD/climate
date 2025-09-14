@@ -30,9 +30,9 @@ def set_lang(language):
     lang.install()
 
 
-# TODO 2 git del leftover branches? will possibly del git activity too E: delete ok
+# TODO 1 QV was 0.9.5 link used or 1.0.0?
 
-# TODO E 3 fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST', need to update IAS check tool
+# TODO 3 E fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST', need to update IAS check tool
 # 'SPEC_NIR_ OUT' 'SPEC_PRI_REF_ IN', 'SPEC_RED_ OUT', 'SPEC_PRI_ REF_OUT', 'SPEC_RED_ IN'
 known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 'FC', 'FC_CMB', 'FC_SSITC_TEST', 'FCH4',
                  'FCH4_CMB', 'FCH4_PI', 'FETCH_70', 'FETCH_80', 'FETCH_90', 'FETCH_FILTER', 'FETCH_MAX', 'FH2O', 'FN2O',
@@ -47,8 +47,8 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'TAU', 'TAU_SSITC_TEST', 'TCARI', 'THROUGHFALL', 'TS', 'U_SIGMA', 'USTAR', 'V_SIGMA', 'VPD_PI',
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
-                 # TODO E 3 ias check tool requires one specific name too, must be updated
-                 # TODO 1 QV specification has only H20_STR, not H2O_STR, add import rename or error
+                 # TODO QE 3 ias check tool requires one specific name too, must be updated
+                 # TODO 1: V use specification, H20_STR = no import rename for now
                  # E: intentional (need to rename, to common name)
                  'H20_STR', 'H2O_STR'
                  ]
@@ -372,6 +372,7 @@ def draft_check_ias(fpath):
 
     # TODO 2 move to the script start?
     # will it be translation method for all the tools?
+    # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
 
     logging.info("Checking IAS file...")

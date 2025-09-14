@@ -1,16 +1,8 @@
 # Reminder: this is duplicate of specific cell used for test purposes, it is outdated or ahead frequently
-
-from types import SimpleNamespace
-
-import src.ipynb_globals as ig
-from src.helpers.io_helpers import ensure_empty_folder
 from src.ipynb_globals import *
-from src.reddyproc.preprocess_rg import prepare_rg
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
 
-ig.rep = SimpleNamespace()
-ig.rep.options = SimpleNamespace(
-    site_id=ias_output_prefix,
+config.reddyproc = RepConfig(
+    site_id=config.site_name,
 
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
@@ -39,11 +31,10 @@ ig.rep.options = SimpleNamespace(
     # do not change
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
-    input_file=str(rep_input_fpath),
-    output_dir=str(out_dir / 'reddyproc'),
-    log_fname_end='_log.txt'
+    input_file=str(gl.rep_level3_fpath),
+    output_dir=str(gl.out_dir / 'reddyproc'),
 )
 
-prepare_rg(ig.rep.options)
-ensure_empty_folder(ig.rep.options.output_dir)
-ig.rep.out_info, ig.rep.options = reddyproc_and_postprocess(ig.rep.options)
+prepare_rg(config.reddyproc)
+ensure_empty_dir(config.reddyproc.output_dir)
+gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc)
