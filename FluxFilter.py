@@ -114,7 +114,7 @@
 # !git sparse-checkout init
 # !git sparse-checkout set src locale
 # !git remote add origin https://github.com/PlaZMaD/climate.git
-# !git fetch --depth 1 origin main
+# !git fetch --depth 1 origin v1.0.2
 # !git -c advice.detachedHead=false checkout FETCH_HEAD
 
 # %% id="Ywv5kp0rzanK"
