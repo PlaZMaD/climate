@@ -66,7 +66,7 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
 
 def import_csf(config: FFConfig):
     if len(config.input_files) != 1:
-        raise NotImplemented(
+        raise NotImplementedError(
             'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
     fpath = list(config.input_files.keys())[0]
     df = load_table_logged(fpath, header_row=1, skiprows=[2, 3])

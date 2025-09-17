@@ -74,6 +74,9 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     header_matches = []
     for i, row in df.iterrows():
         fixed_row = row.dropna()
+        if len(fixed_row) == 0:
+            continue
+        
         for cols_set, ftype in detect_col_targets:
             mr = match_ratio(set(fixed_row), cols_set)
             header_matches += [(i, ftype, mr)]

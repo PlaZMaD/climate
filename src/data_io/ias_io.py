@@ -103,7 +103,7 @@ def import_ias(config: FFConfig):
     # TODO 1 V: implement merge for any amount of iases
     # TODO 2 V: implement custom split of ias on export (month, year, all years)
     if len(config.input_files) != 1:
-        raise NotImplemented(
+        raise NotImplementedError(
             'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
     ias_fpath = list(config.input_files.keys())[0]
     draft_check_ias(ias_fpath)
@@ -193,8 +193,8 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     # TODO 1 enable back after comparing finished
-    # sort_fixed(var_cols, fix_underscore=True)
-    var_cols.sort()
+    sort_fixed(var_cols, fix_underscore=True)
+    # var_cols.sort()
 
     df = export_ias_prepare_time_cols(df, time_col)
 
