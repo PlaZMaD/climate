@@ -30,8 +30,6 @@ def set_lang(language):
     lang.install()
 
 
-# TODO 1 QV was 0.9.5 link used or 1.0.0?
-
 # TODO 3 E fixes done: 'FO3_SSITC_ TEST' -> 'FO3_SSITC_TEST', need to update IAS check tool
 # 'SPEC_NIR_ OUT' 'SPEC_PRI_REF_ IN', 'SPEC_RED_ OUT', 'SPEC_PRI_ REF_OUT', 'SPEC_RED_ IN'
 known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 'FC', 'FC_CMB', 'FC_SSITC_TEST', 'FCH4',
@@ -48,7 +46,7 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
                  # TODO QE 3 ias check tool requires one specific name too, must be updated
-                 # TODO 1: V use specification, H20_STR = no import rename for now
+                 # TODO 1: QV: specification contains error V: use specification, H20_STR = no import rename for now; 
                  # E: intentional (need to rename, to common name)
                  'H20_STR', 'H2O_STR'
                  ]

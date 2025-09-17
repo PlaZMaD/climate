@@ -48,6 +48,8 @@ filters_min_max = {
 
 # TODO 1 QOA set config above, run after or set interactively? 0.9.4 seems had it above (fundamental problem with execution sequence)
 
+# TODO 1 QV was 0.9.5 link used or 1.0.0?
+
 # DONE repair 0.9.2 - 0.9.5
 # DONE ensure no new lines anymore + spellcheck
 

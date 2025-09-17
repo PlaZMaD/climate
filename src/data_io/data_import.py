@@ -22,7 +22,7 @@ SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 # - full output, csf, ias = always 30 min
 #   biomet - must be resampled, can not match at all
 
-# TODO 1 test if only WARNING for unknows
+# TODO 1 test if only WARNING for unknowns
 # - OA, V: logging.critical() for unknown cols, don't error
 #   V: but in IAS, require by specification (due to check instrument)
 
@@ -36,8 +36,7 @@ SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 # problem: Excel vs VCS, use yaml table? csv? ...?
 # handling unit/str conversions between import and export if name is same?
 # ias check, ias export, ias import, initial script renames, renames during script run (required for export)
-# E: unclear if table will help, people may damage it on edits
-# Чем меньше дублирования - тем меньше шансов забыть где-то подправить. Можно таблицы, или мега-конфиг-темплейт?
+# E: unclear if table will help, people may damage it on edits (may be mega-config?)
 
 
 # FluxFiler.py:

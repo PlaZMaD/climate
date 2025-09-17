@@ -7,6 +7,7 @@ from src.ffconfig import RepConfig
 
 # TODO 2 QOA move call earlier to REP file preparation to remove double read of file,
 #  but will requre user to set lat long earlier in the config
+# TODO 2 QOA theoretical Rg was not yet to work with flux partition (as a precautions) check if ok to allow partitioning 
 def prepare_rg(cfg: RepConfig):
     # generate theoretical solar radiation using specifically pysolar
 
