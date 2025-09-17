@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
+from src.data_io.ias_cols import COLS_IAS_KNOWN
 from src.data_io.table_loader import load_table_logged
 
 
@@ -46,10 +47,13 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  'W_SIGMA', 'WD', 'WD_SIGMA', 'WS', 'WS_MAX', 'WTD', 'ZL', 'CO2_STR', 'CH4_RSSI',
                  'FCH4_SSITC_TEST',
                  # TODO QE 3 ias check tool requires one specific name too, must be updated
-                 # TODO 1: QV: specification contains error V: use specification, H20_STR = no import rename for now; 
-                 # E: intentional (need to rename, to common name)
-                 'H20_STR', 'H2O_STR'
+                 # TODO 2: V: use specification QV: specification contains error 'H20_STR' instead of 'H2O_STR' 
+                 'H2O_STR'
                  ]
+
+# workaround assert that dupe defines are in sync, possibly remove list here and just import from ias_cols
+dupe_defs_check = {re.sub(r'_\d_\d_\d', '', col) for col in COLS_IAS_KNOWN} - {'TIMESTAMP_END', 'TIMESTAMP_START', 'DTime'}
+assert set(known_columns) == dupe_defs_check
 
 
 def get_freq(df, time):
@@ -72,7 +76,7 @@ def column_checker(col_list):
 
     # Проверка на наличие временнЫх колонок
     minimum_setup = {'TIMESTAMP_START', 'TIMESTAMP_END'}
-    if not set(col_list[:2]) <= minimum_setup:  # TODO QE 3 or != ?
+    if set(col_list[:2]) != minimum_setup:
         logging.error(
             _("DateTime columns ['TIMESTAMP_START', 'TIMESTAMP_END'] should go first. Check columns order and names."))
         error_flag = 1
@@ -398,7 +402,7 @@ def draft_check_ias(fpath):
         msg = f"Input file {fpath} cannot be used yet. Please fix errors."
         logging.error(msg)
 
-        # TODO 2 colab crashes on this, what is proper silent abort? search 1 more use case
+        # TODO 2 colab crashes on this, what is proper expected abort here and in the other places?
         # raise SystemExit(msg)
 
         raise Exception(msg)

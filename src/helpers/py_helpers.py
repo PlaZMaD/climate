@@ -91,7 +91,7 @@ def sort_fixed(items: list[str], fix_underscore: bool):
     def key(s):
         return s.replace('_', ' ') if fix_underscore else s
 
-    items.sort(key=key)
+    return sorted(items, key=key)
 
 
 def ensure_list(items, transform_func=None) -> list:

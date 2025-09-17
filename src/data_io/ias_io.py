@@ -192,8 +192,8 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     df = df.fillna(-9999)
     
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
-    # TODO 1 enable back after comparing finished
-    sort_fixed(var_cols, fix_underscore=True)
+    var_cols = sort_fixed(var_cols, fix_underscore=True)
+    # TODO 1 remove after reference data update finished
     # var_cols.sort()
 
     df = export_ias_prepare_time_cols(df, time_col)
