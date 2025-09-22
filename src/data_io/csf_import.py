@@ -22,7 +22,7 @@ def check_csf_col_names(df: pd.DataFrame):
     unknown_cols = df.columns.difference(known_csf_cols)
     if len(unknown_cols) > 0:
         msg = 'Неизвестные CSF переменные: \n', str(unknown_cols)
-        logging.critical(msg)
+        ff_log.warning(msg)
         # raise NotImplementedError(msg)
 
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)

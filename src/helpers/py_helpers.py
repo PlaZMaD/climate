@@ -1,13 +1,10 @@
 import contextlib
-import inspect
 import logging
-import sys
-from pathlib import Path
 from typing import Callable
 
 
 @contextlib.contextmanager
-def catch(on_exception=None, err_types=Exception):
+def catch(on_exception: Callable = None, err_types=Exception):
     if not err_types:
         yield
         return
@@ -49,42 +46,6 @@ def fix_strs_case(strs: list[str], correct_case: list[str]):
     return new_strs, renames, missing
 
 
-def debug_stdout_to_log(debug_log_fpath):
-    # stdout->log was required for something, but for what?
-    # duplicates all prints to file
-
-    class Logger(object):
-        def __init__(self):
-            self.terminal = sys.stdout
-            self.log = open(debug_log_fpath, "w")
-
-        def write(self, message):
-            self.terminal.write(message)
-            self.log.write(message)
-
-        def flush(self):
-            # this flush method is needed for python 3 compatibility.
-            # this handles the flush command by doing nothing.
-            # you might want to specify some extra behavior here.
-            pass
-
-    sys.stdout = Logger()
-
-
-def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
-    # this function is also required during tests, so placing not in ipynb is optimal
-
-    if fpath:
-        logging.basicConfig(level=level, filename=fpath, filemode="w", force=True)
-        if to_stdout:
-            logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-    else:
-        # when no file is specified, writes to stderr
-        logging.basicConfig(level=level, force=True)
-
-    logging.info("START")
-
-
 def sort_fixed(items: list[str], fix_underscore: bool):
     # sort: ['NETRAD_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1', 'P_1_1_1']
     # fix_underscore = True: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
@@ -122,6 +83,7 @@ def switch_log_level(level, logger_name=None):
         logger.setLevel(old_level)
 
 
+''' was used to save-load time convert functions, but better to avoid
 def func_to_str(fn: Callable) -> str:
     return inspect.getsource(fn).strip()
 
@@ -145,6 +107,7 @@ def str_to_func(code: str) -> Callable:
     func = list(ns.values())[1]
     assert callable(func)
     return func
+'''
 
 
 def gen_enum_info(enum_class) -> str:

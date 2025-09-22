@@ -6,7 +6,7 @@ Also consider to change if nessesary:
 if ENV.IPYNB:
     import matplotlib.pyplot as plt
 """
-import logging
+
 from inspect import getsource
 from pathlib import Path
 from warnings import warn
@@ -52,11 +52,6 @@ filters_min_max = {
 
 # DONE repair 0.9.2 - 0.9.5
 # DONE ensure no new lines anymore + spellcheck
-
-if ENV.LOCAL:
-    # reducing plotly log spam
-    logging.getLogger('kaleido').setLevel(logging.WARNING)
-    logging.getLogger('choreographer').setLevel(logging.WARNING)
 
 
 def display_image_row(paths: list[Path]):

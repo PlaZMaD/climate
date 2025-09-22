@@ -44,7 +44,7 @@ def set_simple_user_warnings():
     Prepares warning.warn (not a duplicate of ff_log.warning)
     warning.warn is for system level unexpected states, ff_log.warning is for script logic
     """
-
+    # TODO 1 log ff_log?
     default_show_warning = warnings.showwarning
 
     logging.captureWarnings(True)

@@ -54,7 +54,9 @@ def setup_r_env():
 
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
-
+        
+        # TODO 1 log remove if logger worked
+        
         # PATH warning unsolvable, but goes from:
         # %R_HOME%/etc/Rcmd_environ
         # PATH=... -> # PATH=...

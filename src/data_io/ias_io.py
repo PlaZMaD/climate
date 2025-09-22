@@ -7,7 +7,7 @@ from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
-from src.data_io.ias_error_check import set_lang, draft_check_ias
+from src.data_io.ias_error_check import set_lang, check_ias
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
 from src.ffconfig import FFConfig
@@ -76,11 +76,11 @@ def import_ias_cols(df: pd.DataFrame, time_col):
     unknown_cols = df.columns.difference(known_ias_cols)
     if len(unknown_cols) > 0:
         msg = 'Неизвестные ИАС переменные: \n', str(unknown_cols)
-        logging.critical(msg)
+        ff_log.warning(msg)
 
     unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
     if len(unsupported_cols) > 0:
-        # TODO 2 localize properly, check prints (logging.* goes to stdout too, but must be ru / en)
+        # TODO 2 localize properly, check prints (ff_log.* goes to stdout too, but must be ru / en)
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unsupported_cols.to_list())
         ff_log.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
@@ -106,7 +106,7 @@ def import_ias(config: FFConfig):
         raise NotImplementedError(
             'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
     ias_fpath = list(config.input_files.keys())[0]
-    draft_check_ias(ias_fpath)
+    check_ias(ias_fpath)
     df = load_table_logged(ias_fpath)
     ''' from eddypro to ias
     for year in ias_df.index.year.unique():
@@ -177,7 +177,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     # df['DTime'] = np.round(span.dt.days + 1 + day_part, decimals=3)
     return df
 
-
+# TODO 1 separate check log, but merge into ff_log
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
     # TODO 2 check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
