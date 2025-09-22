@@ -41,15 +41,15 @@ def ch_project_root_dir():
 
 def set_simple_user_warnings():
     """
-    Prepares warning.warn (not a duplicate of logging.warning)
-    warning.warn is for system level unexpected states, logging.warning is for script logic
+    Prepares warning.warn (not a duplicate of ff_log.warning)
+    warning.warn is for system level unexpected states, ff_log.warning is for script logic
     """
 
     default_show_warning = warnings.showwarning
 
     logging.captureWarnings(True)
 
-    # not used yet - replaced with logging.warning for ipynb
+    # not used yet - replaced with ff_log.warning for ipynb
 
     def custom_show_warning(message, category, filename, lineno, file=None, line=None):
         if category != UserWarning:

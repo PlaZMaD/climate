@@ -1,16 +1,16 @@
-import logging
 import re
 
 import numpy as np
 import pandas as pd
 
+from src.helpers.pd_helpers import df_ensure_cols_case
+from src.ff_logger import ff_log
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
     COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.table_loader import load_table_logged
 from src.data_io.time_series_utils import df_init_time_draft
 from src.ffconfig import FFConfig
-from src.helpers.pd_helpers import df_ensure_cols_case
 
 
 def check_csf_col_names(df: pd.DataFrame):
@@ -27,12 +27,12 @@ def check_csf_col_names(df: pd.DataFrame):
 
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)
     if len(unused_cols) > 0:
-        # TODO 2 localize properly, remove prints (logging.* goes to stdout too)
+        # TODO 2 localize properly, remove prints (ff_log.* goes to stdout too)
         # log - english only? OA: ok
         # TODO QOA 2 print may be too?
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
-        logging.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))
+        ff_log.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))
 
 
 def import_rename_csf_cols(df: pd.DataFrame, time_col):
@@ -52,7 +52,7 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
             if not match:
                 continue
             if col in rename_map:
-                logging.warning(f'Column {col} matches regex rename patterns twice or more: {rename_map} and {expr}.')
+                ff_log.warning(f'Column {col} matches regex rename patterns twice or more: {rename_map} and {expr}.')
             rename_map[col] = tgt_name
 
     df.rename(columns=rename_map, inplace=True)
@@ -80,7 +80,7 @@ def import_csf(config: FFConfig):
     df = df_init_time_draft(df, time_col)
 
     print('Диапазон времени csf (START): ', df.index[[0, -1]])
-    logging.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
     print('Replacing -9999 to np.nan')
     df.replace(-9999, np.nan, inplace=True)

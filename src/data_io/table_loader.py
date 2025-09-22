@@ -3,12 +3,12 @@ This file is an attempt to handle table load as an abstract initial part of data
 and to separate operations like time series repair or merge years from specific file format (if this is possible at all)
 """
 
-import logging
 from pathlib import Path
 import pandas as pd
 import numpy as np
 
 from src.helpers.pd_helpers import find_changed_el
+from src.ff_logger import ff_log
 
 
 def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwargs):
@@ -42,7 +42,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
         raise
     except Exception as e:
         # TODO 2 change any to UnicodeDecodeError, <header err name>?
-        logging.debug(f'When reading {fpath}: {e}, attempting other import mode.')
+        ff_log.debug(f'When reading {fpath}: {e}, attempting other import mode.')
 
         if pd_read_kwargs['skiprows'] is None:
             pd_read_kwargs['skiprows'] = guess_inconsistent_csv_table_start(fpath, **fallback_io_kwargs)
@@ -55,7 +55,7 @@ def load_xls(fpath, **pd_read_kwargs):
     data = pd.read_excel(fpath, **pd_read_kwargs)
     if isinstance(data, dict):
         if len(data.values()) > 1:
-            logging.error(("Several lists in data file!"))
+            ff_log.error(("Several lists in data file!"))
             assert False
         else:
             data = next(iter(data.values()))
@@ -83,9 +83,9 @@ def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0):
     try:
         data = load_table_from_file(fpath, skiprows, nrows, header_row)
     except Exception as e:
-        logging.exception(e)
+        ff_log.exception(e)
         # raise SystemExit vs
         raise
 
-    logging.info(f'File {fpath} loaded.\n')
+    ff_log.info(f'File {fpath} loaded.\n')
     return data

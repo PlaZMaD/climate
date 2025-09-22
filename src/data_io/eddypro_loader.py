@@ -1,11 +1,10 @@
-import logging
-
 import pandas as pd
 
 import bglabutils.basic as bg
+from src.helpers.py_helpers import ensure_list
+from src.ff_logger import ff_log
 from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.ffconfig import FFConfig
-from src.helpers.py_helpers import ensure_list
 
 
 def load_biomet(config_meteo, data_freq):
@@ -17,12 +16,12 @@ def load_biomet(config_meteo, data_freq):
 
     meteo_freq = data_meteo.index.freq
     print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
-    logging.info(f"MeteoData loaded from {config_meteo['path']}")
-    logging.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_log.info(f"MeteoData loaded from {config_meteo['path']}")
+    ff_log.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
     if data_freq != meteo_freq:
         print("Resampling meteo data")
-        logging.info(f"Resampling meteo data")
+        ff_log.info(f"Resampling meteo data")
         data_meteo = data_meteo.asfreq(data_freq)
 
     return data_meteo
@@ -53,7 +52,7 @@ def pick_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
                         f'Trying to apply them to column data: \n{test_chunk}')
     else:
         if len(guesses) > 1:
-            logging.info(f'Using datetime format {ok_formats[0]}')
+            ff_log.info(f'Using datetime format {ok_formats[0]}')
         return ok_formats[0]
 
 
@@ -120,7 +119,7 @@ def load_eddypro(config: FFConfig):
     data_freq = df.index.freq
 
     print("Диапазон времени full_output: ", df.index[[0, -1]])
-    logging.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_log.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
 
     has_meteo = (config.import_mode == ImportMode.EDDYPRO_FO_AND_BIOMET)
     if has_meteo:

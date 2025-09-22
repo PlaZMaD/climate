@@ -5,7 +5,7 @@ import pytest
 
 from src.data_io.data_import_modes import ImportMode
 from src.ffconfig import FFConfig
-from src.helpers.py_helpers import init_logging
+from src.ff_logger import init_logging
 
 
 def os_view_path(filename):

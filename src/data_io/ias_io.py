@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +13,7 @@ from src.data_io.time_series_utils import df_init_time_draft
 from src.ffconfig import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_helpers import sort_fixed, intersect_list
+from src.ff_logger import ff_log
 
 
 # TODO 1 test more ias export to match import after export 1y fixed
@@ -83,7 +83,7 @@ def import_ias_cols(df: pd.DataFrame, time_col):
         # TODO 2 localize properly, check prints (logging.* goes to stdout too, but must be ru / en)
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unsupported_cols.to_list())
-        logging.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
+        ff_log.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
 
     df = import_ias_cols_conversions(df)
 
@@ -116,7 +116,7 @@ def import_ias(config: FFConfig):
         save_data = save_data.fillna(-9999)
         if len(save_data.index) >= 5:
             save_data.to_csv(os.path.join('output', ias_filename), index=False)
-            logging.info(f'IAS file saved to {os.path.join('output', ias_filename)}.csv')
+            ff_log.info(f'IAS file saved to {os.path.join('output', ias_filename)}.csv')
         else:
             try:
                 os.remove(os.path.join('output', ias_filename))
@@ -124,7 +124,7 @@ def import_ias(config: FFConfig):
                 print(e)
 
             print(f'not enough df for {year}')
-            logging.info(f'{year} not saved, not enough df!')
+            ff_log.info(f'{year} not saved, not enough df!')
     # ias_filename = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
     # ias_df.to_csv(os.path.join('output',ias_filename), index=False)
     '''
@@ -136,7 +136,7 @@ def import_ias(config: FFConfig):
     df = df_init_time_draft(df, time_col)
 
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
-    logging.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     df = ias_table_extend_year(df, time_col, -9999)
 
     print('Replacing -9999 to np.nan')
@@ -231,14 +231,14 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
         save_data = save_data.fillna(-9999)
         if len(save_data.index) >= 5:
             save_data.to_csv(fpath, index=False)
-            logging.info(f'IAS file saved to {fpath}')
+            ff_log.info(f'IAS file saved to {fpath}')
         else:
             fpath.unlink(missing_ok=True)
 
             # TODO 2 is print excessive?
             # print(f'not enough data for {year}')
-            logging.info(f'{year} not saved, not enough data!')
+            ff_log.info(f'{year} not saved, not enough data!')
     # ias_year = df[time_col].dt.year.min()
     # fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
     # ias_df.to_csv(os.path.join('output',fname), index=False)
-    # logging.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')
+    # ff_log.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')

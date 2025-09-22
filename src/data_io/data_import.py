@@ -1,6 +1,8 @@
-import logging
 from pathlib import Path
 
+from src.helpers.io_helpers import ensure_path
+from src.helpers.py_helpers import ensure_list
+from src.ff_logger import ff_log
 from src.data_io.csf_import import import_csf
 from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.data_io.eddypro_loader import load_eddypro
@@ -11,8 +13,6 @@ from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADE
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_ias_fname, try_parse_eddypro_fname, try_parse_csf_fname
 from src.data_io.table_loader import load_table_from_file
-from src.helpers.io_helpers import ensure_path
-from src.helpers.py_helpers import ensure_list
 
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
@@ -23,7 +23,7 @@ SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 #   biomet - must be resampled, can not match at all
 
 # TODO 1 test if only WARNING for unknowns
-# - OA, V: logging.critical() for unknown cols, don't error
+# - OA, V: ff_log.critical() for unknown cols, don't error
 #   V: but in IAS, require by specification (due to check instrument)
 
 # V: newly generated cols can be considered same as if imported for simplicity
@@ -85,11 +85,11 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
 
     if len(positive_matches) == 1:
         _, ftype, _ = positive_matches[0]
-        logging.info(f'Detected file {fpath} as {ftype}')
+        ff_log.info(f'Detected file {fpath} as {ftype}')
         return ftype
     else:
         guesses = '\n'.join([f'{i} {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
-        logging.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
+        ff_log.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
                         f'{guesses}')
         return InputFileType.UNKNOWN
 
@@ -112,7 +112,7 @@ def change_if_auto(option, new_option=None, new_option_call=None,
 
     if option != auto:
         if skip_msg:
-            logging.warning(skip_msg)
+            ff_log.warning(skip_msg)
         return option
 
     if new_option_call:
@@ -120,7 +120,7 @@ def change_if_auto(option, new_option=None, new_option_call=None,
         new_option = new_option_call()
 
     if ok_msg:
-        logging.info(ok_msg)
+        ff_log.info(ok_msg)
     return new_option
 
 
@@ -177,7 +177,7 @@ def auto_detect_input_files(config: FFConfig):
     IM = ImportMode
 
     if config.input_files == 'auto':
-        # logging.info("Detecting input files due to config['path'] = 'auto' ")
+        # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files()
         config.input_files = change_if_auto(config.input_files, input_files_auto,
                                             ok_msg=f'Detected input files: {input_files_auto}')
@@ -190,7 +190,7 @@ def auto_detect_input_files(config: FFConfig):
         raise ValueError(f'{config.input_files=}')
 
     config.import_mode = detect_input_mode(config.input_files)
-    logging.info(f'Detected import mode: {config.import_mode}')
+    ff_log.info(f'Detected import mode: {config.import_mode}')
 
     # TODO 2 update cells desc to match exact config naming after updating config options
     if config.import_mode == IM.IAS:
@@ -216,7 +216,7 @@ def try_auto_detect_input_files(*args, **kwargs):
     try:
         return auto_detect_input_files(*args, **kwargs)
     except AutoImportException as e:
-        logging.error(e)
+        ff_log.error(e)
         raise
 
 
@@ -231,6 +231,6 @@ def import_data(config: FFConfig):
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
 
     paths = ensure_list(config.input_files.keys(), transform_func=str)
-    logging.info(f"Data loaded from {paths}")
+    ff_log.info(f"Data loaded from {paths}")
 
     return res

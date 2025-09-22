@@ -1,9 +1,8 @@
-import logging
-
 import numpy as np
 import pandas as pd
 
 from bglabutils import basic as bg, filters as bf
+from src.ff_logger import ff_log
 from src.plots import get_column_filter
 
 
@@ -40,7 +39,7 @@ def min_max_filter(data_in, filters_db_in, config):
             filters_db[col].append(f"{col}_minmaxfilter")
         else:
             print("filter already exist but will be overwritten")
-    logging.info(f"min_max_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"min_max_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -72,7 +71,7 @@ def qc_filter(data_in, filters_db_in, config):
             filters_db[col].append(f"{col}_qcfilter")
         else:
             print("filter already exist but will be overwritten")
-    logging.info(f"qc_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"qc_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -118,7 +117,7 @@ def std_window_filter(data_in, filters_db_in, config):
             filters_db[col].append(f"{col}_stdwindowfilter")
         else:
             print("filter already exist but will be overwritten")
-    logging.info(f"std_window_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"std_window_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -169,7 +168,7 @@ def meteorological_filter(
         RH_max = config['RH_max']
         data.loc[data['rh_1_1_1'] > RH_max, 'co2_flux_physFilter'] = 0
         data.loc[data['rh_1_1_1'] > RH_max, 'le_physFilter'] = 0
-    logging.info(f"meteorological_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -206,7 +205,7 @@ def meteorological_rh_filter(
         if 'nee' in data.columns:
             data.loc[data['rh_1_1_1'] > RH_max, 'nee_rhFilter'] = 0
         data.loc[data['rh_1_1_1'] > RH_max, 'le_rhFilter'] = 0
-    logging.info(f"meteorological_rh_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_rh_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -217,11 +216,11 @@ def meteorological_night_filter(
     # #@unroll_filters_db
     
     if "swin_1_1_1" not in data_in.columns:
-        logging.info(f"meteorological_night_filter not applied, no SWIN found  \n")
+        ff_log.info(f"meteorological_night_filter not applied, no SWIN found  \n")
         return data_in, filters_db_in
 
     if not config['use_night_filter']:
-        logging.info(f"Night filter dissabled.")
+        ff_log.info(f"Night filter dissabled.")
         return data_in, filters_db_in
 
     file_freq = data_in.index.freq
@@ -265,7 +264,7 @@ def meteorological_night_filter(
     # if 'nee' in data.columns:
     #   data_night_index = data.query(f'nee>{config["day_nee_max"]}&swin_1_1_1>=10').index
     #   data.loc[data_night_index, f"nee_nightFilter"] = 0
-    logging.info(f"meteorological_night_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_night_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -273,11 +272,11 @@ def meteorological_day_filter(data_in, filters_db_in, config):  # , file_freq='3
     # #@unroll_filters_db
     
     if "swin_1_1_1" not in data_in.columns:
-        logging.info(f"meteorological_day_filter not applied, no SWIN found  \n")
+        ff_log.info(f"meteorological_day_filter not applied, no SWIN found  \n")
         return data_in, filters_db_in
 
     if not config['use_day_filter']:
-        logging.info(f"Day filter dissabled.")
+        ff_log.info(f"Day filter dissabled.")
         return data_in, filters_db_in
 
     file_freq = data_in.index.freq
@@ -303,7 +302,7 @@ def meteorological_day_filter(data_in, filters_db_in, config):  # , file_freq='3
     if 'nee' in data.columns:
         data_day_index = data.query(f'nee>{config["day_nee_max"]}&swin_1_1_1>={config["day_swin_limit"]}').index
         data.loc[data_day_index, f"nee_dayFilter"] = 0
-    logging.info(f"meteorological_day_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_day_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -341,7 +340,7 @@ def meteorological_co2ss_filter(
 
         else:
             print("No co2_signal_strength found")
-    logging.info(f"meteorological_co2ss_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_co2ss_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -379,7 +378,7 @@ def meteorological_ch4ss_filter(
         data.loc[data['ch4_signal_strength'] < config['CH4SS_min'], 'ch4_flux_ch4ssFilter'] = 0
     else:
         print("No ch4_signal_strength found")
-    logging.info(f"meteorological_coh4ss_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_coh4ss_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -439,7 +438,7 @@ def meteorological_rain_filter(
                 if 'le' in data.columns:
                     data.loc[ind, 'le_rainFilter'] = 0
 
-    logging.info(f"meteorological_rain_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"meteorological_rain_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -478,7 +477,7 @@ def quantile_filter(data_in, filters_db_in, config):
 
         # print(col, (data.loc[f_inds, col] < down_limit).sum(), (data.loc[f_inds, col] > up_limit).sum(), len(data.loc[f_inds, col].index), ((data.loc[f_inds, col] < up_limit) & (data.loc[f_inds, col] > down_limit)).astype(int).sum())
         # print(filter.sum(), data[f'{col}_quantilefilter'].sum(), filter.sum() - data[f'{col}_quantilefilter'].sum())
-    logging.info(f"quantile_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"quantile_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -515,7 +514,7 @@ def mad_hampel_filter(data_in, filters_db_in, config):
         data.loc[data[f'{col}_madhampel'] == 1, f'{col}_madhampel'] = outdata[f'{col}_filtered'].astype(int)
         data[f"{col}_madhampel"] = data[f"{col}_madhampel"].astype(int)
 
-    logging.info(f"mad_hampel_filter applied with the next config: \n {config}  \n")
+    ff_log.info(f"mad_hampel_filter applied with the next config: \n {config}  \n")
     return data, filters_db
 
 
@@ -557,7 +556,7 @@ def manual_filter(data_in, filters_db_in, col_name, man_range, value, manual_con
         filters_db[col_name].append(f"{col_name}_manualFilter")
     else:
         print("filter already exist but will be overwritten")
-    logging.info(f"manual_filter applied with the next config: \n {manual_config}  \n")
+    ff_log.info(f"manual_filter applied with the next config: \n {manual_config}  \n")
     return data, filters_db
 
 
@@ -669,5 +668,5 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
             else:
                 print("filter already exist but will be overwritten")
 
-    logging.info(f"winter_filter applied with the next config: \n {config}  \n Date range: {date_ranges} \n")
+    ff_log.info(f"winter_filter applied with the next config: \n {config}  \n Date range: {date_ranges} \n")
     return data, filters_db

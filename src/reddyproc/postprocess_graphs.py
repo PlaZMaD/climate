@@ -1,4 +1,3 @@
-import logging
 import textwrap
 from pathlib import Path
 from types import SimpleNamespace
@@ -7,6 +6,7 @@ from IPython.core.display import Markdown
 from IPython.display import display
 from PIL import Image
 
+from src.ff_logger import ff_log
 from src.ffconfig import RepConfig
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
@@ -31,7 +31,7 @@ class RepImgTagHandler:
     def tag_to_img_fpath(self, tag, must_exist=True, warn_if_missing=True):
         fpath = tag_to_fpath(self.main_path, self.loc_prefix, tag, self.img_ext, must_exist)
         if warn_if_missing and not fpath:
-            logging.warning(f"Expected image is missing: {tag}")
+            ff_log.warning(f"Expected image is missing: {tag}")
 
         return fpath
 
@@ -74,7 +74,7 @@ class RepImgTagHandler:
         def detect_prefix(s, prefixes):
             s = tag.partition('_')[0]
             if s not in prefixes:
-                logging.warning('Unexpected file name start: ' + s)
+                ff_log.warning('Unexpected file name start: ' + s)
             return s
 
         prefixes_list = list(vars(EddyPrefixes).values())
@@ -252,7 +252,7 @@ class RepOutputHandler:
             else:
                 check = [ct(tag, prefix=prefix, suffix=None) for prefix in list(vars(EddyPrefixes).values())]
                 if len(check) != 1:
-                    logging.warning(f'Unrecognized tag: {tag}')
+                    ff_log.warning(f'Unrecognized tag: {tag}')
 
     def on_missing_file(self, e):
         print(str(e))

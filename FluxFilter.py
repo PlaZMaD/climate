@@ -130,7 +130,7 @@ import bglabutils.basic as bg
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
 from src.ffconfig import FFConfig, RepConfig, FFGlobals, InputFileType
-from src.helpers.py_helpers import init_logging
+from src.ff_logger import init_logging, ff_log
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
@@ -474,7 +474,7 @@ for col in cols_2_check:
         continue
     error_positions = data[col].fillna(0).apply(pd.to_numeric, errors='coerce').isna()
     if error_positions.any():
-        logging.error(
+        ff_log.error(
             f"""Check input files for {col} column near:\n {error_positions[error_positions == True].index.strftime('%d-%m-%Y %H:%M').values} in {'biomet' if len(meteo_cols) > 0 and col in meteo_cols else 'data'} file"""
         )
         data_type_error_flag = True
@@ -608,7 +608,7 @@ for col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
 
 if not config.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
-    logging.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
+    ff_log.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
@@ -641,7 +641,7 @@ if config.calc_nee and 'co2_strg' in data.columns:
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
 if not config.from_file:
     config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
-logging.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
+ff_log.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
 # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
 # %% id="ueuvsNxYdtgs"
@@ -823,8 +823,8 @@ fdf_df = pd.DataFrame(all_filters)
 
 print("Какая часть данных от общего количества (в %) была отфильтрована:")
 print(fdf_df.iloc[1] / len(plot_data) * 100)
-logging.info("Какая часть данных от общего количества (в %) была отфильтрована:")
-logging.info(fdf_df.iloc[1] / len(plot_data) * 100)
+ff_log.info("Какая часть данных от общего количества (в %) была отфильтрована:")
+ff_log.info(fdf_df.iloc[1] / len(plot_data) * 100)
 
 # %% [markdown] id="gA_IPavss0bq"
 # # Отрисовка рядов
@@ -967,7 +967,7 @@ if 'time' in plot_data.columns:
 
 all_fpath = gl.out_dir / 'output_all.csv'
 plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
-logging.info(f"Basic file saved to {all_fpath}")
+ff_log.info(f"Basic file saved to {all_fpath}")
 
 # %% [markdown] id="-MSrgUD0-19l"
 # ## Файл-резюме результатов фильтрации
@@ -1046,7 +1046,7 @@ basic_df = basic_df.fillna(-9999)
 
 summary_fpath = gl.out_dir / 'output_summary.csv'
 basic_df.to_csv(summary_fpath, index=None)
-logging.info(f"New basic file saved to {summary_fpath}")
+ff_log.info(f"New basic file saved to {summary_fpath}")
 # %% [markdown] id="775a473e"
 # # Обработка инструментом REddyProc
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.

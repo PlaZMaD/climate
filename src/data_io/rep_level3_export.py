@@ -1,6 +1,7 @@
-import logging
 from pathlib import Path
 import pandas as pd
+
+from src.ff_logger import ff_log
 
 
 def export_rep_level3(fpath: Path, df: pd.DataFrame, time_col: str, output_template, config, points_per_day):
@@ -56,4 +57,4 @@ def export_rep_level3(fpath: Path, df: pd.DataFrame, time_col: str, output_templ
     df.to_csv(fpath, index=False, header=False,
               columns=[i for i in output_template.keys() if i in df.columns], mode='a', sep=' ')
     del df
-    logging.info(f"REddyProc file saved to {fpath}")
+    ff_log.info(f"REddyProc file saved to {fpath}")

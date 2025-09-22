@@ -1,5 +1,6 @@
-import logging
 import re
+
+from src.ff_logger import ff_log
 
 
 def examples_to_text(examples: dict):
@@ -25,7 +26,7 @@ def try_parse_ias_fname(fname: str):
         ias_output_prefix = match1.group(1)
         ias_output_version = match1.group(2)
     else:
-        logging.warning(f'Cannot parse ias file name {fname} for site id and version, using defaults.\n'
+        ff_log.warning(f'Cannot parse ias file name {fname} for site id and version, using defaults.\n'
                         "   Try to rename ias input file to match 'siteid_YYYY_vNN.ext' pattern, \n"
                         f"  for example, {txt_examples}.")
         ias_output_prefix = 'unknown_site'
@@ -46,14 +47,14 @@ def try_parse_csf_fname(fname: str):
         ias_output_prefix = match1.group(1)
         ias_output_version = match1.group(2)
     else:
-        logging.warning(f'Cannot parse ias file name {fname} for site id and version, using defaults.\n'
+        ff_log.warning(f'Cannot parse ias file name {fname} for site id and version, using defaults.\n'
                         "   Try to rename ias input file to match 'siteid_YYYY_vNN.ext' pattern, \n"
                         f"  for example, {txt_examples}.")
         ias_output_prefix = 'unknown_site'
         ias_output_version = 'vNN'
     '''
     # TODO 1 update cell description, add patterns OA:ok
-    logging.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
+    ff_log.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
     ias_output_prefix = 'unknown_site'
     ias_output_version = 'vNN'
 
@@ -73,13 +74,13 @@ def try_parse_eddypro_fname(fname: str):
     if match:
         ias_output_prefix = match.group(1)
     else:
-        logging.warning(f'Cannot parse eddypro file name {fname} for site id, using default.\n'
+        ff_log.warning(f'Cannot parse eddypro file name {fname} for site id, using default.\n'
                         "   Try to rename eddypro input file to match 'siteid_FO_YYYY.ext' or 'eddy_pro_siteid_YYYY' "
                         "patterns, \n"
                         f"  for example, {txt_examples}.")
         ias_output_prefix = 'unknown_site'
 
-    logging.warning('No version is expected in eddypro file name, specify manually in ias_output_version .')
+    ff_log.warning('No version is expected in eddypro file name, specify manually in ias_output_version .')
     ias_output_version = 'vNN'
 
     return ias_output_prefix, ias_output_version
