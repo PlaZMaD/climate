@@ -15,7 +15,7 @@ current renames EDDYPRO? -> SCRIPT to check
 # TODO 1 all new generated cols will still be exported to ias OA:ok V:ok
 # test P_RAIN_1_1_1 will be not real data; lazy solution is to export anyway
 
-# TODO 2 QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1', 'par' be imported from ias?
+# TODO 1 QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1', 'par' be imported from ias?
 #  V: _PI are generated, lvl+ (don't export, but import?)
 
 from src.helpers.py_helpers import invert_dict

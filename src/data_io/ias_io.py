@@ -16,6 +16,7 @@ from src.helpers.py_helpers import sort_fixed, intersect_list
 from src.ff_logger import ff_log
 
 
+# DONE separate check log, but merge into ff_log
 # TODO 1 test more ias export to match import after export 1y fixed
 
 
@@ -80,7 +81,7 @@ def import_ias_cols(df: pd.DataFrame, time_col):
 
     unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
     if len(unsupported_cols) > 0:
-        # TODO 2 localize properly, check prints (ff_log.* goes to stdout too, but must be ru / en)
+        # TODO 3 lang localize properly, check prints (ff_log.* goes to stdout too, but must be ru / en)
         print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
               unsupported_cols.to_list())
         ff_log.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
@@ -90,14 +91,16 @@ def import_ias_cols(df: pd.DataFrame, time_col):
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
 
-    # TODO 2 remove whole biomet_cols_index from the script E, OA: ok
+    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     return df, biomet_cols_index
 
 
 def import_ias(config: FFConfig):
-    # TODO 2 move to ipynb?
+    # TODO 2 lang move to the script start?
+    # will it be translation method for all the tools?
+    # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
 
     # TODO 1 V: implement merge for any amount of iases
@@ -129,7 +132,7 @@ def import_ias(config: FFConfig):
     # ias_df.to_csv(os.path.join('output',ias_filename), index=False)
     '''
 
-    # TODO 2 check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid
+    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid
     time_col = 'datetime'
     df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
     df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
@@ -166,7 +169,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
 
     # 1 365, 366, 1 or 1 365, 366, 367 ?
     # V: not a big deal, but better 1.021 and 367 (by TIMESTAMP_END) 
-    # TODO 3 QV from file start or from year start?
+    # TODO 3 QV ias: from file start or from year start?
     day_part = (time_end.dt.hour * 60 * 60 + time_end.dt.minute * 60 + time_end.dt.second) / (24.0 * 60 * 60)
     df['DTime'] = time_end.dt.dayofyear + np.round(day_part, decimals=3)
 
@@ -177,14 +180,14 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     # df['DTime'] = np.round(span.dt.days + 1 + day_part, decimals=3)
     return df
 
-# TODO 1 separate check log, but merge into ff_log
+
 def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
-    # TODO 2 check if attr/mark can be avoided and no info nessesary to attach to cols
+    # TODO 2 cols: check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
 
     # think about abstraction, i.e. how much script-aware should be ias import and export?
     # may be even merge some import and export routines?
-    # TODO 3 may be add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
+    # TODO 4 may be add test: load ias -> convert to eddypro -> convert to ias -> save ias ?
 
     df, new_cols = export_ias_cols_conversions(df)
     df = df.rename(columns=COLS_IAS_EXPORT_MAP)
@@ -198,7 +201,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
 
     df = export_ias_prepare_time_cols(df, time_col)
 
-    # TODO 1 why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
+    # TODO 1 ias: why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
     #  OA: not important cols
     # were they modified during run?
     # E: probably no special reason, unless cols above all nust be presented
@@ -211,7 +214,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
         var_cols.append('SLE_1_1_1')
     '''
 
-    # TODO 1 SW_IN_1_1_1 was data col because:
+    # TODO 1 ias: SW_IN_1_1_1 was data col because:
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
     # OA: RH_1_1_1 - must be exported raw, not filtered (SW_IN_1_1_1 must be exported unchanged)
     if 'SW_IN_1_1_1' in df.columns:
@@ -235,7 +238,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
         else:
             fpath.unlink(missing_ok=True)
 
-            # TODO 2 is print excessive?
+            # TODO 3 QOA logs: is it ok to simply put in logs most of the script outputs? (removing many dupe prints will be ok)
             # print(f'not enough data for {year}')
             ff_log.info(f'{year} not saved, not enough data!')
     # ias_year = df[time_col].dt.year.min()

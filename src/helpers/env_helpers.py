@@ -5,9 +5,12 @@ from pathlib import Path
 from IPython import get_ipython
 
 
-class _Env:
+# DONE log remove if logger worked
+
+
+class EnvDetect:
     def __init__(self):
-        # TODO QE 3 is also support of local ipynb any useful? (COLAB | LOCAL, IPYNB | PY)
+        # TODO QE 4 is also support of local ipynb any useful? (COLAB | LOCAL, IPYNB | PY)
         try:
             import google.colab
         except ImportError:
@@ -19,7 +22,7 @@ class _Env:
         self.IPYNB: bool = get_ipython()
 
 
-ENV = _Env()
+ENV = EnvDetect()
 
 
 def ipython_only(func):
@@ -55,17 +58,6 @@ def setup_r_env():
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
         
-        # TODO 1 log remove if logger worked
-        
-        # PATH warning unsolvable, but goes from:
-        # %R_HOME%/etc/Rcmd_environ
-        # PATH=... -> # PATH=...
-        # bin1_path = "%RTOOLS44_HOME%/x86_64-w64-mingw32.static.posix/bin;"
-        # bin2_path = "%RTOOLS44_HOME%/usr/bin;"
-        # assert bin1_path in os.environ['PATH']
-        # assert bin2_path in os.environ['PATH']
-        # os.environ['PATH'] = bin1_path + bin2_path + "%RTOOLS44_HOME%;" + os.environ['PATH']
-
         # for pip rpy2 on W10, just set R_HOME correctly
         pass
     else:

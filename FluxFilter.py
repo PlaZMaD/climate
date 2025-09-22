@@ -456,6 +456,7 @@ gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 data.columns = data.columns.str.lower()
 if not config.has_meteo:
     data["rh_1_1_1"] = data['rh']
+    # TODO 1 different units? QOA Elg biomet kPa, but mean 8.6 ?  
     data["vpd_1_1_1"] = data['vpd']
 
 # %% [markdown] id="ipknrLaeByCT"

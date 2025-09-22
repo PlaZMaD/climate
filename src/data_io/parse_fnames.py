@@ -53,7 +53,7 @@ def try_parse_csf_fname(fname: str):
         ias_output_prefix = 'unknown_site'
         ias_output_version = 'vNN'
     '''
-    # TODO 1 update cell description, add patterns OA:ok
+    # TODO 2 update cell description, add patterns OA:ok
     ff_log.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
     ias_output_prefix = 'unknown_site'
     ias_output_version = 'vNN'

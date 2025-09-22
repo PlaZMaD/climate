@@ -111,6 +111,7 @@ def column_checker(col_list):
     no_index_cols = [f for f in full_col_list if f not in re_check]
     if len(no_index_cols) > 0:
         error_flag = 1
+        # TODO 3 f'{var}' probably should be supported by poedit, no?
         logger.error(
             _("Columns naming problem, columns {} do not have correct suffix structure.").format(no_index_cols))
 
@@ -153,9 +154,10 @@ def column_checker(col_list):
     linked_cols['H'] = ['G', 'H_SSITC_TEST', 'NETRAD', 'P', 'RH', 'SH', 'SW_IN']
     linked_cols['LE'] = ['LE_SSITC_TEST', 'G', 'NETRAD', 'P', 'SLE', 'SW_IN', 'H2O_STR']
     linked_cols['TAU'] = ['TAU_SSITC_TEST']
-
+    
     for col, linked_list in linked_cols.items():
         if col in unique_cols:
+            # TODO 3 random order in logs, need oredered set or smth
             diff = list(set(linked_list) - set(unique_cols))
             if len(diff) > 0:
                 logger.warning(_("Check linked vars for {}, missing cols: {}").format(col, diff))
@@ -237,7 +239,7 @@ def final_time_check(data, time_in):
 
 
 def load_ias(fpath: Path):
-    # TODO 2 try to merge into src.data_io.table_loader -> load_table_from_file
+    # TODO 1 try to merge into src.data_io.table_loader -> load_table_from_file
     # there is something wrong with csv files
     # may be wrong - file is shared, so will require more shared file
     ext_l = fpath.suffix.lower()
@@ -360,7 +362,7 @@ def check_ias_file(fpath):
     return total_errors
 
 
-# TODO 1 log unfislshed attempt to auto count, remove or finish
+# TODO 1 logs unfinished attempt to auto count, remove or finish
 class ErrorFlagHandler(logging.Handler):
     def __init__(self):
         super().__init__()
@@ -371,13 +373,8 @@ class ErrorFlagHandler(logging.Handler):
             self.had_error = True
 
 
-# TODO 1 test ias logs 1.0.0 vs cur
-def check_ias(fpath):   
-    # TODO 2 move to the script start?
-    # will it be translation method for all the tools?
-    # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
-    set_lang('ru')
-      
+# TODO 1 test logs ias 1.0.0 vs cur
+def check_ias(fpath):
     logger.info("Checking IAS file...")
           
     errors = check_ias_file(fpath)
@@ -392,7 +389,7 @@ def check_ias(fpath):
         raise Exception(msg)
 
 
-# TODO E 2 ff uses its own logs handler, move to ias tool
+# TODO E 3 ff uses its own logs handler, move to ias tool
 # TODO E 3 synchronise sometimes to IAS tool repo (via duplicate file)
 ''' 
 def ias_tool_format_log_messages():

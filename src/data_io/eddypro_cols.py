@@ -10,7 +10,7 @@ BIOMET_HEADER_DETECTION_COLS = [
     'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'
 ]
 EDDYPRO_HEADER_DETECTION_COLS = [
-    # TODO 2 what is exact correct list though?
+    # TODO 1 what is exact correct list though?
     #  it may be useful later and HEADER_DETECTION should be just a copy
     # just a sample, some cols may be missing
     'filename', 'date', 'time', 'DOY', 'daytime', 'file_records', 'used_records', 'Tau',

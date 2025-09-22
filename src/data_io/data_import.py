@@ -48,7 +48,7 @@ SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 # E: ok, requires prev section edits too, but low benefit
 
 # TODO 1 0.9.4 problem: vpd imported from FO, but ignored?
-# ['vpd'] in FO (Pa?) have other units from ['vpd_1_1_1'] in biomet (kPa), but script L2-L4 specs is FO name with biomet units?
+# TODO 1 QOA ['vpd'] in FO (Pa?) have other units from ['vpd_1_1_1'] in biomet (kPa), but script L2-L4 specs is FO name with biomet units? ias hPa 6-140 ?
 # E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
 # DONE OA, V: ias: import VPD_PI and convert (via generalised rename lambda function though)
 
@@ -132,7 +132,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
             possible_input_modes += [ImportMode.EDDYPRO_FO]
         else:
-            # TODO 1 QOA test if multiple biomets are still supported
+            # TODO 2 QOA test if multiple biomets are still supported
             possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
 
     if InputFileType.IAS in input_ftypes:
@@ -192,7 +192,7 @@ def auto_detect_input_files(config: FFConfig):
     config.import_mode = detect_input_mode(config.input_files)
     ff_log.info(f'Detected import mode: {config.import_mode}')
 
-    # TODO 2 update cells desc to match exact config naming after updating config options
+    # TODO 1 update cells desc to match exact config naming after updating config options
     if config.import_mode == IM.IAS:
         res = detect_auto_config_ias(config.input_files)
     elif config.import_mode == IM.CSF:
@@ -211,7 +211,7 @@ def auto_detect_input_files(config: FFConfig):
     config._has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
     return config.input_files, config.import_mode, config.site_name, config.ias_output_version, config._has_meteo
 
-
+# TODO 1 config.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
 def try_auto_detect_input_files(*args, **kwargs):
     try:
         return auto_detect_input_files(*args, **kwargs)

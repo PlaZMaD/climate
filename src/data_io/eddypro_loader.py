@@ -60,7 +60,8 @@ def datetime_converter(df: pd.DataFrame,
                        time_col: str | None = None, time_formats: str | list[str] | None = None,
                        date_col: str | None = None, date_formats: str | list[str] | None = None,
                        datetime_col: str | None = None, datetime_formats: str | list[str] | None = None) -> pd.Series:
-    # TODO 3 move to abstract load utils
+    # TODO 3 move to abstract load utils? 
+    # TODO 1 split fo and biomet
 
     has_date_and_time_cols = time_col is not None and date_col is not None
     has_datetime_col = datetime_col is not None
@@ -89,7 +90,7 @@ def datetime_converter(df: pd.DataFrame,
 # cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
 # ppfd_in_1_1_1 will be renamed to ppfd_1_1_1, 
 
-# TODO 2 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
+# TODO 1 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
 # if moved, check ias import-export handling stands (or solve with generalised col names preprocess check?)
 def load_eddypro(config: FFConfig):
     c_fo = config.eddypro_fo
