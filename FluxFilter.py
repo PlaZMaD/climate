@@ -822,10 +822,9 @@ for key, filters in filters_db.items():
             # print(filter_name, filtered_amount, len(pl_data.index) - old_val)
 fdf_df = pd.DataFrame(all_filters)
 
-print("Какая часть данных от общего количества (в %) была отфильтрована:")
-print(fdf_df.iloc[1] / len(plot_data) * 100)
 ff_log.info("Какая часть данных от общего количества (в %) была отфильтрована:")
-ff_log.info(fdf_df.iloc[1] / len(plot_data) * 100)
+df_stats = fdf_df.iloc[1] / len(plot_data) * 100
+ff_log.info('\n' + df_stats.to_string())
 
 # %% [markdown] id="gA_IPavss0bq"
 # # Отрисовка рядов

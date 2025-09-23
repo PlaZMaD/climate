@@ -42,14 +42,18 @@ def ch_project_root_dir():
 def set_simple_user_warnings():
     """
     Prepares warning.warn (not a duplicate of ff_log.warning)
-    warning.warn is for system level unexpected states, ff_log.warning is for script logic
-    """
-    # TODO 1 logs: log ff_log?
-    default_show_warning = warnings.showwarning
+    warning.warn is for lib level unexpected states, ff_log.warning is for script logic
+    i.e. 
+    src.helpers.* - should use warn
+    fluxfilter - (usually) logging.warning
+    """    
 
+    # does not go through root formatter though?
     logging.captureWarnings(True)
+    # logging.getLogger("py.warnings").handlers[0].setFormatter(FFFormatter())
 
-    # not used yet - replaced with ff_log.warning for ipynb
+    ''' not used yet: replaced with ff_log.warning for ipynb
+    default_show_warning = warnings.showwarning
 
     def custom_show_warning(message, category, filename, lineno, file=None, line=None):
         if category != UserWarning:
@@ -60,6 +64,7 @@ def set_simple_user_warnings():
 
     warnings.showwarning = custom_show_warning
     warnings.simplefilter('always', category=UserWarning)
+    '''
 
 
 set_simple_user_warnings()

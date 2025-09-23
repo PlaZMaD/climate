@@ -25,7 +25,8 @@ def debug_stdout_to_log(debug_log_fpath):
     sys.stdout = Logger()
 '''
 
-ff_log = logging.getLogger('flux_filter')
+# TODO 3 refactor: ff_logger
+ff_log = logging.getLogger('FF')
 
 
 def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):

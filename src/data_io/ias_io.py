@@ -17,6 +17,7 @@ from src.ff_logger import ff_log
 
 
 # DONE separate check log, but merge into ff_log
+# DONE column order improved
 # TODO 1 test more ias export to match import after export 1y fixed
 
 

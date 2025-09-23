@@ -46,11 +46,10 @@ filters_min_max = {
 }
 '''
 
-# TODO 2 cuts print middle part on 0.9.4 Chr, search example:
-# print("Какая часть данных от общего количества (в %) была отфильтрована:")
+# TODO 3 QE logs: FF.py, "Какая часть данных от общего количества (в %) была отфильтрована:" idea was print = log (mostly)? (search for ff_log.* for other possible dupes) 
 
 # TODO 1 QV add ias description in the intro (or idea was to cut more, not to expand?)
-# TODO 1 QOA add csf description in the intro
+# TODO 2 QOA add csf description in the intro
 
 # TODO 3 QOA set config on top of ipynb, run after or set interactively? 0.9.4 seems had it on top (fundamental problem with execution sequence)
 # TODO 2 QV was 0.9.5 link used or 1.0.0?

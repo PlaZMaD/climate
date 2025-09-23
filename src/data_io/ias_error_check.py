@@ -362,7 +362,7 @@ def check_ias_file(fpath):
     return total_errors
 
 
-# TODO 1 logs unfinished attempt to auto count, remove or finish
+''' possibly make auto count later instead of col_errors += 1
 class ErrorFlagHandler(logging.Handler):
     def __init__(self):
         super().__init__()
@@ -371,6 +371,7 @@ class ErrorFlagHandler(logging.Handler):
     def emit(self, record):
         if record.levelno >= logging.ERROR:
             self.had_error = True
+'''
 
 
 # TODO 1 test logs ias 1.0.0 vs cur

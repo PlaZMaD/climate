@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from src.helpers.io_helpers import ensure_path
-from src.helpers.py_helpers import ensure_list
+from src.helpers.py_helpers import ensure_list, format_dict
 from src.ff_logger import ff_log
 from src.data_io.csf_import import import_csf
 from src.data_io.data_import_modes import ImportMode, InputFileType
@@ -229,8 +229,9 @@ def import_data(config: FFConfig):
         res = import_csf(config)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
-
-    paths = ensure_list(config.input_files.keys(), transform_func=str)
-    ff_log.info(f"Data loaded from {paths}")
-
+    
+    paths = format_dict(config.input_files, separator=': ')
+    # DONE logs:  fix log
+    ff_log.info(f'Data imported from files: {paths} \n')
+    
     return res

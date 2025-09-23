@@ -1,13 +1,7 @@
 import re
 
 from src.ff_logger import ff_log
-
-
-def examples_to_text(examples: dict):
-    res = ''
-    for k, v in examples.items():
-        res += k + ' -> ' + v
-    return res
+from src.helpers.py_helpers import format_dict
 
 
 def preprocess_fname(fname: str) -> str:
@@ -16,7 +10,7 @@ def preprocess_fname(fname: str) -> str:
 
 def try_parse_ias_fname(fname: str):
     examples = {'tv_fy4_2023_v01.xlsx': 'tv_fy4'}
-    txt_examples = examples_to_text(examples)
+    txt_examples = format_dict(examples)
     # [try_parse_ias_fname(k) for k,v in examples.items()]
 
     fname = preprocess_fname(fname)
@@ -26,9 +20,10 @@ def try_parse_ias_fname(fname: str):
         ias_output_prefix = match1.group(1)
         ias_output_version = match1.group(2)
     else:
-        ff_log.warning(f'Cannot parse ias file name {fname} for site id and version, using defaults.\n'
-                        "   Try to rename ias input file to match 'siteid_YYYY_vNN.ext' pattern, \n"
-                        f"  for example, {txt_examples}.")
+        msg = (f'Cannot parse ias file name {fname} for site id and version, using defaults. \n'
+               f"\t Try to rename file to match 'siteid_YYYY_vNN.ext' pattern, \n"
+               f'\t for example, {txt_examples}.')
+        ff_log.warning(msg)
         ias_output_prefix = 'unknown_site'
         ias_output_version = 'vNN'
     return ias_output_prefix, ias_output_version
@@ -63,7 +58,7 @@ def try_parse_csf_fname(fname: str):
 
 def try_parse_eddypro_fname(fname: str):
     examples = {'Iga_FO_23.csv': 'Iga', 'eddy_pro SSB 2023.csv': 'SSB'}
-    txt_examples = examples_to_text(examples)
+    txt_examples = format_dict(examples)
     # [try_parse_eddypro_fname(k) for k,v in examples.items()]
 
     fname = preprocess_fname(fname)
@@ -74,10 +69,10 @@ def try_parse_eddypro_fname(fname: str):
     if match:
         ias_output_prefix = match.group(1)
     else:
-        ff_log.warning(f'Cannot parse eddypro file name {fname} for site id, using default.\n'
-                        "   Try to rename eddypro input file to match 'siteid_FO_YYYY.ext' or 'eddy_pro_siteid_YYYY' "
-                        "patterns, \n"
-                        f"  for example, {txt_examples}.")
+        msg = (f'Cannot parse eddypro file name {fname} for site id, using default. \n'
+               f"\t Try to rename file to match 'siteid_FO_YYYY.ext' or 'eddy_pro_siteid_YYYY' patterns, \n"
+               f'\t for example, {txt_examples}.')
+        ff_log.warning(msg)
         ias_output_prefix = 'unknown_site'
 
     ff_log.warning('No version is expected in eddypro file name, specify manually in ias_output_version .')
