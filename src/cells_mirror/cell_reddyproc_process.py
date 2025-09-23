@@ -3,7 +3,7 @@ from src.ipynb_globals import *
 
 config.reddyproc = RepConfig(
     site_id=config.site_name,
-
+    
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable
     ustar_threshold_fallback=0.01,
@@ -15,19 +15,19 @@ config.reddyproc = RepConfig(
     is_bootstrap_u_star=False,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
-
+    
     is_to_apply_partitioning=True,
-
+    
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
     partitioning_methods=["Reichstein05", "Lasslop10"],
-
+    
     latitude=56.5,
     longitude=32.6,
     timezone=+3.0,
-
+    
     # "Tsoil"
     temperature_data_variable="Tair",
-
+    
     # do not change
     u_star_method="RTw",
     is_to_apply_gap_filling=True,

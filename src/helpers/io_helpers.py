@@ -25,7 +25,7 @@ def ensure_path(arg: Path | str) -> Path:
 def tag_to_fpath(parent_dir: Path, prefix, tag, ext, must_exist):
     # meaning of tag here is unique file name ending
     # Test_site_2024_Hd_f.png -> tag is Hd_f
-
+    
     fpath = parent_dir / (prefix + '_' + tag + ext)
     if must_exist and not fpath.exists():
         return None
@@ -39,7 +39,7 @@ def replace_fname_end(fpath: Path, tag: str, new_tag: str):
 
 def ensure_empty_dir(dpath: str | Path):
     dpath = Path(dpath)
-
+    
     dpath.mkdir(parents=True, exist_ok=True)
     for path in dpath.iterdir():
         if path.is_file():
@@ -50,13 +50,13 @@ def create_archive(arc_path: Path | str, dirs: list[Path | str] | Path | str,
                    top_dir: Path | str, include_fmasks, exclude_files: list[Path | str]):
     dirs = ensure_list(dirs, transform_func=ensure_path)
     exclude_files = ensure_list(exclude_files, transform_func=ensure_path)
-
+    
     files = []
     for dpath in dirs:
         for mask in include_fmasks:
             files += list(dpath.glob(mask))
     files = set(files) - set(exclude_files)
-
+    
     with ZipFile(arc_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         for file in files:
             relative_path = file.relative_to(top_dir)
@@ -67,7 +67,7 @@ def find_in_files(root_dir: Path | str, fname_regex='.*', find_regex: str = None
     # fname_regex multiple extensions example '.*\.(py|R|r)$'
     # to exclude, add at the start: ^(?!.*ias_error_check)
     root_dir = Path(root_dir)
-
+    
     all_fpaths = list(root_dir.glob('**/*'))
     fpaths = [f for f in all_fpaths if re.match(pattern=fname_regex, string=str(f))]
     files_with_matches = [f for f in fpaths if open(f, 'r').read().find(find_regex) != -1]

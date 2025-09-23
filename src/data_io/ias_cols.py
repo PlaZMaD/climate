@@ -24,15 +24,15 @@ COLS_IAS_USED_NORENAME_IMPORT = [
     # Script uses cols without renames (but lowercases on import)
     'WD_1_1_1',
     'TS_1_1_1', 'TS_2_1_1', 'TS_3_1_1',
-
+    
     'RH_1_1_1',  # 'RH_1_1_1' <- 'RH_1_1_1' or ~'VPD_1_1_1'
     'P_1_1_1',  # 'P_1_1_1' <- 'P_1_1_1' or 'P_RAIN_1_1_1'
     'P_RAIN_1_1_1',  # 'P_RAIN_1_1_1' <- 'P_RAIN_1_1_1' or 'P_1_1_1'
     'TA_1_1_1',  # 'TA_1_1_1' <- 'TA_1_1_1' or 'air_temperature'
-
+    
     # TODO 1 OA: ALB_1_1_1 must be ignored (WARNING) (opposite of V: import it)
     'ALB_1_1_1',  # 'ALB_1_1_1' <- 'ALB_1_1_1' or 'swin_1_1_1', 'swout_1_1_1'
-
+    
     # moved to COLS_IAS_CONVERSION_IMPORT
     # 'VPD_PI_1_1_1'
     # TODO QOA 2 ias: import other _PI cols or not? V: skip, _PI are cols of level > 2 vs OA: import
@@ -73,10 +73,10 @@ COLS_IAS_NORENAME_EXPORT_DICT = {k.lower(): k for k in COLS_IAS_NORENAME_EXPORT}
 
 COLS_SCRIPT_E_TO_IAS_RENAMES = {
     # originates from conversion of file formats,
-
+    
     # closely matches to columns which are renamed in the script on IAS export
     # only columns which are renamed in the script, not including ones with just changed case
-
+    
     # TODO 1 test for no import renames (fx-lfs/todo)
     # Reminder: instead of
     # IAS -> (lower) -> SCRIPT,
@@ -87,7 +87,7 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     # - generalised columns repair step
     # - simplified to a table with multiple + regex to one
     # check COLS_EDDYPRO_TO_IAS_RENAMES which is derived from this dict
-
+    
     'co2_flux': 'FC_1_1_1', 'qc_co2_flux': 'FC_SSITC_TEST_1_1_1',
     'LE': 'LE_1_1_1', 'qc_LE': 'LE_SSITC_TEST_1_1_1',
     'H': 'H_1_1_1', 'qc_H': 'H_SSITC_TEST_1_1_1',
@@ -101,26 +101,26 @@ COLS_SCRIPT_E_TO_IAS_RENAMES = {
     '(z-d)/L': 'ZL_1_1_1',
     'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
     'ch4_flux': 'FCH4_1_1_1', 'qc_ch4_flux': 'FCH4_SSITC_TEST_1_1_1', 'ch4_mole_fraction': 'CH4_1_1_1',
-
+    
     # TODO 1 is it ok they are different? co2_signal_strength vs ch4_signal_strength
     # E: seems it was ok, but better to check
-
+    
     # TODO QOA 1 ch4_signal_strength not in eddy or any specification? E: -> OA
     # IAS: CH4_RSSI_1_1_1 (%) CH4 Received Signal Strength Indicator
     # IAS: CO2_STR (-) СО2 signal strength
     # FF manual: CH42SS (CH4 Signal Strength или RSSI)	(-) <- does not match
-
+    
     'ch4_strg': 'SCH4_1_1_1', 'ch4_signal_strength': 'CH4_RSSI_1_1_1', 'co2_signal_strength': 'CO2_STR_1_1_1',
     'H_strg': 'SH_1_1_1', 'LE_strg': 'SLE_1_1_1',
-
+    
     # possibly cols which are generated if missing
     'PPFD_1_1_1': 'PPFD_IN_1_1_1',
     'Swin_1_1_1': 'SW_IN_1_1_1', 'Swout_1_1_1': 'SW_OUT_1_1_1',
     'u_star': 'USTAR_1_1_1',
-
+    
     # TODO QOA 1 seems these were csf cols added, but they are not supposed to be imported from IAS, are they?
     # 'wind_dir': 'WD_SONIC', 'v_var': 'V_SIGMA', 'h2o_mixing_ratio': 'H2O_mixratio',
-
+    
     # only case changed, moved to COLS_IAS_NORENAME
     # 'Rh_1_1_1': 'RH_1_1_1', 'Ta_1_1_1': 'TA_1_1_1', 'Ts_1_1_1': 'TS_1_1_1',
     # 'Pa_1_1_1': 'PA_1_1_1',
@@ -137,7 +137,6 @@ COLS_IAS_EXPORT_MAP = COLS_SCRIPT_TO_IAS_RENAMES | COLS_IAS_NORENAME_EXPORT_DICT
 COLS_IAS_CONVERSION_EXPORT = invert_dict(COLS_IAS_CONVERSION_IMPORT)
 
 COLS_IAS_IMPORT_MAP = invert_dict(COLS_IAS_EXPORT_MAP)
-
 
 COLS_IAS_TIME = ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']
 

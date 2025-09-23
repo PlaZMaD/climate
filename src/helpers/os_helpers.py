@@ -17,13 +17,13 @@ from sys import path as sys_paths
 def ch_project_root_dir():
     this_file_path = Path(__file__).parent
     assert this_file_path.name == 'helpers'
-
+    
     src_dir = this_file_path.parent
     assert src_dir.name == 'src'
-
+    
     project_dir = str(src_dir.parent)
     src_dir = str(src_dir)
-
+    
     if src_dir in sys_paths:
         # ambiguous imports can be broken
         sys_paths.remove(src_dir)
@@ -31,10 +31,10 @@ def ch_project_root_dir():
         # ambiguous imports can be broken, dupe remove is necessary sometimes
         sys_paths.remove(src_dir)
     assert src_dir not in sys_paths
-
+    
     if project_dir not in sys_paths:
         sys_paths.append(project_dir)
-
+    
     chdir(project_dir)
     print(f'Workaround for R lang "source" command: current dir is changed to {project_dir}.\n')
 
@@ -46,12 +46,12 @@ def set_simple_user_warnings():
     i.e. 
     src.helpers.* - should use warn
     fluxfilter - (usually) logging.warning
-    """    
-
+    """
+    
     # does not go through root formatter though?
     logging.captureWarnings(True)
     # logging.getLogger("py.warnings").handlers[0].setFormatter(FFFormatter())
-
+    
     ''' not used yet: replaced with ff_log.warning for ipynb
     default_show_warning = warnings.showwarning
 

@@ -24,10 +24,10 @@ def set_lang(language):
     # TODO E 3 replaced to Path, verify bundle still works
     # get the bundle dir if bundled or simply the __file__ dir if not bundled
     bundle_dir = getattr(sys, '_MEIPASS', Path(__file__).parent.parent.parent.absolute())
-
+    
     locales_dir = bundle_dir / 'locale'
     assert locales_dir.exists()
-
+    
     lang = gettext.translation('messages', locales_dir, fallback=True, languages=[language])
     lang.install()
 
@@ -53,7 +53,8 @@ known_columns = ['ALB', 'APAR', 'CH4', 'CO2', 'CO2C13', 'D_SNOW', 'DBH', 'EVI', 
                  ]
 
 # workaround assert that dupe defines are in sync, possibly remove list here and just import from ias_cols
-dupe_defs_check = {re.sub(r'_\d_\d_\d', '', col) for col in COLS_IAS_KNOWN} - {'TIMESTAMP_END', 'TIMESTAMP_START', 'DTime'}
+dupe_defs_check = {re.sub(r'_\d_\d_\d', '', col) for col in COLS_IAS_KNOWN} - {'TIMESTAMP_END', 'TIMESTAMP_START',
+                                                                               'DTime'}
 assert set(known_columns) == dupe_defs_check
 
 
@@ -74,7 +75,7 @@ def get_freq(df, time):
 
 def column_checker(col_list):
     error_flag = 0
-
+    
     # Проверка на наличие временнЫх колонок
     minimum_setup = {'TIMESTAMP_START', 'TIMESTAMP_END'}
     if set(col_list[:2]) != minimum_setup:
@@ -88,7 +89,7 @@ def column_checker(col_list):
             error_flag = 1
     except ValueError:
         logger.info(_("No DTime column in the data"))
-
+    
     # Проверка на наличие дублирующихся названий
     seen = set()
     dupes = []
@@ -100,28 +101,28 @@ def column_checker(col_list):
     if len(dupes) > 0:
         logger.error(_("There are columns with the same names: {}").format(dupes))
         error_flag = 1
-
+    
     # Сортировка по индексам
     full_col_list = copy(col_list)
     full_col_list = [f for f in full_col_list if f not in ['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime']]
-
+    
     re_check = [re.fullmatch(r".*_[0-9]_[0-9]_[0-9]", f) for f in full_col_list]
     re_check = [f.string for f in re_check if f is not None]
-
+    
     no_index_cols = [f for f in full_col_list if f not in re_check]
     if len(no_index_cols) > 0:
         error_flag = 1
         # TODO 3 f'{var}' probably should be supported by poedit, no?
         logger.error(
             _("Columns naming problem, columns {} do not have correct suffix structure.").format(no_index_cols))
-
+    
     unique_cols = list(set([f[:-6] for f in re_check]))
     for col in unique_cols:
-
+        
         if col not in known_columns:
             logger.warning(
                 _("The column {} is not in the known columns list, please double-check the name!").format(col))
-
+        
         col_with_inds = [f for f in re_check if re.fullmatch(f"{col}_[0-9]_[0-9]_[0-9]", f)]
         if len(col_with_inds) == 1:
             if col_with_inds[0][-5:] != '1_1_1':
@@ -135,7 +136,7 @@ def column_checker(col_list):
                 if ind_line.min() != 1:
                     logger.error(_('Check suffix for {}, not starting from 1').format(col))
                     error_flag = 1
-
+                
                 prev = 1
                 sorted_inds = np.sort(ind_line)
                 for i in sorted_inds:
@@ -161,7 +162,7 @@ def column_checker(col_list):
             diff = list(set(linked_list) - set(unique_cols))
             if len(diff) > 0:
                 logger.warning(_("Check linked vars for {}, missing cols: {}").format(col, diff))
-
+    
     return error_flag
 
 
@@ -170,21 +171,21 @@ def check_time(data, time_in, check_year=True):
     data_in['default_index'] = data.index + 2
     data_in.index = data_in[time_in]
     outflag = 0
-
+    
     logger.info(_("Checking time column for {}").format(time_in))
     correct_column_type = is_datetime(data_in[time_in])
     if not correct_column_type:
         logger.info(_("{} is not of correct type.").format(time_in))
         outflag = 1
-
+    
     missed_values = data_in[time_in].isna()
     if missed_values.any():
         logger.error(_("Can't read timestamp. Please check entries near lines \n {}").format(
             data_in.loc[missed_values, 'default_index'].to_numpy()))
         outflag = 1
-
+    
     data_in_dup = data_in.drop(data_in[missed_values].index, axis=0)
-
+    
     if check_year and (
             not (data_in_dup[time_in].dt.year.to_numpy()[0] == data_in_dup[time_in].dt.year.to_numpy()[:-1]).all()):
         years = data_in_dup[time_in].dt.year.unique()
@@ -192,12 +193,12 @@ def check_time(data, time_in, check_year=True):
         logger.error(
             _("There should be only one year presented in file, got {}, i.e. lines {}!").format(years, examples))
         outflag = 1
-
+    
     if data_in_dup.index.duplicated(keep='first').any():
         logger.error(_("Duplicated timestamps! check lines:{}").format(
             data_in_dup.loc[data_in_dup.index.duplicated(), 'default_index'].to_numpy()))
         outflag = 1
-
+    
     return outflag
 
 
@@ -206,9 +207,9 @@ def final_time_check(data, time_in):
     data_in['default_index'] = data.index + 2
     data_in.index = data_in[time_in]
     outflag = 0
-
+    
     data_freq = pd.to_timedelta(get_freq(data_in, time_in))
-
+    
     year = data_in.index.year.to_numpy()[0]
     if "TIMESTAMP_START" in time_in:
         start = f"{year}.01.01 00:00"
@@ -232,9 +233,9 @@ def final_time_check(data, time_in):
         outflag = 1
         logger.error(_("Extra values: {}, lines: {}").format(extra_index.astype(str),
                                                              data_in.loc[extra_index, 'default_index'].to_numpy()))
-
+    
     logger.info("\n")
-
+    
     return outflag
 
 
@@ -243,35 +244,35 @@ def load_ias(fpath: Path):
     # there is something wrong with csv files
     # may be wrong - file is shared, so will require more shared file
     ext_l = fpath.suffix.lower()
-
+    
     if '.csv' in ext_l:
         ftype = 'csv'
     elif ext_l in ['.xls', '.xlsx']:
         ftype = 'excel'
     else:
         raise Exception('Unknown extension.')
-
+    
     load_func = None
     l_config = {}
-
+    
     if ftype == 'csv':
         load_func = pd.read_csv
         # l_config['sep'] = sep
-
+    
     elif ftype == 'excel':
         load_func = pd.read_excel
         l_config['sheet_name'] = None
-
+    
     else:
         logger.error(_("Select CSV, XLS or XLSX file."))
         return 2
-
+    
     try:
         data = load_func(fpath, **l_config)
     except Exception as e:
         logger.error(e)
         raise
-
+    
     if ftype == 'excel':
         if isinstance(data, dict):
             if len(data.values()) > 1:
@@ -280,36 +281,36 @@ def load_ias(fpath: Path):
             else:
                 data = next(iter(data.values()))
         logger.info(f"File {fpath} loaded.\n")
-
+    
     return data
 
 
 def check_ias_file(fpath):
     # TODO 3 possibly extract later to abstract time series converter/repairer routines which are format independent? E: ok
     # eddypro may have similar flaws
-
+    
     # data = load_ias(fpath)
     data = load_table_logged(fpath)
-
+    
     total_errors = 0
     columns = list(copy(data.columns))
     if len(columns) < 3:
         logger.error(
             _("Not enough columns, please check your file. If you are using csv - make sure that it uses comma as a separator."))
         return 0
-
+    
     check_column = column_checker(columns)
     total_errors = total_errors + check_column
-
+    
     time_checks = []
     final_time_checks = []
-
+    
     for col in ['TIMESTAMP_START', 'TIMESTAMP_END']:
         if col not in columns:
             time_checks.append(1)
             logger.error(_('No column {} in the file!').format(col))
             continue
-
+        
         data[f'{col}_datetime'] = pd.to_datetime(data[col].fillna(0).astype(int), format="%Y%m%d%H%M", errors='coerce')
         time_checks.append(check_time(data, f"{col}_datetime"))
         if not time_checks[-1]:
@@ -318,47 +319,47 @@ def check_ias_file(fpath):
             final_time_checks.append(1)
             logger.warning(
                 _("No  final timestamp checks for {}, please fix all errors to complete this step.").format(col))
-
+    
     total_errors = total_errors + np.sum(time_checks) + np.sum(final_time_checks)
     col_errors = 0
-
+    
     for col in columns:
         if col in ['TIMESTAMP_START', 'TIMESTAMP_END'] or col not in data.columns:
             continue
-
+        
         na_test = data[col].isna().all()
         if na_test:
             col_errors += 1
             logger.error(_("The column {} is empty.").format(col))
             continue
-
+        
         all_std_na = data[col].eq(-9999).all()
         if all_std_na:
             col_errors += 1
             logger.error(_("The column {} has only -9999 values.").format(col))
             continue
-
+        
         inf_vals = data.loc[np.logical_or(data[col] == np.inf, data[col] == -np.inf)].index.to_numpy()
         if len(inf_vals) > 0:
             logger.error(_("INF val in {} at the position {}").format(col, inf_vals))
             col_errors += 1
-
+        
         # check_col = pd.to_numeric(data[col].fillna(-9999), errors='coerce')
         check_col = pd.to_numeric(data[col], errors='coerce')
-
+        
         inf_vals = check_col.loc[np.logical_or(check_col == np.inf, check_col == -np.inf)].index.to_numpy()
         if len(inf_vals) > 0:
             logger.error(_("INF val in {} at the position {}").format(col, inf_vals))
             col_errors += 1
-
+        
         wrong_vals = check_col.loc[check_col.isna()].index + 2
         if len(wrong_vals) > 0:
             col_errors += 1
             logger.error(_("Non numerical values in {} at lines {}").format(col, wrong_vals.to_numpy()))
-
+    
     total_errors = total_errors + col_errors
     logger.info(_("{} errors in total, check logs!").format(total_errors))
-
+    
     return total_errors
 
 
@@ -377,7 +378,7 @@ class ErrorFlagHandler(logging.Handler):
 # TODO 1 test logs ias 1.0.0 vs cur
 def check_ias(fpath):
     logger.info("Checking IAS file...")
-          
+    
     errors = check_ias_file(fpath)
     
     if errors > 0:

@@ -22,22 +22,22 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
     else:
         ff_log.info(f"FAT file will have no PPFD")
         fat_output_template.pop('PPFD')
-
+    
     if not config._has_meteo:
         df['ta_1_1_1'] = df['air_temperature'] - 273.15
-
+    
     df['Ta'] = df['ta_1_1_1'].fillna(-99999)
     df['VPD'] = df['vpd_1_1_1'].fillna(-99999)
-
+    
     df['period'] = df.index.month % 12 // 3 + 1
-
+    
     df['Ta_gapfilling'] = df['ta_1_1_1'].interpolate(limit=3).fillna(
         bg.calc_rolling(df['ta_1_1_1'], rolling_window=10, step=gl.points_per_day, min_periods=4)
     ).fillna(-99999)
     df['VPD_gapfilling'] = df['vpd_1_1_1'].interpolate(limit=3).fillna(
         bg.calc_rolling(df['vpd_1_1_1'], rolling_window=10, step=gl.points_per_day, min_periods=4)
     ).fillna(-99999)
-
+    
     for year in df.index.year.unique():
         fat_filename = f"FAT_{config.site_name}_{year}.csv"
         fat_fpath = gl.out_dir / fat_filename
@@ -48,8 +48,8 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
                              columns=[i for i in fat_output_template.keys()], mode='a')  # , sep=' ')
         else:
             fat_fpath.unlink(missing_ok=True)
-
+            
             print(f"not enough data for {year}")
             ff_log.info(f"{year} not saved, not enough data!")
-
+    
     ff_log.info(f"FAT file saved to {fat_fpath}")

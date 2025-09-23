@@ -37,7 +37,7 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
             if record.levelno > logging.INFO:
                 return f"[{record.levelname}] {record.getMessage()}"
             return record.getMessage()
-
+    
     if fpath:
         logging.basicConfig(filename=fpath, filemode="w", force=True)
         if to_stdout:
@@ -48,7 +48,7 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
     else:
         # when no file is specified, writes to stderr
         logging.basicConfig(force=True)
-
+    
     # logging.basicConfig(level = INFO, ...) spams library INFO messages to logs; 
     # possibly using only ff_log is better 
     # reducing plotly log spam
@@ -56,8 +56,7 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
     # logging.getLogger('choreographer').setLevel(logging.WARNING)
     # logging.getLogger('rpy2').setLevel(logging.WARNING)
     # logging.getLogger('rpy2').addFilter(lambda r: 'PATH' not in r.getMessage())
-
+    
     logging.getLogger('bglabutils').setLevel(level=level)
     
     ff_log.setLevel(level=level)
-

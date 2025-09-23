@@ -4,7 +4,7 @@ COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES = {
     'CO2SS'.lower(): 'co2_signal_strength',
     # 'co2_signal_strength_7500_mean': 'co2_signal_strength',
     'co2_signal_strength.{1,}': 'co2_signal_strength',
-
+    
     'CH4SS'.lower(): 'ch4_signal_strength',
     # 'ch4_signal_strength_7700_mean': 'ch4_signal_strength',
     'ch4_signal_strength.{1,}': 'ch4_signal_strength'

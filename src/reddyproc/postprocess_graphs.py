@@ -21,29 +21,29 @@ EddyPrefixes = SimpleNamespace(HEAT_MAP='FP', FLUX='Flux', DIURNAL='DC', DAILY_S
 class RepImgTagHandler:
     def __init__(self, main_path, rep_cfg: RepConfig, rep_out_info, img_ext='.png'):
         self.main_path = Path(main_path)
-
+        
         is_ustar = rep_cfg.is_to_apply_u_star_filtering
         self.nee_f_suffix = 'uStar_f' if is_ustar else 'f'
-
+        
         self.loc_prefix = rep_out_info.fnames_prefix
         self.img_ext = img_ext
-
+    
     def tag_to_img_fpath(self, tag, must_exist=True, warn_if_missing=True):
         fpath = tag_to_fpath(self.main_path, self.loc_prefix, tag, self.img_ext, must_exist)
         if warn_if_missing and not fpath:
             ff_log.warning(f"Expected image is missing: {tag}")
-
+        
         return fpath
-
+    
     def tags_to_img_fpaths(self, tags, exclude_missing=True, must_exist=True, warn_if_missing=True):
         res = {tag: self.tag_to_img_fpath(tag, must_exist, warn_if_missing) for tag in tags}
         missing_image_tags = [k for k, v in res.items() if not v]
-
+        
         if exclude_missing:
             for t in missing_image_tags:
                 res.pop(t)
         return res
-
+    
     @staticmethod
     def test_tag(tag, prefix, suffix):
         if prefix and not tag.startswith(prefix + '_'):
@@ -51,7 +51,7 @@ class RepImgTagHandler:
         if suffix and not tag.endswith('_' + suffix):
             return False
         return True
-
+    
     def raw_tag(self, tag: str):
         if tag.endswith(self.nee_f_suffix):
             return self.remove_suffix(tag, self.nee_f_suffix)
@@ -59,24 +59,24 @@ class RepImgTagHandler:
             return self.remove_suffix(tag, 'f')
         else:
             assert False, f'Cannot derive expected unprocessed image tag for {tag}'
-
+    
     @staticmethod
     def remove_suffix(tag: str, expected_suffix):
         sf = '_' + expected_suffix
         assert tag.endswith(sf)
         return tag.rstrip(sf)
-
+    
     def display_tag_info(self, extended_tags):
         mask = self.loc_prefix + '_*' + self.img_ext
         img_names = [fp.name for fp in self.main_path.glob(mask)]
         possible_tags = [name.removeprefix(self.loc_prefix + '_').removesuffix(self.img_ext) for name in img_names]
-
+        
         def detect_prefix(s, prefixes):
             s = tag.partition('_')[0]
             if s not in prefixes:
                 ff_log.warning('Unexpected file name start: ' + s)
             return s
-
+        
         prefixes_list = list(vars(EddyPrefixes).values())
         final_print = '\nUnused and ' + '[used]' + ' tags in output_sequence: '
         last_prefix = ''
@@ -87,14 +87,14 @@ class RepImgTagHandler:
             final_print += f'[{tag}]' if tag in extended_tags else tag
             final_print += ' '
             last_prefix = prefix
-
+        
         lines = textwrap.wrap(final_print + '\n', replace_whitespace=False,
                               break_long_words=False)
-
+        
         class PyPrint:
             BOLD = '\033[1m'
             END = '\033[0m'
-
+        
         for line in lines:
             repl = line.replace('[', PyPrint.BOLD).replace(']', PyPrint.END)
             print(repl)
@@ -105,21 +105,21 @@ class EddyImgPostProcess:
         self.total_years = total_years
         self.tag_handler = tag_handler
         self.raw_img_duplicates: list[Path] = []
-
+    
     def ungrid_heatmap(self, img):
         tile_count = self.total_years + 1
         row_count = (tile_count - 1) // 3 + 1
         tiles_2d = ungrid_image(img, nx=3, ny=row_count)
         assert len(tiles_2d) == row_count and len(tiles_2d[0]) == 3
-
+        
         tiles_ordered = [elem for row in tiles_2d for elem in row]
         legend_tile = tiles_ordered[tile_count - 1]
-
+        
         year_tiles_stacked_vertically = grid_images(tiles_ordered[0: tile_count - 1], max_horiz=1)
         # just a copy of same legend
         legend_tiles_stacked_vertically = grid_images([legend_tile] * (tile_count - 1), max_horiz=1)
         return year_tiles_stacked_vertically, legend_tiles_stacked_vertically
-
+    
     @staticmethod
     def compact_title_row(img, row_count):
         rows = ungrid_image(img, ny=row_count, flatten=True)
@@ -127,64 +127,64 @@ class EddyImgPostProcess:
         c_title = crop_monocolor_borders(title, sides='TB')
         fixed = grid_images([c_title] + rows[1: row_count], 1)
         return fixed
-
+    
     def load_heatmap(self, fpath):
         img = Image.open(fpath)
-
+        
         # in case of multiple years, they are columns
         maps, legends = self.ungrid_heatmap(img)
         cmap = crop_monocolor_borders(maps, sides='LR')
         clegend = crop_monocolor_borders(legends, sides='LR')
         return cmap, clegend
-
+    
     def get_legend_scale(self, legend: Image):
         legend = ungrid_image(legend, ny=self.total_years, flatten=True)[0]
         scale = ungrid_image(legend, ny=3, flatten=True)[1]
         return scale
-
+    
     def process_heatmaps(self, target_tag):
         raw_tag_f = self.tag_handler.remove_suffix(target_tag, PostProcSuffixes.HMAPS)
         raw_tag = self.tag_handler.raw_tag(raw_tag_f)
-
+        
         tps = self.tag_handler.tags_to_img_fpaths([raw_tag, raw_tag_f], must_exist=True)
         if len(tps) != 2:
             return
         else:
             fpath, fpath_f = tps.values()
-
+        
         maps, legends = self.load_heatmap(fpath)
         maps_f, legends_f = self.load_heatmap(fpath_f)
-
+        
         if self.get_legend_scale(legends) != self.get_legend_scale(legends_f):
             print(f'\n\n Legends of heatmaps do not match, check original output of EProc for {target_tag} \n')
         merged = grid_images([maps, maps_f, legends_f], 3)
-
+        
         merged.save(self.tag_handler.tag_to_img_fpath(target_tag, must_exist=False))
         self.raw_img_duplicates += [fpath, fpath_f]
-
+    
     def process_flux(self, target_tag):
         raw_tag = self.tag_handler.remove_suffix(target_tag, PostProcSuffixes.COMPACT)
-
+        
         fpath = self.tag_handler.tag_to_img_fpath(raw_tag, must_exist=True)
         if not fpath:
             return
         img = Image.open(fpath)
-
+        
         fixed = self.compact_title_row(img, self.total_years + 1)
-
+        
         fixed.save(self.tag_handler.tag_to_img_fpath(target_tag, must_exist=False))
         self.raw_img_duplicates += [fpath]
-
+    
     def process_diurnal_cycle(self, target_tag):
         raw_tag = self.tag_handler.remove_suffix(target_tag, PostProcSuffixes.COMPACT)
-
+        
         fanme = self.tag_handler.tag_to_img_fpath(raw_tag, must_exist=True)
         if not fanme:
             return
         img = Image.open(fanme)
-
+        
         fixed = self.compact_title_row(img, 5)
-
+        
         fixed.save(self.tag_handler.tag_to_img_fpath(target_tag, must_exist=False))
         self.raw_img_duplicates += [fanme]
 
@@ -196,28 +196,28 @@ class RepOutputGen:
     # this allows both default auto-detected order of cell output by this class
     # or custom order if to declare output list manually in the notebook cell
     # auto generation is nessesary because order depends on reddyproc options
-
+    
     def __init__(self, tag_handler: RepImgTagHandler):
         self.tag_handler = tag_handler
-
+    
     def col_name_and_suffix(self, col_name):
         # * in col_name means 'uStar_f' or 'f'
         cn, sf = col_name.split('_')
         if sf == '*':
             sf = self.tag_handler.nee_f_suffix
         return cn, sf
-
+    
     def hmap_compare_row(self, col_name) -> list[str]:
         cn, sf = self.col_name_and_suffix(col_name)
         fp, hm = EddyPrefixes.HEAT_MAP, PostProcSuffixes.HMAPS
         return [f'{fp}_{cn}_{sf}_{hm}']
-
+    
     def diurnal_cycle_row(self, col_name) -> list[str]:
         # for example, 'DC_NEE_uStar_f_compact'
         cn, sf = self.col_name_and_suffix(col_name)
         dc, ct = EddyPrefixes.DIURNAL, PostProcSuffixes.COMPACT
         return [f'{dc}_{cn}_{sf}_{ct}']
-
+    
     def flux_compare_row(self, col_name) -> list[str]:
         # for example, ['Flux_NEE_compact', 'Flux_NEE_uStar_f_compact'],
         cn, sf = self.col_name_and_suffix(col_name)
@@ -229,19 +229,19 @@ class RepOutputHandler:
     def __init__(self, output_sequence, tag_handler, out_info):
         self.output_sequence = output_sequence
         self.tag_handler = tag_handler
-
+        
         total_years = out_info.end_year - out_info.start_year + 1
         assert total_years > 0
         self.img_proc = EddyImgPostProcess(total_years, tag_handler)
-
+    
     def extended_tags(self):
         # flatten, exclude markdown text
         rows = [row for row in self.output_sequence if type(row) is list]
         return [tag for row in rows for tag in row]
-
+    
     def prepare_images(self):
         ct = self.tag_handler.test_tag
-
+        
         for tag in self.extended_tags():
             if ct(tag, EddyPrefixes.HEAT_MAP, PostProcSuffixes.HMAPS):
                 self.img_proc.process_heatmaps(tag)
@@ -253,14 +253,14 @@ class RepOutputHandler:
                 check = [ct(tag, prefix=prefix, suffix=None) for prefix in list(vars(EddyPrefixes).values())]
                 if len(check) != 1:
                     ff_log.warning(f'Unrecognized tag: {tag}')
-
+    
     def on_missing_file(self, e):
         print(str(e))
-
+    
     def prepare_images_safe(self):
         with catch(self.on_missing_file, FileNotFoundError):
             self.prepare_images()
-
+    
     def display_images(self):
         for output_step in self.output_sequence:
             if type(output_step) is str:
@@ -271,7 +271,7 @@ class RepOutputHandler:
                 display_image_row(list(paths.values()))
             else:
                 raise Exception("Wrong ig.output_sequence contents")
-
+    
     def display_images_safe(self):
         with catch(self.on_missing_file, FileNotFoundError):
             self.display_images()

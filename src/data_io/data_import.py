@@ -59,17 +59,17 @@ class AutoImportException(Exception):
 
 def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     df = load_table_from_file(fpath, nrows=nrows, header_row=None)
-
+    
     # may be also consider exact header row place
     ias_cols = (set(IAS_HEADER_DETECTION_COLS), InputFileType.IAS)
     biomet_cols = (set(BIOMET_HEADER_DETECTION_COLS), InputFileType.EDDYPRO_BIOMET)
     eddypro_cols = (set(EDDYPRO_HEADER_DETECTION_COLS), InputFileType.EDDYPRO_FO)
     csf_cols = (set(CSF_HEADER_DETECTION_COLS), InputFileType.CSF)
     detect_col_targets = [ias_cols, biomet_cols, eddypro_cols, csf_cols]
-
+    
     def match_ratio(sample: set, target: set):
         return len(sample & target) / len(sample)
-
+    
     # upper/lower case is yet skipped intentionally
     header_matches = []
     for i, row in df.iterrows():
@@ -80,9 +80,9 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         for cols_set, ftype in detect_col_targets:
             mr = match_ratio(set(fixed_row), cols_set)
             header_matches += [(i, ftype, mr)]
-
+    
     positive_matches = [m for m in header_matches if m[2] > 0.5]
-
+    
     if len(positive_matches) == 1:
         _, ftype, _ = positive_matches[0]
         ff_log.info(f'Detected file {fpath} as {ftype}')
@@ -90,7 +90,7 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     else:
         guesses = '\n'.join([f'{i} {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
         ff_log.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
-                        f'{guesses}')
+                       f'{guesses}')
         return InputFileType.UNKNOWN
 
 
@@ -109,16 +109,16 @@ def change_if_auto(option, new_option=None, new_option_call=None,
                    ok_msg=None, skip_msg=None):
     # new_option_call can be used instead of new_option to optimise out new option detection:
     # if not auto, detection will be skipped
-
+    
     if option != auto:
         if skip_msg:
             ff_log.warning(skip_msg)
         return option
-
+    
     if new_option_call:
         assert new_option is None
         new_option = new_option_call()
-
+    
     if ok_msg:
         ff_log.info(ok_msg)
     return new_option
@@ -127,23 +127,23 @@ def change_if_auto(option, new_option=None, new_option_call=None,
 def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode:
     input_ftypes = list(input_file_types.values())
     possible_input_modes = []
-
+    
     if InputFileType.EDDYPRO_FO in input_ftypes:
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
             possible_input_modes += [ImportMode.EDDYPRO_FO]
         else:
             # TODO 2 QOA test if multiple biomets are still supported
             possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
-
+    
     if InputFileType.IAS in input_ftypes:
         possible_input_modes += [ImportMode.IAS]
-
+    
     if InputFileType.CSF in input_ftypes:
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
             possible_input_modes += [ImportMode.CSF]
         else:
             possible_input_modes += [ImportMode.CSF_AND_BIOMET]
-
+    
     if len(possible_input_modes) == 0:
         raise AutoImportException(
             f'No import modes possible, ensure input files are in the script folder and review log.')
@@ -152,7 +152,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
     else:
         raise AutoImportException(f'Multiple input modes possible: {possible_input_modes}, cannot auto pick.\n'
                                   "Remove some files or specify manually config.input_files = {...} .")
-
+    
     return mode
 
 
@@ -175,7 +175,7 @@ def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType]):
 def auto_detect_input_files(config: FFConfig):
     # noinspection PyPep8Naming
     IM = ImportMode
-
+    
     if config.input_files == 'auto':
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files()
@@ -188,10 +188,10 @@ def auto_detect_input_files(config: FFConfig):
         config.input_files = {Path(fpath): ftype for fpath, ftype in config.input_files.items()}
     else:
         raise ValueError(f'{config.input_files=}')
-
+    
     config.import_mode = detect_input_mode(config.input_files)
     ff_log.info(f'Detected import mode: {config.import_mode}')
-
+    
     # TODO 1 update cells desc to match exact config naming after updating config options
     if config.import_mode == IM.IAS:
         res = detect_auto_config_ias(config.input_files)
@@ -202,14 +202,15 @@ def auto_detect_input_files(config: FFConfig):
     else:
         raise NotImplementedError
     ias_site_name_auto, ias_output_version_auto = res
-
+    
     config.site_name = change_if_auto(config.site_name, ias_site_name_auto,
                                       ok_msg=f'Auto picked site name: {ias_site_name_auto}')
     config.ias_output_version = change_if_auto(config.ias_output_version, ias_output_version_auto,
                                                ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
-
+    
     config._has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
     return config.input_files, config.import_mode, config.site_name, config.ias_output_version, config._has_meteo
+
 
 # TODO 1 config.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
 def try_auto_detect_input_files(*args, **kwargs):

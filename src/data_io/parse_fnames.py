@@ -12,10 +12,10 @@ def try_parse_ias_fname(fname: str):
     examples = {'tv_fy4_2023_v01.xlsx': 'tv_fy4'}
     txt_examples = format_dict(examples)
     # [try_parse_ias_fname(k) for k,v in examples.items()]
-
+    
     fname = preprocess_fname(fname)
     match1 = re.match(r"(.*)_\d{2,4}_(v[\dN]{1,3})", fname)
-
+    
     if match1:
         ias_output_prefix = match1.group(1)
         ias_output_version = match1.group(2)
@@ -52,7 +52,7 @@ def try_parse_csf_fname(fname: str):
     ff_log.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
     ias_output_prefix = 'unknown_site'
     ias_output_version = 'vNN'
-
+    
     return ias_output_prefix, ias_output_version
 
 
@@ -60,11 +60,11 @@ def try_parse_eddypro_fname(fname: str):
     examples = {'Iga_FO_23.csv': 'Iga', 'eddy_pro SSB 2023.csv': 'SSB'}
     txt_examples = format_dict(examples)
     # [try_parse_eddypro_fname(k) for k,v in examples.items()]
-
+    
     fname = preprocess_fname(fname)
     match1 = re.match(r"(.*)_FO_.*\d{2,4}", fname, flags=re.IGNORECASE)
     match2 = re.match(r"eddy.?pro_(.*)_\d{2,4}", fname, flags=re.IGNORECASE)
-
+    
     match = match1 if match1 else match2
     if match:
         ias_output_prefix = match.group(1)
@@ -74,8 +74,8 @@ def try_parse_eddypro_fname(fname: str):
                f'\t for example, {txt_examples}.')
         ff_log.warning(msg)
         ias_output_prefix = 'unknown_site'
-
+    
     ff_log.warning('No version is expected in eddypro file name, specify manually in ias_output_version .')
     ias_output_version = 'vNN'
-
+    
     return ias_output_prefix, ias_output_version

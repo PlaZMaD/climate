@@ -8,7 +8,7 @@ def catch(on_exception: Callable = None, err_types=Exception):
     if not err_types:
         yield
         return
-
+    
     try:
         yield
     except err_types as e:
@@ -21,13 +21,13 @@ def invert_dict(d: dict):
     vals_set = set(vals)
     if len(vals) != len(vals_set):
         raise Exception('Cannot invert dictionary with duplicate values')
-
+    
     return {v: k for k, v in d.items()}
 
 
 def replace_in_dict_by_values(d: dict, replacements: dict):
     assert set(replacements.values()) <= set(d.values())
-
+    
     rd = invert_dict(d)
     rv = invert_dict(replacements)
     for k, v in rv.items():
@@ -39,7 +39,7 @@ def fix_strs_case(strs: list[str], correct_case: list[str]):
     correct_l_to_correct = {c.lower(): c for c in correct_case}
     if len(correct_l_to_correct) != len(correct_case):
         raise Exception('Possibly correct_case contains duplicates with different cases')
-
+    
     missing = [c for c in strs if c.lower() in correct_l_to_correct]
     new_strs = [correct_l_to_correct.get(c.lower(), c) for c in strs]
     renames = [(s, n) for s, n in zip(strs, new_strs) if s != n]
@@ -51,7 +51,7 @@ def sort_fixed(items: list[str], fix_underscore: bool):
     # fix_underscore = True: ['NETRAD_1_1_1', 'P_1_1_1', 'PA_1_1_1', 'PPFD_IN_1_1_1']
     def key(s):
         return s.replace('_', ' ') if fix_underscore else s
-
+    
     return sorted(items, key=key)
 
 
@@ -60,7 +60,7 @@ def ensure_list(items, transform_func=None) -> list:
         ret = items
     else:
         ret = [items]
-
+    
     if transform_func:
         return [transform_func(el) for el in ret]
     else:
@@ -120,7 +120,7 @@ def dict_remove_matches(inplace: dict, match: dict, keep_keys: list[str]):
             continue
         if k in keep_keys:
             continue
-            
+        
         if inplace[k] == match[k]:
             del inplace[k]
 
@@ -131,7 +131,7 @@ def dict_replace(inplace: dict, replace: dict, skip_keys: list[str]):
             continue
         if k in skip_keys:
             continue
-            
+        
         if inplace[k] != replace[k]:
             inplace[k] = replace[k]
 

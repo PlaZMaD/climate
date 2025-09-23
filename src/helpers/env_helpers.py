@@ -13,7 +13,7 @@ class EnvDetect:
             self.COLAB = False
         else:
             self.COLAB = True
-
+        
         self.LOCAL = not self.COLAB
         self.IPYNB: bool = get_ipython()
 
@@ -28,7 +28,7 @@ def ipython_only(func):
         else:
             print(f"IPython env not detected. {func.__name__} is skipped by design.")
             return None
-
+    
     return wrapper
 
 
@@ -39,7 +39,7 @@ def colab_only(func):
         else:
             print(f"Colab env not detected. {func.__name__} is skipped by design.")
             return None
-
+    
     return wrapper
 
 
@@ -50,7 +50,7 @@ def setup_r_env():
         # r_dir = env_dir / 'Lib/R'
         # assert r_dir.exists()
         # os.environ['R_HOME'] = str(r_dir)
-
+        
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
         

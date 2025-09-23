@@ -13,7 +13,7 @@ from test.reddyproc.helpers.io_helpers import find_rep_file
 @pytest.fixture
 def use_r_from_python_env():
     setup_r_env()
-
+    
     # from rpy2 import robjects
     # robjects.r("ip = as.data.frame(installed.packages()[,c(1,3:4)]); ip = ip[is.na(ip$Priority),1:2,drop=FALSE];print(ip)")
     # robjects.r('remove.packages("REddyProc_1.3.3")')
@@ -24,17 +24,17 @@ def use_r_from_python_env():
 
 def test_process(use_r_from_python_env):
     rep_input_file = find_rep_file('output/*REddyProc*.txt')
-
+    
     ig.gl = FFGlobals(
         rep_level3_fpath=rep_input_file.fpath,
         out_dir=Path('output'),
     )
-
+    
     ig.config = FFConfig(
         version='0.0.0',
         site_name=rep_input_file.site_id
     )
-
+    
     import src.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
 
@@ -44,7 +44,7 @@ def test_draw():
         version='0.0.0',
         reddyproc=RepConfig(is_to_apply_u_star_filtering=True)
     )
-
+    
     ig.gl = FFGlobals(
         out_dir=Path('output'),
         rep_out_info=RepOutInfo(fnames_prefix='tv_fy4_2023', start_year=2023, end_year=2023)
