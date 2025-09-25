@@ -23,36 +23,28 @@ from src.helpers.image_tools import grid_images
 from src.helpers.io_helpers import ensure_empty_dir
 
 # TODO 2 repo: create readme and changelog for releases
-# TODO 1 refactor: keep empty lines
+# TODO 1 test: more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
 
-# Fluxfilter.py:
-# TODO 2 QE unroll_filters_db = filters_db.copy() how this was used (why not re-run cell)? 
-# OA: remove (wrap into @unroll_filters_db if used)
-
-# TODO 1 test more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
-
+# TODO 3 QE logs: FF.py, "Какая часть данных от общего количества (в %) была отфильтрована:" idea was print = log (mostly)? (search for ff_log.* for other possible dupes)
 # TODO 2 QE fix or not to fix lib versions for %pip? fix: versions may brake on colab update, unfix: script may brake on lib update
 # %pip install pysolar==0.13
 # %pip install ruamel.yaml==0.18.15
 # %pip install deepdiff==8.6.1
 
 
-# TODO 2 QOA commas?, search example:
+# TODO 3 QOA use commas?, search example:
 '''
 filters_min_max = {
     'co2_flux': [-40, 40],
     'co2_strg': [-20, 20],
     ...
 }
-'''
-
-
-# TODO 3 QE logs: FF.py, "Какая часть данных от общего количества (в %) была отфильтрована:" idea was print = log (mostly)? (search for ff_log.* for other possible dupes) 
+''' 
 
 # TODO 1 QV add ias description in the intro (or idea was to cut more, not to expand?)
 # TODO 2 QOA add csf description in the intro
-
 # TODO 3 QOA set config on top of ipynb, run after or set interactively? 0.9.4 seems had it on top (fundamental problem with execution sequence)
+
 # TODO 2 QV was 0.9.5 link used or 1.0.0?
 
 # DONE repair 0.9.2 - 0.9.5
@@ -60,6 +52,8 @@ filters_min_max = {
 # DONE print % filtered on Chr cuts print middle part on 0.9.4 Chr, search example:
 # DONE print % filtered removed 1 dupe from 0.9.3
 # DONE test Ckd_2015_v01 v1.0.0 vs v1.0.0b (std, colab) FCH4_SSITC_* and FC_SSITC_* different values?
+# DONE refactor: keep empty lines
+# DONE unroll_filters removed OA: remove (wrap into @unroll_filters_db if used)
 
 
 def display_image_row(paths: list[Path]):
@@ -70,7 +64,7 @@ def display_image_row(paths: list[Path]):
         except:
             continue
         imgs += [img]
-    # TODO 4 check paths exist where?
+    # TODO 4 check if paths exist here or above?
     if len(imgs) < 1:
         return
     
