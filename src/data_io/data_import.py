@@ -59,13 +59,24 @@ class AutoImportException(Exception):
 
 def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     df = load_table_from_file(fpath, nrows=nrows, header_row=None)
+
+    biomest_cs = set(BIOMET_HEADER_DETECTION_COLS)
+    ias_cs = set(IAS_HEADER_DETECTION_COLS) - biomest_cs
+
+    # not expected to contain
+    # eddypro_cs = set(EDDYPRO_HEADER_DETECTION_COLS) - biomest_cs
+    # csf_cs = set(CSF_HEADER_DETECTION_COLS) - biomest_cs
+    
+    eddypro_cs = set(EDDYPRO_HEADER_DETECTION_COLS)
+    csf_cs = set(CSF_HEADER_DETECTION_COLS)
     
     # may be also consider exact header row place
-    ias_cols = (set(IAS_HEADER_DETECTION_COLS), InputFileType.IAS)
-    biomet_cols = (set(BIOMET_HEADER_DETECTION_COLS), InputFileType.EDDYPRO_BIOMET)
-    eddypro_cols = (set(EDDYPRO_HEADER_DETECTION_COLS), InputFileType.EDDYPRO_FO)
-    csf_cols = (set(CSF_HEADER_DETECTION_COLS), InputFileType.CSF)
-    detect_col_targets = [ias_cols, biomet_cols, eddypro_cols, csf_cols]
+    detect_col_targets = [
+        (InputFileType.IAS, ias_cs), 
+        (InputFileType.EDDYPRO_BIOMET, biomest_cs), 
+        (InputFileType.EDDYPRO_FO, eddypro_cs),
+        (InputFileType.CSF, csf_cs)
+    ]
     
     def match_ratio(sample: set, target: set):
         return len(sample & target) / len(sample)
@@ -77,7 +88,7 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         if len(fixed_row) == 0:
             continue
         
-        for cols_set, ftype in detect_col_targets:
+        for ftype, cols_set in detect_col_targets:
             mr = match_ratio(set(fixed_row), cols_set)
             header_matches += [(i, ftype, mr)]
     
@@ -88,9 +99,10 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         ff_log.info(f'Detected file {fpath} as {ftype}')
         return ftype
     else:
-        guesses = '\n'.join([f'{i} {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
+        guesses = '\n'.join([f'row: {i} match: {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
         ff_log.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
-                       f'{guesses}')
+                       f'{guesses} \n'
+                       f'Consider specifying file types manually according to import cell description.')
         return InputFileType.UNKNOWN
 
 
@@ -221,7 +233,8 @@ def auto_detect_input_files(config: FFConfig):
     config.ias_out_version = change_if_auto(config.ias_out_version, auto_ias_ver,
                                                ok_msg=f'Auto picked ias version: {auto_ias_ver}')
     
-    config._has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
+    # TODO 2 _has_meteo vs has_meteo, duplicates in import toutines 
+    config._has_meteo = config.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
     return config.input_files, config.import_mode, config.site_name, config.ias_out_version, config._has_meteo
 
 
