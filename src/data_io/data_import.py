@@ -156,20 +156,38 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
     return mode
 
 
-def detect_auto_config_ias(input_file_types: dict[Path, InputFileType]):
-    paths = list(input_file_types.keys())
-    return try_parse_ias_fname(paths[0].name)
+def detect_auto_fname_options(input_file_types: dict[Path, InputFileType], import_mode: ImportMode):
+    IM, IFT = ImportMode, InputFileType
+    parse_fname_type = {
+        IM.EDDYPRO_FO: IFT.EDDYPRO_FO,
+        IM.EDDYPRO_FO_AND_BIOMET: IFT.EDDYPRO_FO,
+        IM.IAS: IFT.IAS,
+        IM.CSF: IFT.IAS,
+        IM.CSF_AND_BIOMET: IFT.CSF
+    }[import_mode]
+    parser = {
+        IFT.EDDYPRO_FO: try_parse_eddypro_fname,
+        IFT.IAS: try_parse_ias_fname,
+        IFT.CSF: try_parse_csf_fname
+    }[parse_fname_type]
 
+    paths = [k for k, v in input_file_types.items() if v == parse_fname_type]
+    
+    if len(paths) > 1:
+        ff_log.warning(f'Multiple file names can be used to auto detect site: {paths}, \n' 
+                       'Using the first or specify auto options manually.')
 
-def detect_auto_config_csf(input_file_types: dict[Path, InputFileType]):
-    paths = list(input_file_types.keys())
-    return try_parse_csf_fname(paths[0].name)
+    if len(paths) >= 1:
+        ias_site_name_auto, ias_output_version_auto = parser(paths[0].name)
+    else:
+        ias_site_name_auto, ias_output_version_auto = None, None
+    
+    if ias_site_name_auto is None:
+        ias_site_name_auto = 'unknown_site'
+    if ias_output_version_auto is None:
+        ias_output_version_auto = 'vNN'
 
-
-def detect_auto_config_eddypro(input_file_types: dict[Path, InputFileType]):
-    # 1 or 0 biomet files are already ensured
-    config_path = [k for k, v in input_file_types.items() if v == InputFileType.EDDYPRO_FO]
-    return try_parse_eddypro_fname(Path(config_path[0]).name)
+    return ias_site_name_auto, ias_output_version_auto
 
 
 def auto_detect_input_files(config: FFConfig):
@@ -193,23 +211,15 @@ def auto_detect_input_files(config: FFConfig):
     ff_log.info(f'Detected import mode: {config.import_mode}')
     
     # TODO 1 update cells desc to match exact config naming after updating config options
-    if config.import_mode == IM.IAS:
-        res = detect_auto_config_ias(config.input_files)
-    elif config.import_mode == IM.CSF:
-        res = detect_auto_config_csf(config.input_files)
-    elif config.import_mode in [IM.EDDYPRO_FO, IM.EDDYPRO_FO_AND_BIOMET]:
-        res = detect_auto_config_eddypro(config.input_files)
-    else:
-        raise NotImplementedError
-    ias_site_name_auto, ias_output_version_auto = res
+    auto_site_name, auto_ias_ver = detect_auto_fname_options(config.input_files, config.import_mode)
     
-    config.site_name = change_if_auto(config.site_name, ias_site_name_auto,
-                                      ok_msg=f'Auto picked site name: {ias_site_name_auto}')
-    config.ias_output_version = change_if_auto(config.ias_output_version, ias_output_version_auto,
-                                               ok_msg=f'Auto picked ias version: {ias_output_version_auto}')
+    config.site_name = change_if_auto(config.site_name, auto_site_name,
+                                      ok_msg=f'Auto picked site name: {auto_site_name}')
+    config.ias_out_version = change_if_auto(config.ias_out_version, auto_ias_ver,
+                                               ok_msg=f'Auto picked ias version: {auto_ias_ver}')
     
     config._has_meteo = config.import_mode in [IM.CSF, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
-    return config.input_files, config.import_mode, config.site_name, config.ias_output_version, config._has_meteo
+    return config.input_files, config.import_mode, config.site_name, config.ias_out_version, config._has_meteo
 
 
 # TODO 1 config.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix

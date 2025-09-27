@@ -24,8 +24,8 @@ def try_parse_ias_fname(fname: str):
                f"\t Try to rename file to match 'siteid_YYYY_vNN.ext' pattern, \n"
                f'\t for example, {txt_examples}.')
         ff_log.warning(msg)
-        ias_output_prefix = 'unknown_site'
-        ias_output_version = 'vNN'
+        ias_output_prefix = None
+        ias_output_version = None
     return ias_output_prefix, ias_output_version
 
 
@@ -50,8 +50,8 @@ def try_parse_csf_fname(fname: str):
     '''
     # TODO 2 update cell description, add patterns OA:ok
     ff_log.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
-    ias_output_prefix = 'unknown_site'
-    ias_output_version = 'vNN'
+    ias_output_prefix = None
+    ias_output_version = None
     
     return ias_output_prefix, ias_output_version
 
@@ -73,9 +73,9 @@ def try_parse_eddypro_fname(fname: str):
                f"\t Try to rename file to match 'siteid_FO_YYYY.ext' or 'eddy_pro_siteid_YYYY' patterns, \n"
                f'\t for example, {txt_examples}.')
         ff_log.warning(msg)
-        ias_output_prefix = 'unknown_site'
+        ias_output_prefix = None
     
     ff_log.warning('No version is expected in eddypro file name, specify manually in ias_output_version .')
-    ias_output_version = 'vNN'
+    ias_output_version = None
     
     return ias_output_prefix, ias_output_version

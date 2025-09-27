@@ -298,7 +298,7 @@ if not config.from_file:
     
     # Индекс станции для названий выходных файлов, рисунков
     config.site_name = 'auto'
-    config.ias_output_version = 'auto'
+    config.ias_out_version = 'auto'
 
 # %% [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные со значением флага больше порога будут исключены.
@@ -445,7 +445,7 @@ if not config.from_file:
 # # Импорт и проверка данных
 
 # %% id="Xw5TapK10EhR"
-config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo = try_auto_detect_input_files(
+config.input_files, config.import_mode, config.site_name, config.ias_out_version, config.has_meteo = try_auto_detect_input_files(
     config)
 data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
@@ -926,7 +926,7 @@ if config.has_meteo:
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
     
-    export_ias(gl.out_dir, config.site_name, config.ias_output_version, ias_df, time_col=time_col,
+    export_ias(gl.out_dir, config.site_name, config.ias_out_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])
 
 # %% [markdown] id="Pm8hiMrb_wRW"

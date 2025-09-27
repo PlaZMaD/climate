@@ -12,6 +12,8 @@ from src.ff_logger import ff_log
 
 
 def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwargs):
+    """ a workaround for some (incorrect) csv with multiple header columns with different width """
+    
     rows = [pd.read_csv(fpath, skiprows=i, nrows=1, header=None, **pd_io_kwargs) for i in range(lookup_rows)]
     row_l = np.array([len(row.columns) for row in rows])
     equal_rows_start_at = find_changed_el(row_l, from_end=True) + 1

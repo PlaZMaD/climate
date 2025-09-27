@@ -93,7 +93,7 @@ class FFConfig(BaseConfig):
     has_meteo: bool = None
     
     site_name: str = None
-    ias_output_version: str = None
+    ias_out_version: str = None
     
     qc: dict = None
     filters: FiltersConfig = FiltersConfig.model_construct()
