@@ -140,6 +140,6 @@ def is_protected_method(name):
     return name.startswith("_")
 
 
-def format_dict(items: dict, separator: str = '->') -> str:
-    str_items = [f'{k} {separator} {v}' for k, v in items.items()]
+def format_dict(items: dict, separator: str = ' -> ') -> str:
+    str_items = [f'{k}{separator}{v}' for k, v in items.items()]
     return ', '.join(str_items)

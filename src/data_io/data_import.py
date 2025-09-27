@@ -140,7 +140,8 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
     
     if InputFileType.CSF in input_ftypes:
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
-            possible_input_modes += [ImportMode.CSF]
+            # possible_input_modes += [ImportMode.CSF]
+            ff_log.warning('Found CSF, but biomet is missing. Biomet data is required to use CSF import mode.')
         else:
             possible_input_modes += [ImportMode.CSF_AND_BIOMET]
     
@@ -158,24 +159,25 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
 
 def detect_auto_fname_options(input_file_types: dict[Path, InputFileType], import_mode: ImportMode):
     IM, IFT = ImportMode, InputFileType
-    parse_fname_type = {
+    parse_fname_source = {
         IM.EDDYPRO_FO: IFT.EDDYPRO_FO,
         IM.EDDYPRO_FO_AND_BIOMET: IFT.EDDYPRO_FO,
         IM.IAS: IFT.IAS,
-        IM.CSF: IFT.IAS,
+        # IM.CSF: IFT.CSF,
         IM.CSF_AND_BIOMET: IFT.CSF
     }[import_mode]
     parser = {
         IFT.EDDYPRO_FO: try_parse_eddypro_fname,
         IFT.IAS: try_parse_ias_fname,
         IFT.CSF: try_parse_csf_fname
-    }[parse_fname_type]
+    }[parse_fname_source]
 
-    paths = [k for k, v in input_file_types.items() if v == parse_fname_type]
+    paths = [k for k, v in input_file_types.items() if v == parse_fname_source]
     
     if len(paths) > 1:
-        ff_log.warning(f'Multiple file names can be used to auto detect site: {paths}, \n' 
-                       'Using the first or specify auto options manually.')
+        paths_info = ensure_list(paths, str)
+        ff_log.warning(f'Multiple file names can be used to auto detect site: {paths_info}, \n' 
+                       'Using the first one or specify auto options.')
 
     if len(paths) >= 1:
         ias_site_name_auto, ias_output_version_auto = parser(paths[0].name)
@@ -197,8 +199,9 @@ def auto_detect_input_files(config: FFConfig):
     if config.input_files == 'auto':
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files()
+        input_files_info = format_dict(input_files_auto, separator=': ')
         config.input_files = change_if_auto(config.input_files, input_files_auto,
-                                            ok_msg=f'Detected input files: {input_files_auto}')
+                                            ok_msg=f'Detected input files: {input_files_info}')
     elif type(config.input_files) in [list, str]:
         user_fpaths = ensure_list(config.input_files, transform_func=ensure_path)
         config.input_files = detect_known_files(from_list=user_fpaths)
@@ -236,7 +239,8 @@ def import_data(config: FFConfig):
         res = load_eddypro(config)
     elif config.import_mode == ImportMode.IAS:
         res = import_ias(config)
-    elif config.import_mode == ImportMode.CSF:
+    # elif config.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
+    elif config.import_mode in [ImportMode.CSF_AND_BIOMET]:
         res = import_csf(config)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")

@@ -12,9 +12,11 @@ COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES = {
 
 COLS_CSF_TO_SCRIPT_U_RENAMES = {
     'FC': 'co2_flux', 'FC_QC': 'qc_co2_flux', 'LE_QC': 'qc_LE', 'H_QC': 'qc_H', 'TAU': 'Tau', 'TAU_QC': 'qc_Tau',
-    'USTAR': 'u*', 'TA_1_1_1': 'Ta_1_1_1', 'RH_1_1_1': 'RH_1_1_1', 'T_SONIC': 'sonic_temperature',
+    'USTAR': 'u*', 'T_SONIC': 'sonic_temperature',
     'WS_RSLT': 'MWS_1_1_1', 'CO2': 'co2_mole_fraction', 'CO2_sig_strgth_Min': 'co2_signal_strength_7500_mean',
     'FETCH_MAX': 'x_peak', 'FETCH_90': 'x_90%', 'FETCH_70': 'x_70%', 'MO_LENGTH_1_1_1': 'L', 'ZL_1_1_1': '(z-d)/L'
+    # not expected anymore in csf:
+    # 'TA_1_1_1': 'Ta_1_1_1', 'RH_1_1_1': 'RH_1_1_1',
 }
 
 COLS_CSF_USED_NORENAME_IMPORT = [
