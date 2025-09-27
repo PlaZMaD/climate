@@ -80,12 +80,12 @@ def import_ias_cols(df: pd.DataFrame, time_col):
         msg = 'Неизвестные ИАС переменные: \n', str(unknown_cols)
         ff_log.warning(msg)
     
-    unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
-    if len(unsupported_cols) > 0:
+    unused_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
+    if len(unused_cols) > 0:
         # TODO 3 lang localize properly, check prints (ff_log.* goes to stdout too, but must be ru / en)
-        print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
-              unsupported_cols.to_list())
-        ff_log.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
+        # ff_log.warning('Unused vars (only save loaded): \n' + str(unused_cols.to_list()))
+        print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
+              unused_cols.to_list())
     
     df = import_ias_cols_conversions(df)
     

@@ -7,7 +7,7 @@ current renames EDDYPRO? -> SCRIPT to check
 
 # which cols used in the script and unused?
 # currently 4 column names variations are possible:
-# IAS file, EddyPro file, notebook import, export (after all the processing)
+# IAS file, EddyPro file, script import, export (after all the processing)
 
 # V: import all possible, even if it may prevent expected calculations (add warning on extra cols)
 # OA: imported cols for ias must be exported same way (except ones which are generated) (existed on import and generated cases?)

@@ -14,7 +14,7 @@ def try_parse_ias_fname(fname: str):
     # [try_parse_ias_fname(k) for k,v in examples.items()]
     
     fname = preprocess_fname(fname)
-    match1 = re.match(r"(.*)_\d{2,4}_(v[\dN]{1,3})", fname)
+    match1 = re.match(r"(.*)_\d{2,4}_(v[\dN]{1,3})", fname, re.IGNORECASE)
     
     if match1:
         ias_output_prefix = match1.group(1)
@@ -30,30 +30,25 @@ def try_parse_ias_fname(fname: str):
 
 
 def try_parse_csf_fname(fname: str):
-    '''
-    examples = {'tv_fy4_2023_v01.xlsx': 'tv_fy4'}
-    txt_examples = examples_to_text(examples)
+    # TODO 2 QOA import: add patterns
+    examples = {'Psn_CSF_2024_test.csv': 'Psn'}
+    txt_examples = format_dict(examples)
     # [try_parse_ias_fname(k) for k,v in examples.items()]
-
-    fname = preprocess_fname(fname)
-    match1 = re.match(r"(.*)_\d{2,4}_(v[\dN]{1,3})", fname)
-
-    if match1:
-        ias_output_prefix = match1.group(1)
-        ias_output_version = match1.group(2)
-    else:
-        ff_log.warning(f'Cannot parse ias file name {fname} for site id and version, using defaults.\n'
-                        "   Try to rename ias input file to match 'siteid_YYYY_vNN.ext' pattern, \n"
-                        f"  for example, {txt_examples}.")
-        ias_output_prefix = 'unknown_site'
-        ias_output_version = 'vNN'
-    '''
-    # TODO 2 update cell description, add patterns OA:ok
-    ff_log.warning('No csf file name patterns yet, set config ias_output_prefix manually.')
-    ias_output_prefix = None
-    ias_output_version = None
     
-    return ias_output_prefix, ias_output_version
+    fname = preprocess_fname(fname)
+    match1 = re.match(r"(.*)_CSF_\d{2,4}_.*", fname, re.IGNORECASE)
+    
+    if match1:
+        site_name = match1.group(1)
+    else:
+        ff_log.warning(f'Cannot parse csf file name {fname} for site name, using defaults.\n'
+                       "   Try to rename csf input file to match 'siteid_CSF_YYYY.ext' pattern, \n"
+                       f"  for example, {txt_examples}.")
+        site_name = 'unknown_site'
+    
+    ias_out_version = None
+    
+    return site_name, ias_out_version
 
 
 def try_parse_eddypro_fname(fname: str):
@@ -78,4 +73,5 @@ def try_parse_eddypro_fname(fname: str):
     ff_log.warning('No version is expected in eddypro file name, specify manually in ias_output_version .')
     ias_output_version = None
     
+    # TODO 2 refactor: ias_output_prefix -> site_name, ias_output_version -> ias_out_version
     return ias_output_prefix, ias_output_version

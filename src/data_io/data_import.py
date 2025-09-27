@@ -59,10 +59,10 @@ class AutoImportException(Exception):
 
 def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     df = load_table_from_file(fpath, nrows=nrows, header_row=None)
-
+    
     biomest_cs = set(BIOMET_HEADER_DETECTION_COLS)
     ias_cs = set(IAS_HEADER_DETECTION_COLS) - biomest_cs
-
+    
     # not expected to contain
     # eddypro_cs = set(EDDYPRO_HEADER_DETECTION_COLS) - biomest_cs
     # csf_cs = set(CSF_HEADER_DETECTION_COLS) - biomest_cs
@@ -72,8 +72,8 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     
     # may be also consider exact header row place
     detect_col_targets = [
-        (InputFileType.IAS, ias_cs), 
-        (InputFileType.EDDYPRO_BIOMET, biomest_cs), 
+        (InputFileType.IAS, ias_cs),
+        (InputFileType.EDDYPRO_BIOMET, biomest_cs),
         (InputFileType.EDDYPRO_FO, eddypro_cs),
         (InputFileType.CSF, csf_cs)
     ]
@@ -96,7 +96,7 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     
     if len(positive_matches) == 1:
         _, ftype, _ = positive_matches[0]
-        ff_log.info(f'Detected file {fpath} as {ftype}')
+        # ff_log.info(f'Detected file {fpath} as {ftype}') # duplicates
         return ftype
     else:
         guesses = '\n'.join([f'row: {i} match: {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
@@ -183,25 +183,25 @@ def detect_auto_fname_options(input_file_types: dict[Path, InputFileType], impor
         IFT.IAS: try_parse_ias_fname,
         IFT.CSF: try_parse_csf_fname
     }[parse_fname_source]
-
+    
     paths = [k for k, v in input_file_types.items() if v == parse_fname_source]
     
     if len(paths) > 1:
         paths_info = ensure_list(paths, str)
-        ff_log.warning(f'Multiple file names can be used to auto detect site: {paths_info}, \n' 
+        ff_log.warning(f'Multiple file names can be used to auto detect site: {paths_info}, \n'
                        'Using the first one or specify auto options.')
-
+    
     if len(paths) >= 1:
-        ias_site_name_auto, ias_output_version_auto = parser(paths[0].name)
+        ias_site_name_auto, ias_out_version_auto = parser(paths[0].name)
     else:
-        ias_site_name_auto, ias_output_version_auto = None, None
+        ias_site_name_auto, ias_out_version_auto = None, None
     
     if ias_site_name_auto is None:
         ias_site_name_auto = 'unknown_site'
-    if ias_output_version_auto is None:
-        ias_output_version_auto = 'vNN'
-
-    return ias_site_name_auto, ias_output_version_auto
+    if ias_out_version_auto is None:
+        ias_out_version_auto = 'vNN'
+    
+    return ias_site_name_auto, ias_out_version_auto
 
 
 def auto_detect_input_files(config: FFConfig):
@@ -223,7 +223,7 @@ def auto_detect_input_files(config: FFConfig):
         raise ValueError(f'{config.input_files=}')
     
     config.import_mode = detect_input_mode(config.input_files)
-    ff_log.info(f'Detected import mode: {config.import_mode}')
+    ff_log.info(f'Import mode: {config.import_mode}')
     
     # TODO 1 update cells desc to match exact config naming after updating config options
     auto_site_name, auto_ias_ver = detect_auto_fname_options(config.input_files, config.import_mode)
@@ -231,7 +231,7 @@ def auto_detect_input_files(config: FFConfig):
     config.site_name = change_if_auto(config.site_name, auto_site_name,
                                       ok_msg=f'Auto picked site name: {auto_site_name}')
     config.ias_out_version = change_if_auto(config.ias_out_version, auto_ias_ver,
-                                               ok_msg=f'Auto picked ias version: {auto_ias_ver}')
+                                            ok_msg=f'Auto picked ias version: {auto_ias_ver}')
     
     # TODO 2 _has_meteo vs has_meteo, duplicates in import toutines 
     config._has_meteo = config.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
@@ -261,5 +261,8 @@ def import_data(config: FFConfig):
     paths = format_dict(config.input_files, separator=': ')
     # DONE logs:  fix log
     ff_log.info(f'Data imported from files: {paths} \n')
+    
+    # TODO 2 import: if to use fo and biomet from different years, this will fail on rep export; ensure this is detected earlier
+    # assert res[0][config.time_col].isna().sum() == 0
     
     return res

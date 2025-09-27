@@ -5,7 +5,9 @@ import pandas as pd
 
 from src.data_io.data_import_modes import InputFileType
 from src.data_io.table_loader import load_table_logged
+from src.ff_logger import ff_log
 from src.ffconfig import FFConfig
+from src.helpers.py_helpers import ensure_list
 
 
 def get_freq(df, time):
@@ -54,6 +56,35 @@ def repair_time(df, time):
     return new_time
 
 
+def pick_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
+    guesses = ensure_list(guesses)
+    
+    rows = len(col)
+    if rows < 100:
+        raise Exception(f'Cannot detect datetime format based on less than 100 rows. Rows provided: {rows}')
+    
+    test_chunk = col[0:10]
+    
+    ok_formats = []
+    for guess in guesses:
+        try:
+            pd.to_datetime(test_chunk, format=guess)
+        except ValueError:
+            continue
+        ok_formats.append(guess)
+    
+    if len(ok_formats) == 0:
+        raise Exception(f'None of date or time formats worked, check file contents. Formats were {guesses}, '
+                        f'Trying to apply them to column data: \n{test_chunk}')
+    elif len(ok_formats) > 1:
+        raise Exception(f'Multiple date or time formats worked, remove excessive. Formats were {guesses}, '
+                        f'Trying to apply them to column data: \n{test_chunk}')
+    else:
+        if len(guesses) > 1:
+            ff_log.info(f'Using datetime format {ok_formats[0]}')
+        return ok_formats[0]
+
+
 def prepare_time_series_df(df: pd.DataFrame, time_col, repair_time, target_freq) -> pd.DataFrame:
     rows = dict(df)     
     for key, item in rows.items():
@@ -84,10 +115,14 @@ def prepare_time_series_df(df: pd.DataFrame, time_col, repair_time, target_freq)
     return rows
 
 
-def preprocess_time_csf(df: pd.DataFrame, ftype, tgt_time_col):
+def preprocess_time_csf(df: pd.DataFrame, src_time_col, try_fmts, tgt_time_col):
     """ Only init time column, no checks or repairs """
+    fmt = pick_datetime_format(df[src_time_col], try_fmts)
+    
+    src_time_col_bkp = src_time_col + '_STR'
+    
     df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
-    df[tgt_time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format='%Y-%m-%d %H:%M:%S')
+    df[tgt_time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format=fmt)
     return df
 
 
@@ -106,7 +141,7 @@ def preload_time_series(fpath: Path, ftype: InputFileType, config: FFConfig) -> 
     # TODO 3 # if 'debug' in d_config.keys():f:
     if ftype == InputFileType.CSF:
         df = load_table_logged(fpath, header_row=1, skiprows=[2, 3])
-        df = preprocess_time_csf(df, ftype, config.time_col)
+        df = preprocess_time_csf(df, config.csf.datetime_col, config.csf.try_datetime_formats, config.time_col)
         df = cleanup_df(df)
     elif ftype == InputFileType.EDDYPRO_BIOMET:
         df = load_table_logged(fpath, header_row=1)
@@ -153,3 +188,4 @@ def merge_time_series():
             return None
     '''
     pass
+

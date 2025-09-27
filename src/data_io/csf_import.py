@@ -33,14 +33,14 @@ def check_csf_col_names(df: pd.DataFrame):
         # TODO 3 lang: localize properly, remove prints (ff_log.* goes to stdout too)
         # log - english only? OA: ok
         # TODO QOA 3 lang: print may be too only english for simplicity?
-        print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
+        print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
-        ff_log.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))
+        # ff_log.warning('Unused vars (only save-loaded): \n' + str(unused_cols.to_list()))
 
 
 def import_rename_csf_cols(df: pd.DataFrame, time_col):
     df.rename(columns=COLS_CSF_IMPORT_MAP, inplace=True)
-    print('Переменные после загрузки: \n', df.columns.to_list())
+    # print('Переменные после загрузки: \n', df.columns.to_list()) # duplicate
     
     known_meteo_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(known_meteo_cols)
@@ -77,13 +77,13 @@ def import_csf(config: FFConfig):
         raise NotImplementedError(
             'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
     
-    df = [preload_time_series(fpath, ftype, config) for fpath, ftype in csfs.items()][0]
+    df_csf = [preload_time_series(fpath, ftype, config) for fpath, ftype in csfs.items()][0]
 
     # TODO 1 repair time must be abstracted
-    df = df_init_time_draft(df, config.time_col)    
-    print('Диапазон времени csf (START): ', df.index[[0, -1]])
-    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    data_freq = df.index.freq
+    df_csf = df_init_time_draft(df_csf, config.time_col)    
+    print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
+    ff_log.info('Time range for full_output: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    data_freq = df_csf.index.freq
     
     c_bm = config.eddypro_biomet
     bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
@@ -100,31 +100,38 @@ def import_csf(config: FFConfig):
             },
             'repair_time': c_bm.repair_time,
         }
-        biomet_df = load_biomet(bg_bm_config, data_freq)
+        df_biomet = load_biomet(bg_bm_config, data_freq)
     else:
-        biomet_df = None
+        df_biomet = None
        
        
-    df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
-    check_csf_col_names(df)
-        
-    df, biomet_cols_index = import_rename_csf_cols(df, config.time_col)
+    df_csf = regex_fix_col_names(df_csf, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
+    check_csf_col_names(df_csf)        
+    df_csf, biomet_cols_index = import_rename_csf_cols(df_csf, config.time_col)
     
     
-    # TODO 1 imvore merge
-    # df = merge_time_series(dfs, biomet_df)
-    print("Колонки в FullOutput \n", df.columns.to_list())
+    # TODO 1 imrpove merge
+    # df = merge_time_series(dfs, df_biomet)
+    print("Колонки в CSF \n", df_csf.columns.to_list())
     if has_meteo:
-        print("Колонки в метео \n", biomet_df.columns.to_list())
+        print("Колонки в метео \n", df_biomet.columns.to_list())
+    
+    same_cols = {col for col in df_csf.columns if col.lower() in df_biomet.columns.str.lower()}
+    same_cols = same_cols - {config.time_col}
+    if len(same_cols) > 0:
+        ff_log.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
+        df_csf = df_csf.drop(list(same_cols), axis=1)
     
     # merge into common DataFrame
     if has_meteo:
-        df = df.join(biomet_df, how='outer', rsuffix='_meteo')
+        df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
         df[config.time_col] = df.index
         df = repair_time(df, config.time_col)
-        if df[biomet_df.columns[-1]].isna().sum() == len(df.index):
+        if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
             print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
             has_meteo = False
+    else:
+        df = df_csf
     
     # reddyproc requires 3 months
     if config.debug:
@@ -132,9 +139,10 @@ def import_csf(config: FFConfig):
     
     biomet_columns = []
     if has_meteo:
-        biomet_columns = biomet_df.columns.str.lower()
+        biomet_columns = df_biomet.columns.str.lower()
         
-        
-        
+    # TODO 2 after merge or after load?
+    if df[config.time_col].isna().sum() > 0:
+        raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
     
     return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo

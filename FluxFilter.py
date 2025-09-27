@@ -259,17 +259,21 @@ if not config.from_file:
     config.time_col = 'datetime'
     
     config.eddypro_fo.missing_data_codes = ['-9999']
-    config.eddypro_fo.time_col = 'time'
-    config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
     config.eddypro_fo.date_col = 'date'
     config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    config.eddypro_fo.time_col = 'time'
+    config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
     config.eddypro_fo.repair_time = True
     
     config.eddypro_biomet.missing_data_codes = ['-9999']
-    config.eddypro_biomet.repair_time = True
     config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
     config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
-
+    config.eddypro_biomet.repair_time = True
+    
+    config.csf.missing_data_codes = ['-9999']
+    config.csf.datetime_col = 'TIMESTAMP'
+    config.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
+    config.csf.repair_time = True
 # %% [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
 

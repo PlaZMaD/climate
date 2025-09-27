@@ -1,7 +1,7 @@
 import pandas as pd
 
 import bglabutils.basic as bg
-from src.helpers.py_helpers import ensure_list
+from src.data_io.time_series_loader import pick_datetime_format
 from src.ff_logger import ff_log
 from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.ffconfig import FFConfig
@@ -25,35 +25,6 @@ def load_biomet(config_meteo, data_freq):
         data_meteo = data_meteo.asfreq(data_freq)
     
     return data_meteo
-
-
-def pick_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
-    guesses = ensure_list(guesses)
-    
-    rows = len(col)
-    if rows < 100:
-        raise Exception(f'Cannot detect datetime format based on less than 100 rows. Rows provided: {rows}')
-    
-    test_chunk = col[0:10]
-    
-    ok_formats = []
-    for guess in guesses:
-        try:
-            pd.to_datetime(test_chunk, format=guess)
-        except ValueError:
-            continue
-        ok_formats.append(guess)
-    
-    if len(ok_formats) == 0:
-        raise Exception(f'None of date or time formats worked, check file contents. Formats were {guesses}, '
-                        f'Trying to apply then to column data: \n{test_chunk}')
-    elif len(ok_formats) > 1:
-        raise Exception(f'Multiple date or time formats worked, remove excessive. Formats were {guesses}, '
-                        f'Trying to apply them to column data: \n{test_chunk}')
-    else:
-        if len(guesses) > 1:
-            ff_log.info(f'Using datetime format {ok_formats[0]}')
-        return ok_formats[0]
 
 
 def datetime_converter(df: pd.DataFrame,
