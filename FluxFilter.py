@@ -138,13 +138,14 @@ import bglabutils.basic as bg
 # import textwrap
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
-from src.ffconfig import FFConfig, RepConfig, FFGlobals, InputFileType
+from src.ff_config import FFConfig, RepConfig, FFGlobals, InputFileType
 from src.ff_logger import init_logging, ff_log
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
 from src.data_io.rep_level3_export import export_rep_level3
-from src.data_io.data_import import try_auto_detect_input_files, import_data
+from src.data_io.data_import import import_data
+from src.data_io.detect_import import try_auto_detect_input_files
 from src.data_io.ias_io import export_ias
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \

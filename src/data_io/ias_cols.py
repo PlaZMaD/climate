@@ -18,7 +18,7 @@ current renames EDDYPRO? -> SCRIPT to check
 # TODO 1 QOA should 'nee' -> 'NEE_PI', 'rg_1_1_1', 'par' be imported from ias?
 #     V: _PI are generated, lvl+ (don't export, but import?)
 
-from src.helpers.py_helpers import invert_dict
+from src.helpers.py_collections import invert_dict
 
 COLS_IAS_USED_NORENAME_IMPORT = [
     # Script uses cols without renames (but lowercases on import)

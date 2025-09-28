@@ -1,61 +1,9 @@
-import pandas as pd
-
 import bglabutils.basic as bg
-from src.data_io.time_series_loader import pick_datetime_format
+from src.data_io.biomet_loader import load_biomet
+from src.data_io.utils.time_series_utils import datetime_parser, date_time_parser
 from src.ff_logger import ff_log
 from src.data_io.data_import_modes import ImportMode, InputFileType
-from src.ffconfig import FFConfig
-
-
-def load_biomet(config_meteo, data_freq):
-    print("Проверяем корректность временных меток. Убираем повторы, дополняем пропуски. "
-          "На случай загрузки нескольких файлов. При загрузке одного делается автоматически.")
-    
-    data_meteo, time_meteo = bg.load_df(config_meteo)
-    data_meteo = data_meteo[next(iter(data_meteo))]  # т.к. изначально у нас словарь
-    
-    meteo_freq = data_meteo.index.freq
-    print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
-    ff_log.info(f"MeteoData loaded from {config_meteo['path']}")
-    ff_log.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    
-    if data_freq != meteo_freq:
-        print("Resampling meteo data")
-        ff_log.info(f"Resampling meteo data")
-        data_meteo = data_meteo.asfreq(data_freq)
-    
-    return data_meteo
-
-
-def datetime_converter(df: pd.DataFrame,
-                       time_col: str | None = None, time_formats: str | list[str] | None = None,
-                       date_col: str | None = None, date_formats: str | list[str] | None = None,
-                       datetime_col: str | None = None, datetime_formats: str | list[str] | None = None) -> pd.Series:
-    # TODO 3 move to abstract load utils? 
-    # TODO 1 split fo and biomet
-    
-    has_date_and_time_cols = time_col is not None and date_col is not None
-    has_datetime_col = datetime_col is not None
-    
-    if has_date_and_time_cols == has_datetime_col:
-        raise Exception(
-            'Unexpected time and date column options: specify time_col and date_col or datetime_col in import options.')
-    
-    if has_date_and_time_cols:
-        date = df[date_col].astype(str)
-        date_format = pick_datetime_format(date, date_formats)
-        time = df[time_col].astype(str)
-        time_format = pick_datetime_format(time, time_formats)
-        
-        tmp_datetime = date + " " + time
-        res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")
-    elif has_datetime_col:
-        datetime_format = pick_datetime_format(df[datetime_col], datetime_formats)
-        res = pd.to_datetime(df[datetime_col], format=datetime_format)
-    else:
-        res = None
-    
-    return res
+from src.ff_config import FFConfig
 
 
 # TODO 1 in the ipynb, u_star is not yet renamed at the next line?
@@ -81,9 +29,8 @@ def load_eddypro(config: FFConfig):
         '-9999_to_nan': '-9999' in c_fo.missing_data_codes,
         'time': {
             'column_name': config.time_col,
-            'converter': lambda x: datetime_converter(x,
-                                                      time_col=c_fo.time_col, time_formats=c_fo.try_time_formats,
-                                                      date_col=c_fo.date_col, date_formats=c_fo.try_date_formats)
+            'converter': lambda x: date_time_parser(x, c_fo.time_col, c_fo.try_time_formats,
+                                                       c_fo.date_col, c_fo.try_date_formats)
         },
         'repair_time': c_fo.repair_time,
     }
@@ -102,8 +49,7 @@ def load_eddypro(config: FFConfig):
             '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
             'time': {
                 'column_name': config.time_col,
-                'converter': lambda x: datetime_converter(x, datetime_col=c_bm.datetime_col,
-                                                          datetime_formats=c_bm.try_datetime_formats)
+                'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
             },
             'repair_time': c_bm.repair_time,
         }
@@ -115,6 +61,7 @@ def load_eddypro(config: FFConfig):
     if has_meteo:
         print("Колонки в метео \n", data_meteo.columns.to_list())
     
+    # TODO 3 switch to common time series merge from utils
     # merge into common DataFrame
     if has_meteo:
         df = df.join(data_meteo, how='outer', rsuffix='_meteo')

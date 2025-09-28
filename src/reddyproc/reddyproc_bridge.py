@@ -10,7 +10,7 @@ from rpy2.rinterface_lib.sexp import NULLType
 from rpy2.robjects import conversion, default_converter
 
 from src.ff_logger import ff_log
-from src.ffconfig import RepConfig, RepOutInfo
+from src.ff_config import RepConfig, RepOutInfo
 
 
 @contextmanager

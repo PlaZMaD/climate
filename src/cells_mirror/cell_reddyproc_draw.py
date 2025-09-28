@@ -1,4 +1,4 @@
-# Reminder: this is duplicate of specific cell used for test purposes, it is outdated or ahead frequently
+""" Reminder: this is dev-only duplicate of specific ipynb cell, it is out of sync frequently """
 from pathlib import Path
 
 from src.ipynb_globals import *

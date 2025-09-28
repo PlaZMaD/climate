@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from bglabutils import basic as bg
-from src.ffconfig import FFConfig, FFGlobals
+from src.ff_config import FFConfig, FFGlobals
 from src.ff_logger import ff_log
 
 

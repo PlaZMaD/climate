@@ -9,16 +9,18 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, check_ias
 from src.data_io.table_loader import load_table_logged
-from src.data_io.time_series_utils import df_init_time_draft
-from src.ffconfig import FFConfig
+from src.data_io.time_series_loader import df_init_time_draft
+from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
-from src.helpers.py_helpers import sort_fixed, intersect_list
+from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_log
 
 
 # DONE separate check log, but merge into ff_log
 # DONE column order improved
-# TODO 1 test more ias export to match import after export 1y fixed
+
+# TODO 1 test: more ias export to match import after export 1y fixed
+# TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
@@ -105,51 +107,29 @@ def import_ias(config: FFConfig):
     set_lang('ru')
     
     # TODO 1 V: implement merge for any amount of iases
-    # TODO 2 V: implement custom split of ias on export (month, year, all years)
     if len(config.input_files) != 1:
         raise NotImplementedError(
             'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
     ias_fpath = list(config.input_files.keys())[0]
     check_ias(ias_fpath)
     df = load_table_logged(ias_fpath)
-    ''' from eddypro to ias
-    for year in ias_df.index.year.unique():
-        ias_filename = f'{ias_output_prefix}_{year}_{ias_output_version}.csv'
-        save_data = ias_df.loc[ias_df[time_col].dt.year == year]
-        save_data = save_data.drop(time_col, axis=1)
-        save_data = save_data.fillna(-9999)
-        if len(save_data.index) >= 5:
-            save_data.to_csv(os.path.join('output', ias_filename), index=False)
-            ff_log.info(f'IAS file saved to {os.path.join('output', ias_filename)}.csv')
-        else:
-            try:
-                os.remove(os.path.join('output', ias_filename))
-            except Exception as e:
-                print(e)
-
-            print(f'not enough df for {year}')
-            ff_log.info(f'{year} not saved, not enough df!')
-    # ias_filename = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
-    # ias_df.to_csv(os.path.join('output',ias_filename), index=False)
-    '''
     
-    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid
-    time_col = 'datetime'
-    df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
+    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
+    df[config.time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
     df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
-    df = df_init_time_draft(df, time_col)
+    df = df_init_time_draft(df, config.time_col, repair=True)
     
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
     ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    df = ias_table_extend_year(df, time_col, -9999)
+    df = ias_table_extend_year(df, config.time_col, -9999)
     
     print('Replacing -9999 to np.nan')
     df.replace(-9999, np.nan, inplace=True)
     
-    df, biomet_cols_index = import_ias_cols(df, time_col)
+    df, biomet_cols_index = import_ias_cols(df, config.time_col)
     
     has_meteo = True
-    return df, time_col, biomet_cols_index, df.index.freq, has_meteo
+    return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
 def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
@@ -182,7 +162,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
+def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
     # TODO 2 cols: check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
     
@@ -227,7 +207,7 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     df = df[col_list_ias]
     
     for year in df.index.year.unique():
-        fname = f'{ias_output_prefix}_{year}_{ias_output_version}.csv'
+        fname = f'{site_name}_{year}_{ias_out_version}.csv'
         fpath = out_dir / fname
         
         save_data = df.loc[df[time_col].dt.year == year]
@@ -243,6 +223,6 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
             # print(f'not enough data for {year}')
             ff_log.info(f'{year} not saved, not enough data!')
     # ias_year = df[time_col].dt.year.min()
-    # fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
+    # fname = f'{site_name}_{ias_year}_{ias_out_version}.csv'
     # ias_df.to_csv(os.path.join('output',fname), index=False)
     # ff_log.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')

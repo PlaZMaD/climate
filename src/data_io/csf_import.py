@@ -1,19 +1,18 @@
 import re
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from src.data_io.data_import_modes import InputFileType, ImportMode
-from src.data_io.eddypro_loader import datetime_converter, load_biomet
-from src.data_io.time_series_loader import preload_time_series, repair_time
-from src.ffconfig import FFConfig
+from src.data_io.biomet_loader import load_biomet
+from src.data_io.utils.time_series_utils import datetime_parser
+from src.data_io.time_series_loader import preload_time_series, df_init_time_draft, merge_time_series
+from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_log
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
     COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
-from src.data_io.time_series_utils import df_init_time_draft
 
 
 def check_csf_col_names(df: pd.DataFrame):
@@ -80,7 +79,7 @@ def import_csf(config: FFConfig):
     df_csf = [preload_time_series(fpath, ftype, config) for fpath, ftype in csfs.items()][0]
 
     # TODO 1 repair time must be abstracted
-    df_csf = df_init_time_draft(df_csf, config.time_col)    
+    df_csf = df_init_time_draft(df_csf, config.time_col, config.csf.repair_time)
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
     ff_log.info('Time range for full_output: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     data_freq = df_csf.index.freq
@@ -95,8 +94,7 @@ def import_csf(config: FFConfig):
             '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
             'time': {
                 'column_name': config.time_col,
-                'converter': lambda x: datetime_converter(x, datetime_col=c_bm.datetime_col,
-                                                          datetime_formats=c_bm.try_datetime_formats)
+                'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
             },
             'repair_time': c_bm.repair_time,
         }
@@ -112,30 +110,7 @@ def import_csf(config: FFConfig):
     
     # TODO 1 imrpove merge
     # df = merge_time_series(dfs, df_biomet)
-    print("Колонки в CSF \n", df_csf.columns.to_list())
-    if has_meteo:
-        print("Колонки в метео \n", df_biomet.columns.to_list())
-    
-    same_cols = {col for col in df_csf.columns if col.lower() in df_biomet.columns.str.lower()}
-    same_cols = same_cols - {config.time_col}
-    if len(same_cols) > 0:
-        ff_log.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
-        df_csf = df_csf.drop(list(same_cols), axis=1)
-    
-    # merge into common DataFrame
-    if has_meteo:
-        df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
-        df[config.time_col] = df.index
-        df = repair_time(df, config.time_col)
-        if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
-            print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
-            has_meteo = False
-    else:
-        df = df_csf
-    
-    # reddyproc requires 3 months
-    if config.debug:
-        df = df[0: min(31 * 3 * 24 * 2, len(df))]
+    df, has_meteo = merge_time_series(config, df_biomet, df_csf, has_meteo)
     
     biomet_columns = []
     if has_meteo:
@@ -146,3 +121,5 @@ def import_csf(config: FFConfig):
         raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
     
     return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
+
+
