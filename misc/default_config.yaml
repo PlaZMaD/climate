@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.0.1
 debug: false
 input_files: auto
 eddypro_fo:
@@ -13,11 +13,16 @@ eddypro_biomet:
     missing_data_codes: ['-9999']
     datetime_col: TIMESTAMP_1
     try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+csf:
+    repair_time: true
+    missing_data_codes: ['-9999']
+    datetime_col: TIMESTAMP
+    try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
 import_mode: AUTO
 time_col: datetime
 has_meteo: true
 site_name: auto
-ias_output_version: auto
+ias_out_version: auto
 qc:
     h: 1
     le: 1

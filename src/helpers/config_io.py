@@ -106,6 +106,10 @@ class BaseConfig(FFBaseModel):
         
         if load_path:
             config = cls.load_from_yaml(Path(load_path))
+            if config.version != init_version:
+                raise NotImplementedError(f'Current config version: {init_version} does not match loaded version: {config.version}. \n'
+                                          'Backwards compatibility is planned to be implemented soon. \n'
+                                          'For now, please update config fields manually to match default exported config.')
             config.from_file = True
         else:
             # if ENV.LOCAL:
