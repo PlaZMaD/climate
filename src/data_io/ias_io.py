@@ -9,7 +9,7 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, check_ias
 from src.data_io.table_loader import load_table_logged
-from src.data_io.time_series_loader import df_init_time_draft
+from src.data_io.time_series_loader import df_init_time_draft, merge_time_series
 from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
@@ -106,13 +106,11 @@ def import_ias(config: FFConfig):
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    # TODO 1 V: implement merge for any amount of iases
-    if len(config.input_files) != 1:
-        raise NotImplementedError(
-            'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
-    ias_fpath = list(config.input_files.keys())[0]
-    check_ias(ias_fpath)
-    df = load_table_logged(ias_fpath)
+    # TODO 1 V: implement merge for any amount of iases    
+    [check_ias(fpath) for fpath, _ in config.input_files.items()]
+    dfs = [load_table_logged(fpath) for fpath, _ in config.input_files.items()]
+    
+    df = merge_time_series_(dfs)
     
     # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
     df[config.time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')

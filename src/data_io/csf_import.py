@@ -6,7 +6,7 @@ import pandas as pd
 from src.data_io.data_import_modes import InputFileType, ImportMode
 from src.data_io.biomet_loader import load_biomet
 from src.data_io.utils.time_series_utils import datetime_parser
-from src.data_io.time_series_loader import preload_time_series, df_init_time_draft, merge_time_series
+from src.data_io.time_series_loader import preload_time_series, df_init_time_draft, merge_time_series_biomet
 from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_log
@@ -110,7 +110,12 @@ def import_csf(config: FFConfig):
     
     # TODO 1 imrpove merge
     # df = merge_time_series(dfs, df_biomet)
-    df, has_meteo = merge_time_series(config, df_biomet, df_csf, has_meteo)
+    print("Колонки в CSF \n", df_csf.columns.to_list())        
+    if has_meteo:
+        print("Колонки в метео \n", df_biomet.columns.to_list())
+        df, has_meteo = merge_time_series_biomet(df_csf, df_biomet, config.time_col)
+    else:
+        df = df_csf
     
     biomet_columns = []
     if has_meteo:

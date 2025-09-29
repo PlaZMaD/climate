@@ -56,31 +56,24 @@ def preload_time_series(fpath: Path, ftype: InputFileType, config: FFConfig) -> 
     return df
 
 
-def merge_time_series(config, df_biomet, df_csf, has_meteo):
+def merge_time_series_biomet(df: pd.DataFrame, df_biomet: pd.DataFrame, time_col: str):
     """ based on bglabutils==0.0.21 """
     
-    print("Колонки в CSF \n", df_csf.columns.to_list())
-    if has_meteo:
-        print("Колонки в метео \n", df_biomet.columns.to_list())
-    same_cols = {col for col in df_csf.columns if col.lower() in df_biomet.columns.str.lower()}
-    same_cols = same_cols - {config.time_col}
+    df_join = df.copy()
+    same_cols = {col for col in df_join.columns if col.lower() in df_biomet.columns.str.lower()}
+    same_cols = same_cols - {time_col}
     if len(same_cols) > 0:
         ff_log.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
-        df_csf = df_csf.drop(list(same_cols), axis=1)
-    # merge into common DataFrame
-    if has_meteo:
-        df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
-        df[config.time_col] = df.index
-        df = repair_time(df, config.time_col)
-        if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
-            print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
-            has_meteo = False
-    else:
-        df = df_csf
-    # reddyproc requires 3 months
-    if config.debug:
-        df = df[0: min(31 * 3 * 24 * 2, len(df))]
-    return df, has_meteo
+        df_join = df_join.drop(list(same_cols), axis=1)
+
+    df_join = df_join.join(df_biomet, how='outer', rsuffix='_meteo')
+    df_join[time_col] = df_join.index
+    df_join = repair_time(df_join, time_col)
+    if df_join[df_biomet.columns[-1]].isna().sum() == len(df_join.index):
+        print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
+        return df_join, False
+
+    return df_join, True
     
     ''' consequent merge sample (without repair)
         multi_out = []
@@ -101,6 +94,49 @@ def merge_time_series(config, df_biomet, df_csf, has_meteo):
         return {'default': multi_out}, time
     '''
 
+
+def merge_time_series(dfs: list[pd.DataFrame], time_col, df_names: list[str], col_priority: str):
+    """ merge should be done by valid time_col from each df """
+    
+
+    same_cols = {col for col in df_csf.columns if col.lower() in df_biomet.columns.str.lower()}
+    same_cols = same_cols - {config.time_col}
+    if len(same_cols) > 0:
+        ff_log.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
+        df_csf = df_csf.drop(list(same_cols), axis=1)
+
+    df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
+    df[config.time_col] = df.index
+    df = repair_time(df, config.time_col)
+    if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
+        print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
+        has_meteo = False
+    
+    # TODO 1 move to loads
+    # reddyproc requires 3 months
+    if config.debug:
+        df = df[0: min(31 * 3 * 24 * 2, len(df))]
+        
+    return df, has_meteo
+    
+    ''' consequent merge sample (without repair)
+        multi_out = []
+        time = None
+        for file in d_config['path']:
+            temp_config = d_config.copy()
+            temp_config['path'] = file
+            loaded_data, time = load_df(temp_config)
+            multi_out = multi_out + [df for df in loaded_data.values()]
+        freqs = [df.index.freq for df in loaded_data.values()]
+        if not np.all(np.array(freqs) == freqs[0]):
+            print("Different freq in data files. Aborting!")
+            return None
+
+        multi_out = pd.concat(multi_out)
+        multi_out = multi_out.sort_index()
+        multi_out = repair_time(multi_out, time)
+        return {'default': multi_out}, time
+    '''
 
 def df_init_time_draft(df: pd.DataFrame, time_col: str, repair: bool):
     if not repair:
