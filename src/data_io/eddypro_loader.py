@@ -19,14 +19,14 @@ def load_eddypro(config: FFConfig):
     bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
     
     # load of eddypro = full_output, optionally with biomet
-    if not set(c_fo.missing_data_codes) <= {'-9999'}:
-        raise NotImplementedError(f"Not yet supported missing codes: {c_fo.missing_data_codes}")
+    if not set(c_fo.missing_data_codes) <= {-9999}:
+        raise NotImplementedError(f"Changing missing_data_codes is not yet supported")
     
     bg_fo_config = {
         'path': fo_paths,
         # reddyproc requires 90 days, see this function below
         'debug': False,
-        '-9999_to_nan': '-9999' in c_fo.missing_data_codes,
+        '-9999_to_nan': -9999 in c_fo.missing_data_codes,
         'time': {
             'column_name': config.time_col,
             'converter': lambda x: date_time_parser(x, c_fo.time_col, c_fo.try_time_formats,
@@ -46,7 +46,7 @@ def load_eddypro(config: FFConfig):
         bg_bm_config = {
             'path': bm_paths,
             'debug': False,
-            '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
+            '-9999_to_nan': -9999 in c_bm.missing_data_codes,
             'time': {
                 'column_name': config.time_col,
                 'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)

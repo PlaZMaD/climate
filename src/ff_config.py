@@ -7,13 +7,14 @@ from src.helpers.py_helpers import gen_enum_info
 
 
 # DEFAULT_CONFIG = 'misc/default_config.yaml'
+# TODO 1 strings as strings, not values
 
 
 class InputFileConfig(FFBaseModel):
     """ generate new timestamps in case of errors """
     repair_time: bool = None
     """ can replace -9999 to np.nan """
-    missing_data_codes: str | list[str] = None
+    missing_data_codes: list[str | int] = None
     
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
     # time_converter: Callable[[Any], Any]

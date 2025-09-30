@@ -33,7 +33,9 @@ def preprocess_time_biomet(df: pd.DataFrame, ftype, tgt_time_col):
 
 def cleanup_df(df: pd.DataFrame, missing_data_codes):
     print(f'Replacing {missing_data_codes} to np.nan')
-    df.replace(missing_data_codes, np.nan, inplace=True)
+    # TODO 2 can this be done on file reading, not later?
+    # TODO 2 replaces float NOT to np.nan, but to np.float(nan); changing this reqs changing script main routines
+    df.replace(to_replace=missing_data_codes, value=np.nan, inplace=True)
     return df
 
 
