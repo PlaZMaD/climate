@@ -5,7 +5,7 @@ from src.data_io.data_import_modes import InputFileType, ImportMode
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_eddypro_fname, try_parse_ias_fname, try_parse_csf_fname
-from src.data_io.table_loader import load_table_from_file
+from src.data_io.utils.table_loader import load_table_from_file
 from src.ff_logger import ff_log
 from src.ff_config import FFConfig
 from src.helpers.io_helpers import ensure_path

@@ -9,7 +9,7 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, check_ias
-from src.data_io.table_loader import load_table_logged
+from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.time_series_loader import repair_time
 from src.data_io.utils.time_series_utils import merge_time_series
 from src.ff_config import FFConfig

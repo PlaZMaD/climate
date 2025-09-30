@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from src.data_io.data_import_modes import InputFileType
-from src.data_io.table_loader import load_table_logged
+from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.utils.time_series_utils import repair_time, pick_datetime_format
 from src.ff_logger import ff_log
 from src.ff_config import FFConfig
