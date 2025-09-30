@@ -18,3 +18,8 @@ class InputFileType(Enum):
     EDDYPRO_BIOMET = 'EDDYPRO_BIOMET'
     CSF = 'CSF'
     IAS = 'IAS'
+
+
+# TODO 3 ensure cut is applied to all inport types
+# DEBUG_NROWS = 31 * 3 * 24 * 2 # = None
+DEBUG_NROWS = None

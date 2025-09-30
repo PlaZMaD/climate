@@ -4,15 +4,17 @@ import numpy as np
 import pandas as pd
 
 from src.ff_logger import ff_log
-from src.helpers.py_collections import ensure_list
+from src.helpers.py_collections import ensure_list, format_dict
 
 
-def get_freq(df, time):
+def get_freq(df, time_col):
+    """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
+    
     try_max = 100
     try_ind = 0
     t_shift = 5
     start = 1
-    deltas = df[time] - df[time].shift(1)
+    deltas = df[time_col] - df[time_col].shift(1)
     while try_ind < try_max:
         del_arr = deltas.iloc[start + try_ind * t_shift: start + try_ind * t_shift + t_shift].values
         if not np.all(del_arr == del_arr[0]) and del_arr[0] is not None:
@@ -22,11 +24,14 @@ def get_freq(df, time):
             return del_arr[0]
 
 
-def repair_time(df, time):
-    """ based on bglabutils==0.0.21 """
+def repair_time(df, time_col):
+    """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
+
+    # TODO 3 more transparent rework could be handy:
+    #  with support of repair=False and separation of checks, repairs, and standard routines E: ok
     
-    freq = get_freq(df, time)
-    df = df.set_index(time, drop=False)
+    freq = get_freq(df, time_col)
+    df = df.set_index(time_col, drop=False)
     tmp_index = df.index.copy()
     df = df[~df.index.duplicated(keep='first')]
     
@@ -37,22 +42,22 @@ def repair_time(df, time):
     stop = -1
     while True:
         try:
-            pd.to_datetime(df[time].iloc[start])
+            pd.to_datetime(df[time_col].iloc[start])
             break
         except:
             start = start + 1
             continue
     while True:
         try:
-            pd.to_datetime(df[time].iloc[stop])
+            pd.to_datetime(df[time_col].iloc[stop])
             break
         except:
             stop = stop - 1
             continue
-    new_time = pd.DataFrame(index=pd.date_range(start=df[time].iloc[start], end=df[time].iloc[stop],
+    df_fixed = pd.DataFrame(index=pd.date_range(start=df[time_col].iloc[start], end=df[time_col].iloc[stop],
                                                 freq=pd.to_timedelta(freq)))
-    new_time = new_time.join(df, how='left')
-    return new_time
+    df_fixed = df_fixed.join(df, how='left')
+    return df_fixed
 
 
 '''
@@ -147,3 +152,84 @@ def date_time_parser(df: pd.DataFrame,
     res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")    
 
     return res
+
+
+def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_duplicate_cols=False):
+    """
+    dfs: list of (name, df) from the highest intersection priority to the lowest
+    merge is done by time_col from each df
+    returns merged time series or None if failure 
+    """
+    # TODO 1 ensure cols are renamed (to script name, .columns.str.lower()) before merge
+    # TODO 1 ensure time is repaired (index.freq) before merge
+    if len(named_dfs) == 0:
+        return None
+    elif len(named_dfs) == 1:
+        return named_dfs.values()[0]    
+
+    # each df must have two new attributes: .name and .index.freq
+    named_freqs = {name: df.index.freq for name, df in named_dfs.items()}
+    freqs = np.array(list(named_freqs.values()))
+    if not np.all(freqs == freqs[0]):
+        raise Exception(f'Aborting, different freqs in data files: {format_dict(named_freqs)}')
+    
+    dfs = []
+    for name, df in named_dfs.items():
+        for col in df.columns: 
+            df[col].attrs['source_file'] = name
+        dfs += [df]
+    
+    if no_duplicate_cols:
+        # df = dfs[0]
+        # for df_join in dfs[1:]:
+        #     df = df.join(df_join, how='outer', rsuffix='_meteo')
+        df = None
+        raise NotImplementedError
+    else:
+        df = pd.concat(dfs, axis=0)
+        df[time_col] = df.index
+        # df = df.sort_index()
+        df = repair_time(df, time_col)
+
+    # TODO 1 ensure no datetime gaps?
+    # if to use fo and biomet from different years, this will fail on rep export; ensure this is detected earlier
+    assert df[time_col].isna().sum() == 0
+
+    '''
+    if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
+        print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
+        has_meteo = False
+    '''
+        
+    '''
+    cols = pd.Index([])
+    for name, df in dfs:        
+        if no_duplicate_cols:
+            duplicate_cols = cols.intersection(new_cols) - time_col
+
+            if len(duplicate_cols) > 0:
+                ff_log.warning(f'Duplicate columns {duplicate_cols} on merge, columns from {name} excluded. \n')
+                # TODO 1 ensure works
+                df = df.drop(columns=duplicate_cols, axis=1)
+            new_cols = df.columns
+        else:
+            new_cols = new_cols - cols
+        cols += new_cols
+    '''
+
+    ''' horizontal
+    df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
+    df[time_col] = df.index
+    df = repair_time(df, config.time_col)
+    if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
+        print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
+        has_meteo = False
+    '''
+    
+    ''' vertical merge sample (without repair)
+        multi_out = pd.concat(dfs)
+        multi_out = multi_out.sort_index()
+        multi_out = repair_time(multi_out, time)
+        return {'default': multi_out}, time
+    '''
+    return df

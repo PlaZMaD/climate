@@ -1,8 +1,10 @@
+import logging
 from pathlib import Path
 from typing import Self, Any, Annotated
 from pydantic import BaseModel, ConfigDict, model_serializer, Field
 from ruamel.yaml import CommentedSeq, CommentedMap, YAML
 
+from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
 
 # TODO 1 +.toml vs ?.py (vs .yaml)?
@@ -112,8 +114,9 @@ class BaseConfig(FFBaseModel):
                                           'For now, please update config fields manually to match default exported config.')
             config.from_file = True
         else:
-            # if ENV.LOCAL:
-            #     init_debug = True
+            if ENV.LOCAL:
+                logging.warning('\n Debug mode enabled in local ENV. \n')
+                init_debug = True
             
             config = cls.model_construct(debug=init_debug, version=init_version)
             config.from_file = False

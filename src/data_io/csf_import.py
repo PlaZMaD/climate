@@ -6,13 +6,15 @@ import pandas as pd
 from src.data_io.data_import_modes import InputFileType, ImportMode
 from src.data_io.biomet_loader import load_biomet
 from src.data_io.utils.time_series_utils import datetime_parser
-from src.data_io.time_series_loader import preload_time_series, df_init_time_draft, merge_time_series_biomet
+from src.data_io.time_series_loader import preload_time_series, repair_time, merge_time_series_biomet
 from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_log
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
     COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
+
+# DONE repair time must be abstracted
 
 
 def check_csf_col_names(df: pd.DataFrame):
@@ -78,8 +80,8 @@ def import_csf(config: FFConfig):
     
     df_csf = [preload_time_series(fpath, ftype, config) for fpath, ftype in csfs.items()][0]
 
-    # TODO 1 repair time must be abstracted
-    df_csf = df_init_time_draft(df_csf, config.time_col, config.csf.repair_time)
+    if config.csf.repair_time:
+        df_csf = repair_time(df_csf, config.time_col)
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
     ff_log.info('Time range for full_output: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     data_freq = df_csf.index.freq
@@ -108,7 +110,7 @@ def import_csf(config: FFConfig):
     df_csf, biomet_cols_index = import_rename_csf_cols(df_csf, config.time_col)
     
     
-    # TODO 1 imrpove merge
+    # TODO 1 switch to abstract merge + abstract loader instead of csf and biomet specific 
     # df = merge_time_series(dfs, df_biomet)
     print("Колонки в CSF \n", df_csf.columns.to_list())        
     if has_meteo:

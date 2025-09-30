@@ -3,7 +3,7 @@ from src.ff_logger import ff_log
 from src.data_io.csf_import import import_csf
 from src.data_io.data_import_modes import ImportMode
 from src.data_io.eddypro_loader import load_eddypro
-from src.data_io.ias_io import import_ias
+from src.data_io.ias_io import import_iases
 from src.ff_config import FFConfig
 
 
@@ -46,11 +46,11 @@ from src.ff_config import FFConfig
 # TODO 1 config.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
 
 
-def import_data(config: FFConfig):
+def import_data(config: FFConfig):    
     if config.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
         res = load_eddypro(config)
     elif config.import_mode == ImportMode.IAS:
-        res = import_ias(config)
+        res = import_iases(config)
     # elif config.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
     elif config.import_mode in [ImportMode.CSF_AND_BIOMET]:
         res = import_csf(config)
@@ -60,8 +60,5 @@ def import_data(config: FFConfig):
     paths = format_dict(config.input_files, separator=': ')
     # DONE logs:  fix log
     ff_log.info(f'Data imported from files: {paths} \n')
-    
-    # TODO 2 import: if to use fo and biomet from different years, this will fail on rep export; ensure this is detected earlier
-    # assert res[0][config.time_col].isna().sum() == 0
-    
+       
     return res

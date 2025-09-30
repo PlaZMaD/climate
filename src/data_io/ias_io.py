@@ -3,13 +3,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from src.data_io.data_import_modes import DEBUG_NROWS
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, check_ias
 from src.data_io.table_loader import load_table_logged
-from src.data_io.time_series_loader import df_init_time_draft, merge_time_series
+from src.data_io.time_series_loader import repair_time
+from src.data_io.utils.time_series_utils import merge_time_series
 from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
@@ -18,7 +20,9 @@ from src.ff_logger import ff_log
 
 # DONE separate check log, but merge into ff_log
 # DONE column order improved
+# DONE V: implement merge for any amount of iases
 
+# TODO 1 test: merge for any amount of iases
 # TODO 1 test: more ias export to match import after export 1y fixed
 # TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
 
@@ -71,7 +75,7 @@ def export_ias_cols_conversions(df: pd.DataFrame) -> (pd.DataFrame, [str]):
     return df, new_cols
 
 
-def import_ias_cols(df: pd.DataFrame, time_col):
+def import_ias_process_cols(df: pd.DataFrame, time_col):
     print('Переменные в IAS: \n', df.columns.to_list())
     
     known_ias_cols = COLS_IAS_KNOWN + [time_col]
@@ -94,37 +98,46 @@ def import_ias_cols(df: pd.DataFrame, time_col):
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
     
-    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
-    expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
-    biomet_cols_index = df.columns.intersection(expected_biomet_cols)
-    return df, biomet_cols_index
+    return df
 
 
-def import_ias(config: FFConfig):
+def import_ias(fpath: Path, time_col: str, ias_repair_time: bool, debug: bool):
+    if not debug:    
+        check_ias(fpath)
+    nrows = None if not debug else DEBUG_NROWS
+    df = load_table_logged(fpath, nrows=nrows)
+        
+    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
+    df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
+    df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
+    if ias_repair_time:
+        df = repair_time(df, time_col)
+    
+    print('Диапазон времени IAS (START): ', df.index[[0, -1]])
+    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    df = ias_table_extend_year(df, time_col, -9999)
+    
+    print('Replacing -9999 to np.nan')
+    df.replace(-9999, np.nan, inplace=True)
+    
+    df = import_ias_process_cols(df, time_col)
+    return df
+
+
+def import_iases(config: FFConfig):
     # TODO 2 lang move to the script start?
     # will it be translation method for all the tools?
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    # TODO 1 V: implement merge for any amount of iases    
-    [check_ias(fpath) for fpath, _ in config.input_files.items()]
-    dfs = [load_table_logged(fpath) for fpath, _ in config.input_files.items()]
+    dfs = {fpath.name: import_ias(fpath, config.time_col, config.debug) 
+           for fpath, _ in config.input_files.items()}
+
+    df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
     
-    df = merge_time_series_(dfs)
-    
-    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
-    df[config.time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
-    df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
-    df = df_init_time_draft(df, config.time_col, repair=True)
-    
-    print('Диапазон времени IAS (START): ', df.index[[0, -1]])
-    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    df = ias_table_extend_year(df, config.time_col, -9999)
-    
-    print('Replacing -9999 to np.nan')
-    df.replace(-9999, np.nan, inplace=True)
-    
-    df, biomet_cols_index = import_ias_cols(df, config.time_col)
+    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
+    expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
+    biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     
     has_meteo = True
     return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo

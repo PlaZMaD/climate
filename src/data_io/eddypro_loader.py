@@ -2,7 +2,7 @@ import bglabutils.basic as bg
 from src.data_io.biomet_loader import load_biomet
 from src.data_io.utils.time_series_utils import datetime_parser, date_time_parser
 from src.ff_logger import ff_log
-from src.data_io.data_import_modes import ImportMode, InputFileType
+from src.data_io.data_import_modes import ImportMode, InputFileType, DEBUG_NROWS
 from src.ff_config import FFConfig
 
 
@@ -73,7 +73,7 @@ def load_eddypro(config: FFConfig):
     
     # reddyproc requires 3 months
     if config.debug:
-        df = df[0: min(31 * 3 * 24 * 2, len(df))]
+        df = df[0: min(DEBUG_NROWS, len(df))]
     
     biomet_columns = []
     if has_meteo:
