@@ -72,7 +72,7 @@ def load_eddypro(config: FFConfig):
             has_meteo = False
     
     # reddyproc requires 3 months
-    if config.debug:
+    if config.debug and DEBUG_NROWS:
         df = df[0: min(DEBUG_NROWS, len(df))]
     
     biomet_columns = []

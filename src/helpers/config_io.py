@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Self, Any, Annotated
 from pydantic import BaseModel, ConfigDict, model_serializer, Field
 from ruamel.yaml import CommentedSeq, CommentedMap, YAML
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
@@ -39,17 +40,21 @@ def config_to_yaml(x, path, max_len=5):
         else:
             for k, v in res.items():
                 res[k] = config_to_yaml(v, path + [str(k)], max_len)
-    elif isinstance(x, list):
+        return res
+    
+    if isinstance(x, list):
         types = {type(v) for v in x}
         if types <= {str, int, float}:  # and len(x) <= max_len
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:
             res = [config_to_yaml(i, path + [str(x)], max_len) for i in x]
-    else:
-        res = x
+        return res
+
+    if isinstance(x, str):
+        return SingleQuotedScalarString(x)
     
-    return res
+    return x
 
 
 class AnnotatedBaseModel(BaseModel):
@@ -80,21 +85,26 @@ class BaseConfig(FFBaseModel):
     from_file: Annotated[bool, Field(exclude=True)] = None
     
     @classmethod
+    def get_yaml(cls) -> YAML:
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
+        yaml.indent(mapping=4, sequence=4, offset=4)
+        return yaml
+    
+    @classmethod
     def load_from_yaml(cls, fpath: Path):
         with open(fpath, 'r') as fl:
-            loaded_yaml = YAML().load(fl)
+            yaml = cls.get_yaml()
+            loaded_yaml = yaml.load(fl)
         return cls.model_validate(loaded_yaml)
     
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path):
-        save_dict = config.model_dump(mode='json')
-        
-        yaml = YAML()
-        yaml.default_flow_style = False
-        yaml.indent(mapping=4, sequence=4, offset=4)
-        
+        save_dict = config.model_dump(mode='json')        
         config_yaml = config_to_yaml(save_dict, path=[])
         with open(fpath, "w") as fl:
+            yaml = cls.get_yaml()            
             yaml.dump(config_yaml, fl)
     
     @classmethod
