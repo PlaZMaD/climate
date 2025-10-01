@@ -10,9 +10,9 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, check_ias
 from src.data_io.utils.table_loader import load_table_logged
-from src.data_io.time_series_loader import repair_time
+from src.data_io.time_series_loader import repair_time, cleanup_df
 from src.data_io.utils.time_series_utils import merge_time_series
-from src.ff_config import FFConfig
+from src.ff_config import FFConfig, InputFileConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_log
@@ -101,7 +101,7 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def import_ias(fpath: Path, time_col: str, ias_repair_time: bool, debug: bool):
+def import_ias(fpath: Path, time_col: str, ias: InputFileConfig, debug: bool):
     if not debug:    
         check_ias(fpath)
     nrows = None if not debug else DEBUG_NROWS
@@ -110,15 +110,14 @@ def import_ias(fpath: Path, time_col: str, ias_repair_time: bool, debug: bool):
     # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
     df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
     df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
-    if ias_repair_time:
+    if ias.repair_time:
         df = repair_time(df, time_col)
     
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
     ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     df = ias_table_extend_year(df, time_col, -9999)
     
-    print('Replacing -9999 to np.nan')
-    df.replace(-9999, np.nan, inplace=True)
+    df = cleanup_df(df, ias.missing_data_codes)
     
     df = import_ias_process_cols(df, time_col)
     return df
@@ -130,7 +129,7 @@ def import_iases(config: FFConfig):
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    dfs = {fpath.name: import_ias(fpath, config.time_col, config.debug) 
+    dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.debug) 
            for fpath, _ in config.input_files.items()}
 
     df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
