@@ -92,7 +92,7 @@ def prepare_time_series_df(df: pd.DataFrame, time_col, repair_time, target_freq)
 '''
 
 
-def pick_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
+def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
     """ 
     Attempts to detect datetime format on df column. 
     If multiple matches fit, this is not considered as correct result. 
@@ -100,6 +100,10 @@ def pick_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
     # TODO 4 raise in wrapper, not here
     
     guesses = ensure_list(guesses)
+    if len(guesses) == 1:
+        fmt = guesses[0]
+        ff_log.info(f'Using datetime format {fmt}')
+        return fmt
     
     rows = len(col)
     if rows < 100:
@@ -123,7 +127,7 @@ def pick_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
                         f'Trying to apply them to column data: \n{test_chunk}')
     else:
         if len(guesses) > 1:
-            ff_log.info(f'Using datetime format {ok_formats[0]}')
+            ff_log.info(f'Detected datetime format {ok_formats[0]}')
         return ok_formats[0]
 
 
@@ -131,7 +135,7 @@ def datetime_parser(df: pd.DataFrame, datetime_col: str, datetime_fmt_guesses: s
     """ Parses datetime column into pd.datetime column"""    
     assert datetime_col is not None
     
-    datetime_format = pick_datetime_format(df[datetime_col], datetime_fmt_guesses)
+    datetime_format = detect_datetime_format(df[datetime_col], datetime_fmt_guesses)
     res = pd.to_datetime(df[datetime_col], format=datetime_format)
     
     return res
@@ -144,9 +148,9 @@ def date_time_parser(df: pd.DataFrame,
     assert time_col is not None and date_col is not None
        
     date = df[date_col].astype(str)
-    date_format = pick_datetime_format(date, date_fmt_guesses)
+    date_format = detect_datetime_format(date, date_fmt_guesses)
     time = df[time_col].astype(str)
-    time_format = pick_datetime_format(time, time_fmt_guesses)
+    time_format = detect_datetime_format(time, time_fmt_guesses)
     
     tmp_datetime = date + " " + time
     res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")    

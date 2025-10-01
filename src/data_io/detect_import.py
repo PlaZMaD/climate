@@ -190,9 +190,9 @@ def detect_input_files(config: FFConfig):
     auto_site_name, auto_ias_ver = detect_fname_options(config.input_files, config.import_mode)
     
     config.site_name = change_if_auto(config.site_name, auto_site_name,
-                                      ok_msg=f'Auto picked site name: {auto_site_name}')
+                                      ok_msg=f'Auto detected site name: {auto_site_name}')
     config.ias_out_version = change_if_auto(config.ias_out_version, auto_ias_ver,
-                                            ok_msg=f'Auto picked ias version: {auto_ias_ver}')
+                                            ok_msg=f'Auto detected ias version: {auto_ias_ver}')
     
     # TODO 2 _has_meteo vs has_meteo, duplicates in import toutines 
     config._has_meteo = config.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]

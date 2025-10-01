@@ -10,14 +10,14 @@ import pandas as pd
 
 from src.data_io.data_import_modes import InputFileType
 from src.data_io.utils.table_loader import load_table_logged
-from src.data_io.utils.time_series_utils import repair_time, pick_datetime_format
+from src.data_io.utils.time_series_utils import repair_time, detect_datetime_format
 from src.ff_logger import ff_log
 from src.ff_config import FFConfig
 
 
 def preprocess_time_csf(df: pd.DataFrame, src_time_col, try_fmts, tgt_time_col):
     """ Only init time column, no checks or repairs """
-    fmt = pick_datetime_format(df[src_time_col], try_fmts)
+    fmt = detect_datetime_format(df[src_time_col], try_fmts)
     
     src_time_col_bkp = src_time_col + '_STR'
     
