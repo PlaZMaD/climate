@@ -17,10 +17,13 @@ from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_log
 
+IAS_EXPORT_MIN_ROWS = 5
+
 
 # DONE separate check log, but merge into ff_log
 # DONE column order improved
 # DONE V: implement merge for any amount of iases
+# DONE ias: years skipped if IAS data does not contain next year extra row V: could be necessary to fix bug QOA: fix
 
 # TODO 1 test: merge for any amount of iases
 # TODO 1 test: more ias export to match import after export 1y fixed
@@ -142,13 +145,22 @@ def import_iases(config: FFConfig):
     return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
-def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
+def export_ias_prepare_time_cols(df: pd.DataFrame, time_col, min_rows):
     # possibly will be applied later to each year separately
     
-    # TODO 1 QOA years is skipped if IAS data does not contain next year extra row
-    # V: could be necessary to fix bug E: intentionally, E: Вопрос к Вадиму. Я не знаю, совпадает определение полного года дя ИАС и остальных данных
-    new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
-                                   end=f'01.01.{df[time_col].dt.year.max()}',
+    dt_vals = df[time_col]
+    first_year = dt_vals.dt.year.min()
+    last_year = dt_vals.dt.year.max()
+    
+    drop_first = dt_vals.where(dt_vals.dt.year == first_year).count() < min_rows
+    drop_last = dt_vals.where(dt_vals.dt.year == last_year).count() < min_rows
+    if drop_first and last_year > first_year:
+        first_year += 1
+    if drop_last and last_year > first_year:
+        last_year -= 1
+    
+    new_time_index = pd.date_range(start=f'01.01.{first_year}',
+                                   end=f'01.01.{last_year + 1}',
                                    freq=df.index.freq, inclusive='left')
     df_new_time = pd.DataFrame(index=new_time_index)
     df = df_new_time.join(df, how='left')
@@ -183,14 +195,15 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     df, new_cols = export_ias_cols_conversions(df)
     df = df.rename(columns=COLS_IAS_EXPORT_MAP)
     
-    df = df.fillna(-9999)
-    
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     # TODO 1 remove after reference data update finished
     # var_cols.sort()
     
-    df = export_ias_prepare_time_cols(df, time_col)
+    df = export_ias_prepare_time_cols(df, time_col, IAS_EXPORT_MIN_ROWS)
+    
+    # must be done after time extension due to new nans added
+    df = df.fillna(-9999)
     
     # TODO 1 ias: why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
     #  OA: not important cols
@@ -215,15 +228,15 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     col_list_ias = COLS_IAS_TIME + var_cols + [time_col]
     print(col_list_ias)
     df = df[col_list_ias]
-    
+        
     for year in df.index.year.unique():
         fname = f'{site_name}_{year}_{ias_out_version}.csv'
         fpath = out_dir / fname
         
         save_data = df.loc[df[time_col].dt.year == year]
         save_data = save_data.drop(time_col, axis=1)
-        save_data = save_data.fillna(-9999)
-        if len(save_data.index) >= 5:
+        # save_data = save_data.fillna(-9999)
+        if len(save_data.index) >= IAS_EXPORT_MIN_ROWS:
             save_data.to_csv(fpath, index=False)
             ff_log.info(f'IAS file saved to {fpath}')
         else:

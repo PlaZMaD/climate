@@ -2,6 +2,8 @@
 from src.data_io.ias_cols import COLS_SCRIPT_E_TO_IAS_RENAMES
 from src.helpers.py_collections import replace_in_dict_by_values
 
+# TODO 2 QOA possible situation: Ta_1_1_1 from biomet, but T_DP_1_1_1 and TA_SIGMA_1_1_1 from FO 
+
 # biomet cols are required not only in eddypro load, but also, for example, in ias check;
 # probably biomet should be reworked to just a list of special cols, but as is for now
 BIOMET_HEADER_DETECTION_COLS = [

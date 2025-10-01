@@ -20,6 +20,7 @@ class InputFileType(Enum):
     IAS = 'IAS'
 
 
-# TODO 3 ensure cut is applied to all inport types
+# TODO 3 ensure cut is applied to all import types
+# DEBUG_NROWS = 31 * 3 * 24 * 2 *2 # = None
 # DEBUG_NROWS = 31 * 3 * 24 * 2 # = None
 DEBUG_NROWS = None
