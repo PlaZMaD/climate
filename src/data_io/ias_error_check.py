@@ -19,6 +19,8 @@ from src.data_io.utils.table_loader import load_table_logged
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# TODO 1 OA: (meeting) add option which disables ias check
+# TODO 2 V: (meeting) add filter on fetch data?
 
 def set_lang(language):
     # TODO E 3 replaced to Path, verify bundle still works
