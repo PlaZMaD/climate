@@ -7,7 +7,8 @@ from src.helpers.py_helpers import gen_enum_info
 
 
 # DEFAULT_CONFIG = 'misc/default_config.yaml'
-# TODO 1 strings as strings, not values
+# TODO 1 strings in arrays as strings, not values: missing_data_codes: [-9999, NAN]
+# TODO 2 config file link in the introduction - how to deal with updates?
 
 
 class InputFileConfig(FFBaseModel):

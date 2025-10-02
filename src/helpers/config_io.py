@@ -124,9 +124,11 @@ class BaseConfig(FFBaseModel):
                                           'For now, please update config fields manually to match default exported config.')
             config.from_file = True
         else:
+            '''
             if ENV.LOCAL:
                 logging.warning('\n Debug mode enabled in local ENV. \n')
                 init_debug = True
+            '''
             
             config = cls.model_construct(debug=init_debug, version=init_version)
             config.from_file = False
