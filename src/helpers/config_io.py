@@ -1,4 +1,5 @@
 import logging
+from copy import copy
 from pathlib import Path
 from typing import Self, Any, Annotated
 from pydantic import BaseModel, ConfigDict, model_serializer, Field
@@ -109,7 +110,16 @@ class BaseConfig(FFBaseModel):
     
     @classmethod
     def save(cls: Self, config, fpath: str | Path):
-        cls.save_to_yaml(config, Path(fpath))
+        # TODO 1 hardcoded temp fix, restore auto options in some better way
+        config_auto = copy(config)
+        config_auto.input_files = 'auto'
+        config_auto.import_mode = 'AUTO'
+        config_auto.site_name = 'auto'
+        config_auto.ias_out_version = 'auto'
+        config_auto.reddyproc.site_id = ''
+        config_auto.reddyproc.input_file = ''
+        
+        cls.save_to_yaml(config_auto, Path(fpath))
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, init_debug: bool, init_version: str) -> Self:

@@ -1190,6 +1190,10 @@ config_reddyproc = RepConfig(
 if not config.from_file:
     config.reddyproc = config_reddyproc
 
+config.reddyproc.input_file = config_reddyproc.input_file
+config.reddyproc.output_dir = config_reddyproc.output_dir
+config.reddyproc.site_id = config_reddyproc.site_id
+
 prepare_rg(config.reddyproc)
 ensure_empty_dir(config.reddyproc.output_dir)
 gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc, gl.repo_dir)
