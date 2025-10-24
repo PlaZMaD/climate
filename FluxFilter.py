@@ -112,7 +112,7 @@
 # %env clone_br=main
 # %env clone_repo=https://github.com/PlaZMaD/climate.git
 # !git clone -b $clone_br -n --depth=1 --filter=tree:0 $clone_repo scripts
-# !git -C scripts sparse-checkout set --no-cone src locale
+# !git -C scripts sparse-checkout set --no-cone src locale misc
 # !git -C scripts checkout &> /dev/null
 
 # %% id="Ywv5kp0rzanK"
@@ -251,7 +251,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto',
+config = FFConfig.load_or_init(load_path='auto', default_path=gl.repo_dir / 'misc/config_v1.0.2_default.yaml',
                                init_debug=False, init_version='1.0.2')
 
 if not config.from_file:
