@@ -6,6 +6,7 @@ and to separate operations like time series repair or merge years from specific 
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import gettext
 
 from src.helpers.pd_helpers import find_changed_el
 from src.ff_logger import ff_log
@@ -53,8 +54,6 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
     
     # TODO 2 Excel sometimes saves empty columns into csv: ,,,,,,,; remove them verbose/silent
     return df
-    
-    
 
 
 def load_xls(fpath, **pd_read_kwargs):
@@ -62,7 +61,7 @@ def load_xls(fpath, **pd_read_kwargs):
     data = pd.read_excel(fpath, **pd_read_kwargs)
     if isinstance(data, dict):
         if len(data.values()) > 1:
-            ff_log.error(("Several lists in data file!"))
+            ff_log.error(_("Several lists in data file!"))
             assert False
         else:
             data = next(iter(data.values()))

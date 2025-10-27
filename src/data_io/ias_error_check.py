@@ -6,6 +6,7 @@ import logging
 import re
 import sys
 from copy import deepcopy as copy
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -19,8 +20,13 @@ from src.data_io.utils.table_loader import load_table_logged
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO 1 OA: (meeting) add option which disables ias check
+# TODO 1 QOA: (meeting) add option which disables ias check; ckeck line below
+# DONE: allows -9999 in any cols, is this better?
+
+# DONE merge into src.data_io.table_loader -> load_table_from_file
+
 # TODO 2 V: (meeting) add filter on fetch data?
+
 
 def set_lang(language):
     # TODO E 3 replaced to Path, verify bundle still works
@@ -241,53 +247,12 @@ def final_time_check(data, time_in):
     return outflag
 
 
-def load_ias(fpath: Path):
-    # TODO 1 try to merge into src.data_io.table_loader -> load_table_from_file
-    # there is something wrong with csv files
-    # may be wrong - file is shared, so will require more shared file
-    ext_l = fpath.suffix.lower()
-    
-    if '.csv' in ext_l:
-        ftype = 'csv'
-    elif ext_l in ['.xls', '.xlsx']:
-        ftype = 'excel'
-    else:
-        raise Exception('Unknown extension.')
-    
-    load_func = None
-    l_config = {}
-    
-    if ftype == 'csv':
-        load_func = pd.read_csv
-        # l_config['sep'] = sep
-    
-    elif ftype == 'excel':
-        load_func = pd.read_excel
-        l_config['sheet_name'] = None
-    
-    else:
-        logger.error(_("Select CSV, XLS or XLSX file."))
-        return 2
-    
-    try:
-        data = load_func(fpath, **l_config)
-    except Exception as e:
-        logger.error(e)
-        raise
-    
-    if ftype == 'excel':
-        if isinstance(data, dict):
-            if len(data.values()) > 1:
-                logger.error(_("Several lists in data file!"))
-                assert False
-            else:
-                data = next(iter(data.values()))
-        logger.info(f"File {fpath} loaded.\n")
-    
-    return data
+class IasCheckMode(Enum):
+    STRICT = 'STRICT'
+    IMPORT = 'IMPORT'
 
 
-def check_ias_file(fpath):
+def check_ias_file(fpath, mode: IasCheckMode):
     # TODO 3 possibly extract later to abstract time series converter/repairer routines which are format independent? E: ok
     # eddypro may have similar flaws
     
@@ -337,8 +302,12 @@ def check_ias_file(fpath):
         
         all_std_na = data[col].eq(-9999).all()
         if all_std_na:
-            col_errors += 1
-            logger.error(_("The column {} has only -9999 values.").format(col))
+            msg = _("The column {} has only -9999 values.").format(col)
+            if mode == IasCheckMode.STRICT:
+                col_errors += 1
+                logger.error(msg)
+            else:
+                logger.warning(msg)
             continue
         
         inf_vals = data.loc[np.logical_or(data[col] == np.inf, data[col] == -np.inf)].index.to_numpy()
@@ -381,7 +350,7 @@ class ErrorFlagHandler(logging.Handler):
 def check_ias(fpath):
     logger.info("Checking IAS file...")
     
-    errors = check_ias_file(fpath)
+    errors = check_ias_file(fpath, mode=IasCheckMode.IMPORT)
     
     if errors > 0:
         msg = f"Input file {fpath} cannot be used yet. Please fix errors."
