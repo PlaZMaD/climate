@@ -7,6 +7,9 @@ from src.ff_logger import ff_log
 from src.helpers.py_collections import ensure_list, format_dict
 
 
+# DONE repair time also repairs file gaps
+
+
 def get_freq(df, time_col):
     """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
     
@@ -25,8 +28,11 @@ def get_freq(df, time_col):
 
 
 def repair_time(df, time_col):
-    """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
-
+    """ 
+    source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
+    df.index could be both pd.RangeIndex or pd.DatetimeIndex (if converted previously) 
+    """
+    
     # TODO 3 more transparent rework could be handy:
     #  with support of repair=False and separation of checks, repairs, and standard routines E: ok
     
@@ -57,6 +63,12 @@ def repair_time(df, time_col):
     df_fixed = pd.DataFrame(index=pd.date_range(start=df[time_col].iloc[start], end=df[time_col].iloc[stop],
                                                 freq=pd.to_timedelta(freq)))
     df_fixed = df_fixed.join(df, how='left')
+    
+    assert isinstance(df_fixed.index, pd.DatetimeIndex)
+    idx = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
+    assert idx.all()
+    df_fixed[time_col] = df_fixed.index
+    
     return df_fixed
 
 
@@ -132,7 +144,7 @@ def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
 
 
 def datetime_parser(df: pd.DataFrame, datetime_col: str, datetime_fmt_guesses: str | list[str]) -> pd.Series:
-    """ Parses datetime column into pd.datetime column"""    
+    """ Parses datetime column into pd.datetime column"""
     assert datetime_col is not None
     
     datetime_format = detect_datetime_format(df[datetime_col], datetime_fmt_guesses)
@@ -146,15 +158,15 @@ def date_time_parser(df: pd.DataFrame,
                      date_col: str, date_fmt_guesses: str | list[str]) -> pd.Series:
     """ Parses separate date and time columns into pd.datetime column """
     assert time_col is not None and date_col is not None
-       
+    
     date = df[date_col].astype(str)
     date_format = detect_datetime_format(date, date_fmt_guesses)
     time = df[time_col].astype(str)
     time_format = detect_datetime_format(time, time_fmt_guesses)
     
     tmp_datetime = date + " " + time
-    res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")    
-
+    res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")
+    
     return res
 
 
@@ -166,12 +178,13 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     """
     # TODO 1 ensure cols are renamed (to script name, .columns.str.lower()) before merge
     # TODO 1 ensure time is repaired (index.freq) before merge
+    # TODO 1 process ovelaps properly
     if len(named_dfs) == 0:
         return None
     elif len(named_dfs) == 1:
-        return list(named_dfs.values())[0]    
-
-    # each df must have two new attributes: .name and .index.freq
+        return list(named_dfs.values())[0]
+        
+        # each df must have two new attributes: .name and .index.freq
     named_freqs = {name: df.index.freq for name, df in named_dfs.items()}
     freqs = np.array(list(named_freqs.values()))
     if not np.all(freqs == freqs[0]):
@@ -179,7 +192,7 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     
     dfs = []
     for name, df in named_dfs.items():
-        for col in df.columns: 
+        for col in df.columns:
             df[col].attrs['source_file'] = name
         dfs += [df]
     
@@ -194,17 +207,17 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
         df[time_col] = df.index
         # df = df.sort_index()
         df = repair_time(df, time_col)
-
-    # TODO 1 ensure no datetime gaps?
-    # if to use fo and biomet from different years, this will fail on rep export; ensure this is detected earlier
+    
+    # repair_time from different years should fill gaps
+    # TODO 1 ias: new test for multiyeardata 
     assert df[time_col].isna().sum() == 0
-
+    
     '''
     if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
         print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
         has_meteo = False
     '''
-        
+    
     '''
     cols = pd.Index([])
     for name, df in dfs:        
@@ -220,7 +233,7 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
             new_cols = new_cols - cols
         cols += new_cols
     '''
-
+    
     ''' horizontal
     df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
     df[time_col] = df.index
