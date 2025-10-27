@@ -13,7 +13,7 @@ import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
 from src.data_io.ias_cols import COLS_IAS_KNOWN
-from src.data_io.table_loader import load_table_logged
+from src.data_io.utils.table_loader import load_table_logged
 
 # np.set_printoptions(threshold=sys.maxsize)
 logger = logging.getLogger(__name__)

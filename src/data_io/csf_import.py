@@ -3,14 +3,18 @@ import re
 import numpy as np
 import pandas as pd
 
+from src.data_io.data_import_modes import InputFileType, ImportMode
+from src.data_io.biomet_loader import load_biomet
+from src.data_io.utils.time_series_utils import datetime_parser
+from src.data_io.time_series_loader import preload_time_series, repair_time, merge_time_series_biomet
+from src.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_log
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
     COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
-from src.data_io.table_loader import load_table_logged
-from src.data_io.time_series_utils import df_init_time_draft
-from src.ffconfig import FFConfig
+
+# DONE repair time must be abstracted
 
 
 def check_csf_col_names(df: pd.DataFrame):
@@ -30,14 +34,14 @@ def check_csf_col_names(df: pd.DataFrame):
         # TODO 3 lang: localize properly, remove prints (ff_log.* goes to stdout too)
         # log - english only? OA: ok
         # TODO QOA 3 lang: print may be too only english for simplicity?
-        print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
+        print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
-        ff_log.warning('Unsupported by notebook csf vars (only save loaded): \n' + str(unused_cols.to_list()))
+        # ff_log.warning('Unused vars (only save-loaded): \n' + str(unused_cols.to_list()))
 
 
 def import_rename_csf_cols(df: pd.DataFrame, time_col):
     df.rename(columns=COLS_CSF_IMPORT_MAP, inplace=True)
-    print('Переменные после загрузки: \n', df.columns.to_list())
+    # print('Переменные после загрузки: \n', df.columns.to_list()) # duplicate
     
     known_meteo_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(known_meteo_cols)
@@ -65,27 +69,64 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
 
 
 def import_csf(config: FFConfig):
-    if len(config.input_files) != 1:
+    # TODO 1 finish transfer to abstract loader
+    # biomets = {k: v for k, v in config.input_files.items() if v == InputFileType.EDDYPRO_BIOMET}
+    csfs = {k: v for k, v in config.input_files.items() if v == InputFileType.CSF}
+
+    
+    if len(csfs) != 1:
         raise NotImplementedError(
             'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
-    fpath = list(config.input_files.keys())[0]
-    df = load_table_logged(fpath, header_row=1, skiprows=[2, 3])
     
-    df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
-    check_csf_col_names(df)
+    df_csf = [preload_time_series(fpath, ftype, config) for fpath, ftype in csfs.items()][0]
+
+    if config.csf.repair_time:
+        df_csf = repair_time(df_csf, config.time_col)
+    print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
+    ff_log.info('Time range for full_output: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    data_freq = df_csf.index.freq
     
-    df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
-    time_col = config.time_col
-    df[time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format='%Y-%m-%d %H:%M:%S')
-    df = df_init_time_draft(df, time_col)
+    c_bm = config.eddypro_biomet
+    bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
+    has_meteo = (config.import_mode == ImportMode.CSF_AND_BIOMET)
+    if has_meteo:
+        bg_bm_config = {
+            'path': bm_paths,
+            'debug': False,
+            '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
+            'time': {
+                'column_name': config.time_col,
+                'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
+            },
+            'repair_time': c_bm.repair_time,
+        }
+        df_biomet = load_biomet(bg_bm_config, data_freq)
+    else:
+        df_biomet = None
+       
+       
+    df_csf = regex_fix_col_names(df_csf, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
+    check_csf_col_names(df_csf)        
+    df_csf, biomet_cols_index = import_rename_csf_cols(df_csf, config.time_col)
     
-    print('Диапазон времени csf (START): ', df.index[[0, -1]])
-    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
-    print('Replacing -9999 to np.nan')
-    df.replace(-9999, np.nan, inplace=True)
+    # TODO 1 switch to abstract merge + abstract loader instead of csf and biomet specific 
+    # df = merge_time_series(dfs, df_biomet)
+    print("Колонки в CSF \n", df_csf.columns.to_list())        
+    if has_meteo:
+        print("Колонки в метео \n", df_biomet.columns.to_list())
+        df, has_meteo = merge_time_series_biomet(df_csf, df_biomet, config.time_col)
+    else:
+        df = df_csf
     
-    df, biomet_cols_index = import_rename_csf_cols(df, time_col)
+    biomet_columns = []
+    if has_meteo:
+        biomet_columns = df_biomet.columns.str.lower()
+        
+    # TODO 2 after merge or after load?
+    if df[config.time_col].isna().sum() > 0:
+        raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
     
-    has_meteo = True
-    return df, time_col, biomet_cols_index, df.index.freq, has_meteo
+    return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
+
+

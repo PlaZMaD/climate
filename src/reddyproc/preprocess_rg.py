@@ -2,7 +2,7 @@ import pandas as pd
 from pysolar import radiation
 from pysolar import solar
 
-from src.ffconfig import RepConfig
+from src.ff_config import RepConfig
 
 
 # TODO 2 QOA move call earlier to REP file preparation to remove double read of file,

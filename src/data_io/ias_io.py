@@ -3,22 +3,31 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from src.data_io.data_import_modes import DEBUG_NROWS
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_error_check import set_lang, check_ias
-from src.data_io.table_loader import load_table_logged
-from src.data_io.time_series_utils import df_init_time_draft
-from src.ffconfig import FFConfig
+from src.data_io.utils.table_loader import load_table_logged
+from src.data_io.time_series_loader import repair_time, cleanup_df
+from src.data_io.utils.time_series_utils import merge_time_series
+from src.ff_config import FFConfig, InputFileConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
-from src.helpers.py_helpers import sort_fixed, intersect_list
+from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_log
+
+IAS_EXPORT_MIN_ROWS = 5
 
 
 # DONE separate check log, but merge into ff_log
 # DONE column order improved
-# TODO 1 test more ias export to match import after export 1y fixed
+# DONE V: implement merge for any amount of iases
+# DONE ias: years skipped if IAS data does not contain next year extra row V: could be necessary to fix bug QOA: fix
+
+# TODO 1 test: merge for any amount of iases
+# TODO 1 test: more ias export to match import after export 1y fixed
+# TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
@@ -69,7 +78,7 @@ def export_ias_cols_conversions(df: pd.DataFrame) -> (pd.DataFrame, [str]):
     return df, new_cols
 
 
-def import_ias_cols(df: pd.DataFrame, time_col):
+def import_ias_process_cols(df: pd.DataFrame, time_col):
     print('Переменные в IAS: \n', df.columns.to_list())
     
     known_ias_cols = COLS_IAS_KNOWN + [time_col]
@@ -80,85 +89,78 @@ def import_ias_cols(df: pd.DataFrame, time_col):
         msg = 'Неизвестные ИАС переменные: \n', str(unknown_cols)
         ff_log.warning(msg)
     
-    unsupported_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
-    if len(unsupported_cols) > 0:
+    unused_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
+    if len(unused_cols) > 0:
         # TODO 3 lang localize properly, check prints (ff_log.* goes to stdout too, but must be ru / en)
-        print('Переменные, которые не используются в тетради (присутствуют только в загрузке - сохранении): \n',
-              unsupported_cols.to_list())
-        ff_log.warning('Unsupported by notebook IAS vars (only save loaded): \n' + str(unsupported_cols.to_list()))
+        # ff_log.warning('Unused vars (only save loaded): \n' + str(unused_cols.to_list()))
+        print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
+              unused_cols.to_list())
     
     df = import_ias_cols_conversions(df)
     
     df = df.rename(columns=COLS_IAS_IMPORT_MAP)
     print('Переменные после загрузки: \n', df.columns.to_list())
     
-    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
-    expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
-    biomet_cols_index = df.columns.intersection(expected_biomet_cols)
-    return df, biomet_cols_index
+    return df
 
 
-def import_ias(config: FFConfig):
-    # TODO 2 lang move to the script start?
-    # will it be translation method for all the tools?
-    # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
-    set_lang('ru')
-    
-    # TODO 1 V: implement merge for any amount of iases
-    # TODO 2 V: implement custom split of ias on export (month, year, all years)
-    if len(config.input_files) != 1:
-        raise NotImplementedError(
-            'Multiple IAS files detected. Multiple run or combining multiple files is not supported yet.')
-    ias_fpath = list(config.input_files.keys())[0]
-    check_ias(ias_fpath)
-    df = load_table_logged(ias_fpath)
-    ''' from eddypro to ias
-    for year in ias_df.index.year.unique():
-        ias_filename = f'{ias_output_prefix}_{year}_{ias_output_version}.csv'
-        save_data = ias_df.loc[ias_df[time_col].dt.year == year]
-        save_data = save_data.drop(time_col, axis=1)
-        save_data = save_data.fillna(-9999)
-        if len(save_data.index) >= 5:
-            save_data.to_csv(os.path.join('output', ias_filename), index=False)
-            ff_log.info(f'IAS file saved to {os.path.join('output', ias_filename)}.csv')
-        else:
-            try:
-                os.remove(os.path.join('output', ias_filename))
-            except Exception as e:
-                print(e)
-
-            print(f'not enough df for {year}')
-            ff_log.info(f'{year} not saved, not enough df!')
-    # ias_filename = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
-    # ias_df.to_csv(os.path.join('output',ias_filename), index=False)
-    '''
-    
-    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid
-    time_col = 'datetime'
+def import_ias(fpath: Path, time_col: str, ias: InputFileConfig, debug: bool):
+    if not debug:    
+        check_ias(fpath)
+    nrows = None if not debug else DEBUG_NROWS
+    df = load_table_logged(fpath, nrows=nrows)
+        
+    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
     df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
     df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
-    df = df_init_time_draft(df, time_col)
+    if ias.repair_time:
+        df = repair_time(df, time_col)
     
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
     ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     df = ias_table_extend_year(df, time_col, -9999)
     
-    print('Replacing -9999 to np.nan')
-    df.replace(-9999, np.nan, inplace=True)
+    df = cleanup_df(df, ias.missing_data_codes)
     
-    df, biomet_cols_index = import_ias_cols(df, time_col)
+    df = import_ias_process_cols(df, time_col)
+    return df
+
+
+def import_iases(config: FFConfig):
+    # TODO 2 lang move to the script start?
+    # will it be translation method for all the tools?
+    # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
+    set_lang('ru')
+    
+    dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.debug) 
+           for fpath, _ in config.input_files.items()}
+
+    df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
+    
+    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
+    expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
+    biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     
     has_meteo = True
-    return df, time_col, biomet_cols_index, df.index.freq, has_meteo
+    return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
-def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
+def export_ias_prepare_time_cols(df: pd.DataFrame, time_col, min_rows):
     # possibly will be applied later to each year separately
     
-    # TODO 1 QOA years is skipped if IAS data does not contain next year extra row
-    # V: could be necessary to fix bug E: intentionally, E: Вопрос к Вадиму. Я не знаю, совпадает определение полного года дя ИАС и остальных данных
-    new_time_index = pd.date_range(start=f'01.01.{df[time_col].dt.year.min()}',
-                                   end=f'01.01.{df[time_col].dt.year.max()}',
+    dt_vals = df[time_col]
+    first_year = dt_vals.dt.year.min()
+    last_year = dt_vals.dt.year.max()
+    
+    drop_first = dt_vals.where(dt_vals.dt.year == first_year).count() < min_rows
+    drop_last = dt_vals.where(dt_vals.dt.year == last_year).count() < min_rows
+    if drop_first and last_year > first_year:
+        first_year += 1
+    if drop_last and last_year > first_year:
+        last_year -= 1
+    
+    new_time_index = pd.date_range(start=f'01.01.{first_year}',
+                                   end=f'01.01.{last_year + 1}',
                                    freq=df.index.freq, inclusive='left')
     df_new_time = pd.DataFrame(index=new_time_index)
     df = df_new_time.join(df, how='left')
@@ -182,7 +184,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
+def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
     # TODO 2 cols: check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
     
@@ -193,14 +195,15 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     df, new_cols = export_ias_cols_conversions(df)
     df = df.rename(columns=COLS_IAS_EXPORT_MAP)
     
-    df = df.fillna(-9999)
-    
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     # TODO 1 remove after reference data update finished
     # var_cols.sort()
     
-    df = export_ias_prepare_time_cols(df, time_col)
+    df = export_ias_prepare_time_cols(df, time_col, IAS_EXPORT_MIN_ROWS)
+    
+    # must be done after time extension due to new nans added
+    df = df.fillna(-9999)
     
     # TODO 1 ias: why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
     #  OA: not important cols
@@ -225,15 +228,15 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
     col_list_ias = COLS_IAS_TIME + var_cols + [time_col]
     print(col_list_ias)
     df = df[col_list_ias]
-    
+        
     for year in df.index.year.unique():
-        fname = f'{ias_output_prefix}_{year}_{ias_output_version}.csv'
+        fname = f'{site_name}_{year}_{ias_out_version}.csv'
         fpath = out_dir / fname
         
         save_data = df.loc[df[time_col].dt.year == year]
         save_data = save_data.drop(time_col, axis=1)
-        save_data = save_data.fillna(-9999)
-        if len(save_data.index) >= 5:
+        # save_data = save_data.fillna(-9999)
+        if len(save_data.index) >= IAS_EXPORT_MIN_ROWS:
             save_data.to_csv(fpath, index=False)
             ff_log.info(f'IAS file saved to {fpath}')
         else:
@@ -243,6 +246,6 @@ def export_ias(out_dir: Path, ias_output_prefix, ias_output_version, df: pd.Data
             # print(f'not enough data for {year}')
             ff_log.info(f'{year} not saved, not enough data!')
     # ias_year = df[time_col].dt.year.min()
-    # fname = f'{ias_output_prefix}_{ias_year}_{ias_output_version}.csv'
+    # fname = f'{site_name}_{ias_year}_{ias_out_version}.csv'
     # ias_df.to_csv(os.path.join('output',fname), index=False)
     # ff_log.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')

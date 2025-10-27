@@ -7,7 +7,7 @@ from IPython.display import display
 from PIL import Image
 
 from src.ff_logger import ff_log
-from src.ffconfig import RepConfig
+from src.ff_config import RepConfig
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
 from src.helpers.io_helpers import tag_to_fpath

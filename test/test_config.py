@@ -4,7 +4,7 @@ import subprocess
 import pytest
 
 from src.data_io.data_import_modes import ImportMode
-from src.ffconfig import FFConfig
+from src.ff_config import FFConfig
 from src.ff_logger import init_logging
 
 

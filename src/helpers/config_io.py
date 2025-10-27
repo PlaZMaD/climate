@@ -1,8 +1,12 @@
+import logging
+from copy import copy
 from pathlib import Path
 from typing import Self, Any, Annotated
 from pydantic import BaseModel, ConfigDict, model_serializer, Field
 from ruamel.yaml import CommentedSeq, CommentedMap, YAML
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
+from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
 
 # TODO 1 +.toml vs ?.py (vs .yaml)?
@@ -37,17 +41,21 @@ def config_to_yaml(x, path, max_len=5):
         else:
             for k, v in res.items():
                 res[k] = config_to_yaml(v, path + [str(k)], max_len)
-    elif isinstance(x, list):
+        return res
+    
+    if isinstance(x, list):
         types = {type(v) for v in x}
         if types <= {str, int, float}:  # and len(x) <= max_len
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:
             res = [config_to_yaml(i, path + [str(x)], max_len) for i in x]
-    else:
-        res = x
+        return res
+
+    if isinstance(x, str):
+        return SingleQuotedScalarString(x)
     
-    return res
+    return x
 
 
 class AnnotatedBaseModel(BaseModel):
@@ -78,26 +86,40 @@ class BaseConfig(FFBaseModel):
     from_file: Annotated[bool, Field(exclude=True)] = None
     
     @classmethod
+    def get_yaml(cls) -> YAML:
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
+        yaml.indent(mapping=4, sequence=4, offset=4)
+        return yaml
+    
+    @classmethod
     def load_from_yaml(cls, fpath: Path):
         with open(fpath, 'r') as fl:
-            loaded_yaml = YAML().load(fl)
+            yaml = cls.get_yaml()
+            loaded_yaml = yaml.load(fl)
         return cls.model_validate(loaded_yaml)
     
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path):
-        save_dict = config.model_dump(mode='json')
-        
-        yaml = YAML()
-        yaml.default_flow_style = False
-        yaml.indent(mapping=4, sequence=4, offset=4)
-        
+        save_dict = config.model_dump(mode='json')        
         config_yaml = config_to_yaml(save_dict, path=[])
         with open(fpath, "w") as fl:
+            yaml = cls.get_yaml()            
             yaml.dump(config_yaml, fl)
     
     @classmethod
     def save(cls: Self, config, fpath: str | Path):
-        cls.save_to_yaml(config, Path(fpath))
+        # TODO 1 hardcoded temp fix, restore auto options in some better way
+        config_auto = copy(config)
+        config_auto.input_files = 'auto'
+        config_auto.import_mode = 'AUTO'
+        config_auto.site_name = 'auto'
+        config_auto.ias_out_version = 'auto'
+        config_auto.reddyproc.site_id = ''
+        config_auto.reddyproc.input_file = ''
+        
+        cls.save_to_yaml(config_auto, Path(fpath))
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, init_debug: bool, init_version: str) -> Self:
@@ -106,10 +128,17 @@ class BaseConfig(FFBaseModel):
         
         if load_path:
             config = cls.load_from_yaml(Path(load_path))
+            if config.version != init_version:
+                raise NotImplementedError(f'Current config version: {init_version} does not match loaded version: {config.version}. \n'
+                                          'Backwards compatibility is planned to be implemented soon. \n'
+                                          'For now, please update config fields manually to match default exported config.')
             config.from_file = True
         else:
-            # if ENV.LOCAL:
-            #     init_debug = True
+            '''
+            if ENV.LOCAL:
+                logging.warning('\n Debug mode enabled in local ENV. \n')
+                init_debug = True
+            '''
             
             config = cls.model_construct(debug=init_debug, version=init_version)
             config.from_file = False

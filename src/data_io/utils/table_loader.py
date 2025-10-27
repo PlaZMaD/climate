@@ -39,7 +39,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
     fallback_io_kwargs = {'encoding': 'utf8', 'encoding_errors': 'backslashreplace'}
     
     try:
-        return pd.read_csv(fpath, **pd_read_kwargs)
+        df = pd.read_csv(fpath, **pd_read_kwargs)
     except FileNotFoundError:
         raise
     except Exception as e:
@@ -49,7 +49,12 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
         if pd_read_kwargs['skiprows'] is None:
             pd_read_kwargs['skiprows'] = guess_inconsistent_csv_table_start(fpath, **fallback_io_kwargs)
         
-        return pd.read_csv(fpath, **fallback_io_kwargs, **pd_read_kwargs)
+        df = pd.read_csv(fpath, **fallback_io_kwargs, **pd_read_kwargs)
+    
+    # TODO 2 Excel sometimes saves empty columns into csv: ,,,,,,,; remove them verbose/silent
+    return df
+    
+    
 
 
 def load_xls(fpath, **pd_read_kwargs):
@@ -80,7 +85,31 @@ def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=0) -> pd.D
     return df
 
 
-def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0):
+def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.DataFrame:  
+    # TODO 2 possibly this fixed csv (or other) bugs, merge into table loader routine?
+    # TODO 2 Excel 2016 saved files seems were impossible to open without specyfying engine, why ?    
+    '''
+    for key, item in df_dict.items():
+        item = item.dropna(how='all', axis=1)
+        if (item.loc[0, :].isnull()).sum() > 2:
+            print(f"skipping line 1, 3")
+            l_config['skiprows'] = [0, 2]  # .append(i)
+            continue
+
+        item = item.replace('NAN', np.nan)
+        item = item.dropna(how='all', axis=1)
+        cond_1 = np.isreal(item.loc[1, :].to_numpy()) == False#(item.loc[1, :].astype(str).str.isnumeric() == False)#(item.loc[0, item.columns != d_config['time']].astype(str).str.isnumeric() == False)
+        cond_2 = (item.loc[1, :].isna())#(item.loc[0, item.columns != d_config['time']].isna())
+
+
+        if (cond_1.sum() > 1 and cond_2.sum() !=len(item.columns) - 1) or (cond_1.sum()==0 and cond_2.sum()==0): #cond_1.sum() > 1 and cond_2.sum() != len(item.columns) - 1: #any(item.loc[0, item.columns != d_config['time']].astype(str).str.isnumeric() == False) and not all(item.loc[0, item.columns != d_config['time']].isna()):
+            l_config['skiprows'].append(1)#[1]#lambda x: x == 1
+            print(f"skipping line #{1}")
+            # else:
+            #     pass
+            #     # l_config['skiprows'] = None
+    '''
+    
     # with log_exception(...) instead
     try:
         data = load_table_from_file(fpath, skiprows, nrows, header_row)
@@ -90,4 +119,7 @@ def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0):
         raise
     
     ff_log.info(f'File {fpath} loaded.\n')
+    
+    # TODO 3 df.index.freq and df.name: unconventional attrs required for script, probably subclass to solve this    
+    
     return data
