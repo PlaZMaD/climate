@@ -7,7 +7,7 @@ from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_eddypro_fname, try_parse_ias_fname, try_parse_csf_fname
 from src.data_io.utils.table_loader import load_table_from_file
 from src.ff_logger import ff_log
-from src.ff_config import FFConfig
+from src.ff_config import FFConfig, FFGlobals
 from src.helpers.io_helpers import ensure_path
 from src.helpers.py_collections import ensure_list, format_dict
 
@@ -67,7 +67,7 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         return InputFileType.UNKNOWN
 
 
-def detect_known_files(input_dir='.', from_list: list[Path] = None) -> dict[Path, InputFileType]:
+def detect_known_files(input_dir=None, from_list: list[Path] = None) -> dict[Path, InputFileType]:
     if not from_list:
         root_files = list(Path(input_dir).glob('*.*'))
         input_files = [f for f in root_files if f.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER]
@@ -165,13 +165,14 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
     return ias_site_name_auto, ias_out_version_auto
 
 
-def detect_input_files(config: FFConfig):
+def detect_input_files(config: FFConfig, gl: FFGlobals):
     # noinspection PyPep8Naming
     IM = ImportMode
+    # TODO 2 do not change config here, consider moving all auto options to gl ?
     
     if config.input_files == 'auto':
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
-        input_files_auto = detect_known_files()
+        input_files_auto = detect_known_files(input_dir=gl.input_dir)
         input_files_info = format_dict(input_files_auto, separator=': ')
         config.input_files = change_if_auto(config.input_files, input_files_auto,
                                             ok_msg=f'Detected input files: {input_files_info}')

@@ -1,5 +1,4 @@
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -35,7 +34,7 @@ def test_process(use_r_from_python_env):
         site_name=rep_input_file.site_id
     )
     
-    import src.cells_mirror.cell_reddyproc_process  # noqa: F401
+    import test.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
 
 
@@ -51,4 +50,4 @@ def test_draw():
     )
     # ensure_empty_dir('output/reddyproc')
     # shutil.copytree('test/reddyproc/test_process/output_sample', 'output/reddyproc', dirs_exist_ok=True)
-    import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
+    import test.cells_mirror.cell_reddyproc_draw  # noqa: F401

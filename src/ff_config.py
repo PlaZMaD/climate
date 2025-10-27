@@ -92,10 +92,11 @@ class FFConfig(BaseConfig):
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
     time_col: str = None
     
-    # TODO 1 move to ig
+    # TODO 1 move to ig?
     has_meteo: bool = None
     
     site_name: str = None
+    # TODO 2 refactor to to ias_out_ver_suffix 
     ias_out_version: str = None
     
     qc: dict = None
@@ -114,7 +115,9 @@ class RepOutInfo(FFBaseModel):
 
 class FFGlobals(FFBaseModel):
     # not yet clear if to include in user config or not
+    # TODO 2 refactor: to output_dir
     out_dir: Path
+    input_dir: Path
     repo_dir: Path
     
     points_per_day: int = None

@@ -1,35 +1,6 @@
-import os
 import re
-import shutil
-from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
-
-import pytest
-
-'''
-
-@contextmanager
-def cwd(path):
-    oldpwd = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(oldpwd)
-
-
-@pytest.mark.usefixtures('tmp_path')
-@pytest.fixture
-def use_fixture_path(tmp_path: Path, src_path: Path):
-    assert(src_path.exists())
-
-    shutil.copytree(src_path, tmp_path, dirs_exist_ok=True)
-    print('Path before test',  Path().resolve())
-    with cwd(tmp_path):
-        print('Path during test', Path().resolve())
-        yield tmp_path
-'''
 
 
 def find_rep_file(path_mask):

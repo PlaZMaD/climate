@@ -158,7 +158,7 @@ from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly,
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
-gl = FFGlobals(out_dir=Path('output'), repo_dir=repo_dir)
+gl = FFGlobals(out_dir=Path('output'), input_dir=Path('.'), repo_dir=repo_dir)
 ensure_empty_dir(gl.out_dir)
 
 colab_no_scroll()
@@ -465,8 +465,8 @@ if not config.from_file:
 # # Импорт и проверка данных
 
 # %% id="Xw5TapK10EhR"
-config.input_files, config.import_mode, config.site_name, config.ias_out_version, config.has_meteo = try_auto_detect_input_files(
-    config)
+res = try_auto_detect_input_files(config, gl)
+config.input_files, config.import_mode, config.site_name, config.ias_out_version, config.has_meteo = res 
 data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
