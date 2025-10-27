@@ -10,7 +10,7 @@ BIOMET_HEADER_DETECTION_COLS = [
     'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'
 ]
 EDDYPRO_HEADER_DETECTION_COLS = [
-    # TODO 2 what is exact correct list though?
+    # TODO 1 what is exact correct list though?
     #  it may be useful later and HEADER_DETECTION should be just a copy
     # just a sample, some cols may be missing
     'filename', 'date', 'time', 'DOY', 'daytime', 'file_records', 'used_records', 'Tau',
@@ -37,13 +37,13 @@ EDDYPRO_HEADER_DETECTION_COLS = [
 
 COLS_SCRIPT_E_TO_IAS_VS_EDDYPRO_TO_IAS = {
     # Not used anywhere yet, but kept for the transparency/completeness purposes
-
+    
     # Reminder: only renames, full list must include also lowercasing
     # Reminder: repiaris should better be in separate list, because export requires specific name
-
+    
     # it would be great to put all them to (excel table + regex) instead of
     # hardcoding duplicate mess, but is this possible?
-
+    
     'u*': 'USTAR_1_1_1',
     'co2_signal_strength_7500_mean': 'CO2_STR_1_1_1',
     'ch4_signal_strength_7700_mean': 'CH4_RSSI_1_1_1',
@@ -59,7 +59,7 @@ COLS_SCRIPT_E_TO_IAS_VS_EDDYPRO_TO_IAS = {
         print(f"renaming {col_name} to ch4_signal_strength")
     data = data.rename(columns={col_name: 'ch4_signal_strength'})
     '''
-
+    
     # BIOMET to IAS
     'SWIN_1_1_1': 'SW_IN_1_1_1',
     'PPFD_1_1_1': 'PPFD_IN_1_1_1',

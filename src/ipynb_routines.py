@@ -6,7 +6,7 @@ Also consider to change if nessesary:
 if ENV.IPYNB:
     import matplotlib.pyplot as plt
 """
-import logging
+
 from inspect import getsource
 from pathlib import Path
 from warnings import warn
@@ -22,39 +22,38 @@ from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
 from src.helpers.io_helpers import ensure_empty_dir
 
-# TODO 2 create git readme and changelog for releases
-# TODO 1 refactor: keep empty lines
+# TODO 2 repo: create readme and changelog for releases
+# TODO 1 test: more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
 
-# Fluxfilter.py:
-# TODO 2 QE unroll_filters_db = filters_db.copy() how this was used (why not re-run cell)? 
-# OA: remove (wrap into @unroll_filters_db if used)
+# TODO 3 QE logs: FF.py, "Какая часть данных от общего количества (в %) была отфильтрована:" idea was print = log (mostly)? (search for ff_log.* for other possible dupes)
+# TODO 2 QE fix or not to fix lib versions for %pip? fix: versions may brake on colab update, unfix: script may brake on lib update
+# %pip install pysolar==0.13
+# %pip install ruamel.yaml==0.18.15
+# %pip install deepdiff==8.6.1
 
-# TODO 1 test more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
 
-# TODO 2 QOA commas?
+# TODO 3 QOA use commas?, search example:
 '''
 filters_min_max = {
     'co2_flux': [-40, 40],
     'co2_strg': [-20, 20],
     ...
 }
-'''
-
-# TODO 2 cuts print middle part on 0.9.4 Chr
-# print("Какая часть данных от общего количества (в %) была отфильтрована:")
+''' 
 
 # TODO 1 QV add ias description in the intro (or idea was to cut more, not to expand?)
-# TODO 1 QOA add csf description in the intro
+# TODO 2 QOA add csf description in the intro
+# TODO 3 QOA set config on top of ipynb, run after or set interactively? 0.9.4 seems had it on top (fundamental problem with execution sequence)
 
-# TODO 1 QOA set config above, run after or set interactively? 0.9.4 seems had it above (fundamental problem with execution sequence)
+# TODO 2 QV was 0.9.5 link used or 1.0.0?
 
 # DONE repair 0.9.2 - 0.9.5
 # DONE ensure no new lines anymore + spellcheck
-
-if ENV.LOCAL:
-    # reducing plotly log spam
-    logging.getLogger('kaleido').setLevel(logging.WARNING)
-    logging.getLogger('choreographer').setLevel(logging.WARNING)
+# DONE print % filtered on Chr cuts print middle part on 0.9.4 Chr, search example:
+# DONE print % filtered removed 1 dupe from 0.9.3
+# DONE test Ckd_2015_v01 v1.0.0 vs v1.0.0b (std, colab) FCH4_SSITC_* and FC_SSITC_* different values?
+# DONE refactor: keep empty lines
+# DONE unroll_filters removed OA: remove (wrap into @unroll_filters_db if used)
 
 
 def display_image_row(paths: list[Path]):
@@ -65,21 +64,21 @@ def display_image_row(paths: list[Path]):
         except:
             continue
         imgs += [img]
-    # TODO 4 check paths exist where?
+    # TODO 4 check if paths exist here or above?
     if len(imgs) < 1:
         return
-
+    
     img_combined = grid_images(imgs, len(imgs))
     # byte_arr = io.BytesIO()
     # img_combined.save(byte_arr, format='PNG')
     # from IPython.display import Image as IImage
     # IImage(data=byte_arr.getvalue(), width=img_combined.width, unconfined=True)
-
+    
     # widgets.Image is not persistent on Colab load
     # display(byte_arr) does not have horisonal scroll,
     #     if vertical scroll is disabled on Colab
     # Hbox(widgets.Output(display(byte_arr))) works fluently
-
+    
     out = widgets.Output(layout={'border': '1px solid black'})
     with out:
         display(img_combined)
@@ -102,11 +101,11 @@ def _register_ipython_callback_once(event_name, cb):
     cb_unregs = [cb_old for cb_old in ev.callbacks[event_name] if cb_old.__name__ == cb.__name__]
     if len(cb_unregs) == 1 and cb.__code__ == cb_unregs[0].__code__:
         return
-
+    
     for cb_old in cb_unregs:
         warn(f'Removing unexpected callback {cb_old}.')
         ev.unregister(event_name, cb_old)
-
+    
     ev.register(event_name, cb)
 
 
@@ -130,10 +129,10 @@ def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
         display(SVG(svg_text))
     if ENV.LOCAL:
         print('Reminder: local screen resolution for plotly render can be adjusted.')
-
+        
         dir = local_out_dir
         dir.mkdir(parents=True, exist_ok=True)
-
+        
         fname = args['config']['toImageButtonOptions']['filename']
         fpath = dir / (fname + '.png')
         self.write_image(format='png', width=1920, file=fpath)
@@ -151,9 +150,9 @@ def setup_plotly(out_dir):
         #     plotly_get_chrome may be required
         #     kaleido==1.0.0
         #     plotly==6.2.0
-
+        
         local_dir = out_dir / 'local' / 'plots'
         ensure_empty_dir(local_dir)
-
+        
         go.Figure.show = lambda self, **args: _plotly_show_override(self, local_dir, **args)
         print(f"Pure py plotly renderer is set to: {renderers.default}.")

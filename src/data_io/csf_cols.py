@@ -4,7 +4,7 @@ COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES = {
     'CO2SS'.lower(): 'co2_signal_strength',
     # 'co2_signal_strength_7500_mean': 'co2_signal_strength',
     'co2_signal_strength.{1,}': 'co2_signal_strength',
-
+    
     'CH4SS'.lower(): 'ch4_signal_strength',
     # 'ch4_signal_strength_7700_mean': 'ch4_signal_strength',
     'ch4_signal_strength.{1,}': 'ch4_signal_strength'
@@ -23,7 +23,7 @@ COLS_CSF_USED_NORENAME_IMPORT = [
 ]
 COLS_CSF_UNUSED_NORENAME_IMPORT = [
     # TODO 1 biomet + CSF (NOT just CSF)
-    # nessesacry to experiment
+    # necessary to experiment
     'FC_mass', 'FC_samples', 'ET', 'ET_QC', 'ET_samples', 'LE', 'LE_samples', 'H', 'H_samples', 'Bowen_ratio', 'TSTAR',
     'TKE', 'e', 'e_sat', 'PA', 'PA_SIGMA', 'VPD', 'U', 'U_SIGMA', 'V', 'V_SIGMA', 'W', 'W_SIGMA', 'T_SONIC_SIGMA',
     'sonic_azimuth', 'WS', 'WD_SONIC', 'WD_SIGMA', 'WD', 'WS_MAX', 'CO2_SIGMA', 'CO2_mixratio', 'CO2_mixratio_SIGMA',

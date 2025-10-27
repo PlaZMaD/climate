@@ -59,12 +59,12 @@ def colab_add_download_button(fpath, caption):
     def clicked(arg):
         files.download(fpath)
         _move_progress_bar_to_top()
-
+    
     import ipywidgets as widgets
-
+    
     button_download = widgets.Button(description=caption)
     button_download.on_click(clicked)
-
+    
     button_box = widgets.HBox([button_download], layout=widgets.Layout(justify_content='center'))
     display(button_box)
 

@@ -130,7 +130,7 @@ import bglabutils.basic as bg
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
 from src.ffconfig import FFConfig, RepConfig, FFGlobals, InputFileType
-from src.helpers.py_helpers import init_logging
+from src.ff_logger import init_logging, ff_log
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
@@ -235,10 +235,10 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # `config.*.repair_time` если `True`, то проверит колонку с датой-временем на пропуски и монотонность, проведет регенерацию по первой-последней точке с учетом предполагаемой длины шага (вычисляется по паре первых значений ряда).
 
 # %% id="tVJ_DRBrlpYd"
- 
+
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', 
+config = FFConfig.load_or_init(load_path='auto',
                                init_debug=False, init_version='1.0.0')
 
 if not config.from_file:
@@ -255,7 +255,7 @@ if not config.from_file:
     config.eddypro_fo.date_col = 'date'
     config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     config.eddypro_fo.repair_time = True
-
+    
     config.eddypro_biomet.missing_data_codes = ['-9999']
     config.eddypro_biomet.repair_time = True
     config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
@@ -298,7 +298,7 @@ if not config.from_file:
     
     # Индекс станции для названий выходных файлов, рисунков
     config.site_name = 'auto'
-    config.ias_output_version = 'auto'
+    config.ias_out_version = 'auto'
 
 # %% [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные со значением флага больше порога будут исключены.
@@ -359,7 +359,6 @@ filters_meteo['CH4SS_min'] = 20.
 if not config.from_file:
     config.filters.meteo = filters_meteo
 
-
 # %% [markdown] id="utUX7SA4qA_I"
 # ### Фильтрация статистическая
 
@@ -405,7 +404,7 @@ for col in ['h', 'le', 'rh_1_1_1', 'vpd_1_1_1']:
     filters_window[col] = {'sigmas': 7, 'window': 10, 'min_periods': 4}
 for col in ['swin_1_1_1', 'ppfd_1_1_1']:
     filters_window[col] = {'sigmas': 8, 'window': 10, 'min_periods': 4}
-    
+
 if not config.from_file:
     config.filters.window = filters_window
 
@@ -446,7 +445,7 @@ if not config.from_file:
 # # Импорт и проверка данных
 
 # %% id="Xw5TapK10EhR"
-config.input_files, config.import_mode, config.site_name, config.ias_output_version, config.has_meteo = try_auto_detect_input_files(
+config.input_files, config.import_mode, config.site_name, config.ias_out_version, config.has_meteo = try_auto_detect_input_files(
     config)
 data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
@@ -456,6 +455,7 @@ gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 data.columns = data.columns.str.lower()
 if not config.has_meteo:
     data["rh_1_1_1"] = data['rh']
+    # TODO QOA 1 different units? Elg biomet kPa, but mean 8.6 ?  
     data["vpd_1_1_1"] = data['vpd']
 
 # %% [markdown] id="ipknrLaeByCT"
@@ -474,7 +474,7 @@ for col in cols_2_check:
         continue
     error_positions = data[col].fillna(0).apply(pd.to_numeric, errors='coerce').isna()
     if error_positions.any():
-        logging.error(
+        ff_log.error(
             f"""Check input files for {col} column near:\n {error_positions[error_positions == True].index.strftime('%d-%m-%Y %H:%M').values} in {'biomet' if len(meteo_cols) > 0 and col in meteo_cols else 'data'} file"""
         )
         data_type_error_flag = True
@@ -513,7 +513,7 @@ for col in data.columns:
     if col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()] or 'ch4_signal_strength' in col:
         print(f"renaming {col} to ch4_signal_strength")
         data = data.rename(columns={col: 'ch4_signal_strength'})
-
+    
     # Biomet renames
     if col == 'ppfd_in_1_1_1':
         print(f"renaming {col} to ppfd_1_1_1")
@@ -521,7 +521,7 @@ for col in data.columns:
     if col == 'sw_in_1_1_1':
         print(f"renaming {col} to swin_1_1_1")
         data = data.rename(columns={col: 'swin_1_1_1'})
-
+    
     if col == "rh_1_1_1":
         have_rh_flag = True
     if col == "vpd_1_1_1":
@@ -608,7 +608,7 @@ for col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
 
 if not config.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
-    logging.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
+    ff_log.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
@@ -641,7 +641,7 @@ if config.calc_nee and 'co2_strg' in data.columns:
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
 if not config.from_file:
     config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
-logging.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
+ff_log.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
 # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
 # %% id="ueuvsNxYdtgs"
@@ -653,7 +653,7 @@ if config.calc_nee and 'co2_strg' in data.columns:
     del tmp_data
     if 'nee' not in cols_to_investigate:
         cols_to_investigate.append('nee')
-        
+    
     if not config.from_file:
         for filter_config in [config.qc, config.filters.meteo, config.filters.min_max, config.filters.window,
                               config.filters.quantile,
@@ -748,7 +748,8 @@ if config.has_meteo:
         ]
     # date_ranges = []
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
-    plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo, config.filters.winter_date_ranges)
+    plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo,
+                                          config.filters.winter_date_ranges)
 
 # %% [markdown] id="iipFLxf6fu5Y"
 # Фильтрация по футпринту
@@ -821,10 +822,9 @@ for key, filters in filters_db.items():
             # print(filter_name, filtered_amount, len(pl_data.index) - old_val)
 fdf_df = pd.DataFrame(all_filters)
 
-print("Какая часть данных от общего количества (в %) была отфильтрована:")
-print(fdf_df.iloc[1] / len(plot_data) * 100)
-logging.info("Какая часть данных от общего количества (в %) была отфильтрована:")
-logging.info(fdf_df.iloc[1] / len(plot_data) * 100)
+ff_log.info("Какая часть данных от общего количества (в %) была отфильтрована:")
+df_stats = fdf_df.iloc[1] / len(plot_data) * 100
+ff_log.info('\n' + df_stats.to_string())
 
 # %% [markdown] id="gA_IPavss0bq"
 # # Отрисовка рядов
@@ -915,7 +915,6 @@ for column, filter in filters_db.items():
 gl.rep_level3_fpath = gl.out_dir / f"REddyProc_{config.site_name}_{int(plot_data[time_col].dt.year.median())}.txt"
 export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config, gl.points_per_day)
 
-
 # %% [markdown] id="e50f7947"
 # ## Файл для ИАС
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
@@ -926,8 +925,8 @@ if config.has_meteo:
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
-
-    export_ias(gl.out_dir, config.site_name, config.ias_output_version, ias_df, time_col=time_col,
+    
+    export_ias(gl.out_dir, config.site_name, config.ias_out_version, ias_df, time_col=time_col,
                data_swin_1_1_1=data['swin_1_1_1'])
 
 # %% [markdown] id="Pm8hiMrb_wRW"
@@ -944,12 +943,12 @@ if config.has_meteo:
         'PPFD': ['umol m-2 s-1'], 'Ta': ['oC'], 'VPD': ['kPa'], 'PPFD_gapfilling': ['umol m-2 s-1'],
         'Ta_gapfilling': ['oC'], 'VPD_gapfilling': ['kPa'], 'period': ['--']
     }
-
+    
     fat_df = plot_data.copy()
     for column, filter in filters_db.items():
         filter = get_column_filter(fat_df, filters_db, column)
         fat_df.loc[~filter.astype(bool), column] = np.nan
-
+    
     export_fat(fat_df, fat_output_template, time_col, gl, config)
     del fat_df
 
@@ -967,7 +966,7 @@ if 'time' in plot_data.columns:
 
 all_fpath = gl.out_dir / 'output_all.csv'
 plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
-logging.info(f"Basic file saved to {all_fpath}")
+ff_log.info(f"Basic file saved to {all_fpath}")
 
 # %% [markdown] id="-MSrgUD0-19l"
 # ## Файл-резюме результатов фильтрации
@@ -1046,7 +1045,7 @@ basic_df = basic_df.fillna(-9999)
 
 summary_fpath = gl.out_dir / 'output_summary.csv'
 basic_df.to_csv(summary_fpath, index=None)
-logging.info(f"New basic file saved to {summary_fpath}")
+ff_log.info(f"New basic file saved to {summary_fpath}")
 # %% [markdown] id="775a473e"
 # # Обработка инструментом REddyProc
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
@@ -1151,19 +1150,19 @@ config_reddyproc = RepConfig(
     is_bootstrap_u_star=False,
     # u_star_seasoning: one of "WithinYear", "Continuous", "User"
     u_star_seasoning="Continuous",
-
+    
     is_to_apply_partitioning=True,
-
+    
     # partitioning_methods: one or both of "Reichstein05", "Lasslop10"
     partitioning_methods=["Reichstein05", "Lasslop10"],
-
+    
     latitude=56.5,
     longitude=32.6,
     timezone=+3.0,
-
+    
     # "Tsoil"
     temperature_data_variable="Tair",
-
+    
     # do not change
     site_id=config.site_name,
     u_star_method="RTw",
@@ -1173,7 +1172,7 @@ config_reddyproc = RepConfig(
 )
 
 if not config.from_file:
-    config.reddyproc = config_reddyproc 
+    config.reddyproc = config_reddyproc
 
 prepare_rg(config.reddyproc)
 ensure_empty_dir(config.reddyproc.output_dir)

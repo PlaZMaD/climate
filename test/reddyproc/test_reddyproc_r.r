@@ -26,13 +26,13 @@ rep_user_options <- list(
 
     is_to_apply_u_star_filtering = TRUE,
     # NA to disable or double
-    ustar_threshold_fallback = 0.1,
+    ustar_threshold_fallback = 0.01,
     # TODO 2 remove leftovers after one of two theoretical Rg options are removed?
     # TODO 2 check if RG_th_REP placed to the output files and it is intended
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # 'Rg_th_Py', 'Rg_th_REP' - estimate by theoretical algs,
     # 'Rg' - by real data, '' - ignore Rg and filter both days and nights
-    ustar_rg_source = 'Rg',
+    ustar_rg_source = 'Rg_th_REP',
 
 
     # TODO 2 User and col season = [1, 1, ...], ensure outputs are same as if Continuous or WithinYear expect 1-2 cols

@@ -5,6 +5,7 @@ from src.data_io.data_import_modes import ImportMode, InputFileType
 from src.helpers.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
 
+
 # DEFAULT_CONFIG = 'misc/default_config.yaml'
 
 
@@ -13,7 +14,7 @@ class InputFileConfig(FFBaseModel):
     repair_time: bool = None
     """ can replace -9999 to np.nan """
     missing_data_codes: str | list[str] = None
-
+    
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
     # time_converter: Callable[[Any], Any]
     # TODO 3 func <-> str is used to support config save load, but it won't be safe in server mode (UI or Colab ok)
@@ -39,17 +40,17 @@ class RepConfig(FFBaseModel):
     is_bootstrap_u_star: bool = None
     # TODO 3 add enums?
     u_star_seasoning: Annotated[str, 'WithinYear, Continuous, User'] = None
-
+    
     is_to_apply_partitioning: bool = None
-
+    
     partitioning_methods: Annotated[list[str], 'Reichstein05, Lasslop10'] = None
-
+    
     latitude: float = None
     longitude: float = None
     timezone: float = None
-
+    
     temperature_data_variable: str = None
-
+    
     site_id: str = None
     u_star_method: str = None
     is_to_apply_gap_filling: bool = None
@@ -75,28 +76,28 @@ class FFConfig(BaseConfig):
     version: str = None
     """  True: fast load, just 3 months of data """
     debug: bool = None
-
+    
     # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
     input_files: str | list[str] | dict[str | Path, InputFileType] = None
     # flexible, but too complicated to edit for user?
     # files: dict[str, InputFileConfig]
-
+    
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
     # ias: InputFileConfig
     # csf: InputFileConfig
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
     time_col: str = None
-
+    
     # TODO 1 move to ig
     has_meteo: bool = None
-
+    
     site_name: str = None
-    ias_output_version: str = None
-
-    qc: dict = None 
+    ias_out_version: str = None
+    
+    qc: dict = None
     filters: FiltersConfig = FiltersConfig.model_construct()
-
+    
     calc_nee: bool = None
     calc_with_strg: bool = None
     reddyproc: RepConfig = RepConfig.model_construct()
@@ -112,9 +113,9 @@ class FFGlobals(FFBaseModel):
     # not yet clear if to include in user config or not
     out_dir: Path
     repo_dir: Path
-
+    
     points_per_day: int = None
-
+    
     rep_arc_exclude_files: list[Path] = None
     rep_out_info: RepOutInfo = None
     rep_level3_fpath: Path = None

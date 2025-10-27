@@ -3,7 +3,6 @@ from typing import Self, Any, Annotated
 from pydantic import BaseModel, ConfigDict, model_serializer, Field
 from ruamel.yaml import CommentedSeq, CommentedMap, YAML
 
-from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
 
 # TODO 1 +.toml vs ?.py (vs .yaml)?
@@ -20,7 +19,7 @@ def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
         for k, v in meta.items():
             eol = []  # or smth else
             if 'desc' in v:
-                eol += [v['desc']]                
+                eol += [v['desc']]
             comment = ' # '.join(eol)
             d.yaml_add_eol_comment(key=k, comment=comment)
     return d
@@ -28,10 +27,10 @@ def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
 
 def config_to_yaml(x, path, max_len=5):
     """ Nested metadata processing and improves yaml items wrapping """
-
+    
     if isinstance(x, dict):
         res = dict_to_yaml_with_comments(x)
-
+        
         v_types = {type(v) for v in res.values()}
         if v_types <= {str, int, float} and len(path) > 1:
             res.fa.set_flow_style()
@@ -47,7 +46,7 @@ def config_to_yaml(x, path, max_len=5):
             res = [config_to_yaml(i, path + [str(x)], max_len) for i in x]
     else:
         res = x
-
+    
     return res
 
 
@@ -57,12 +56,12 @@ class AnnotatedBaseModel(BaseModel):
         for k, v in self.model_fields.items():
             if v.metadata and isinstance(v.metadata, list):
                 self.model_fields[k].metadata = {'desc': v.metadata[0]}
-
+    
     @model_serializer(mode="wrap")
     def include_field_meta(self, nxt):
         """ required to generate yaml comments from annotations """
         res = nxt(self)
-
+        
         assert METADATA_KEY not in self
         config_meta = {k: v.metadata for k, v in self.model_fields.items() if v.metadata}
         if len(config_meta) > 0:
@@ -83,37 +82,36 @@ class BaseConfig(FFBaseModel):
         with open(fpath, 'r') as fl:
             loaded_yaml = YAML().load(fl)
         return cls.model_validate(loaded_yaml)
-
+    
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path):
         save_dict = config.model_dump(mode='json')
-
+        
         yaml = YAML()
         yaml.default_flow_style = False
         yaml.indent(mapping=4, sequence=4, offset=4)
-
-        config_yaml = config_to_yaml(save_dict, path=[])       
+        
+        config_yaml = config_to_yaml(save_dict, path=[])
         with open(fpath, "w") as fl:
             yaml.dump(config_yaml, fl)
-
+    
     @classmethod
     def save(cls: Self, config, fpath: str | Path):
         cls.save_to_yaml(config, Path(fpath))
-
+    
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, init_debug: bool, init_version: str) -> Self:
         if load_path == 'auto':
             load_path = find_unique_file(Path('.'), '*config*.yaml')
-
+        
         if load_path:
             config = cls.load_from_yaml(Path(load_path))
             config.from_file = True
         else:
             # if ENV.LOCAL:
             #     init_debug = True
-
+            
             config = cls.model_construct(debug=init_debug, version=init_version)
             config.from_file = False
-
+        
         return config
-    

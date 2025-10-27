@@ -1,0 +1,120 @@
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+
+
+#: ias_file_check.py:54
+msgid "DateTime columns ['TIMESTAMP_START', 'TIMESTAMP_END'] should go first. Check columns order and names."
+msgstr "Колонки DateTime ['TIMESTAMP_START', 'TIMESTAMP_END'] должны идти первыми. Проверьте порядок и имена столбцов."
+
+#: ias_file_check.py:59
+msgid "Wrong DTime column position, should go 3!"
+msgstr "Неправильное положение колонки DTime, должно быть 3!"
+
+#: ias_file_check.py:62
+msgid "No DTime column in the data"
+msgstr "В данных отсутствует столбец DTime"
+
+#: ias_file_check.py:74
+msgid "There are columns with the same names: {}"
+msgstr "Есть столбцы с одинаковыми именами: {}"
+
+#: ias_file_check.py:88
+msgid "Columns naming problem, columns {} do not have correct suffix structure."
+msgstr "Проблема с именованием столбцов, столбцы {} не имеют правильной суффиксной структуры."
+
+#: ias_file_check.py:94
+msgid "The column {} is not in the known columns list, please double-check the name!"
+msgstr "Столбец {} отсутствует в списке известных столбцов, пожалуйста, перепроверьте его название!"
+
+#: ias_file_check.py:99
+msgid "Suffix problem for {}, 1_1_1 should be used in case of a single variable."
+msgstr "Проблема с суффиксом для {}, 1_1_1 следует использовать в случае единственной переменной."
+
+#: ias_file_check.py:106
+msgid "Check suffix for {}, not starting from 1"
+msgstr "Проверьте суффикс для {}, не начинается с 1"
+
+#: ias_file_check.py:113
+msgid "Check suffix for {} with #{} index \"{}\", incrementing by > 1"
+msgstr "Проверьте суффикс для {} с индексом \"{}\", инкремент > 1"
+
+#: ias_file_check.py:128
+msgid "Checking time column for {}"
+msgstr "Проверка колонки времени для {}"
+
+#: ias_file_check.py:131
+msgid "{} is not of correct type."
+msgstr "{} имеет неправильный тип."
+
+#: ias_file_check.py:136
+msgid ""
+"Can't read timestamp. Please check entries near lines \n"
+" {}"
+msgstr "Не могу прочитать временную метку у строк \n {}"
+
+#: ias_file_check.py:144
+msgid "There should be only one year presented in file, got {}, i.e. lines {}!"
+msgstr "В файле должен быть представлен только один год, присутствуют {}, например строки {}!"
+
+#: ias_file_check.py:148
+msgid "Duplicated timestamps! check lines:{}"
+msgstr "Дублируются временные метки! Проверьте строки: {}"
+
+#: ias_file_check.py:170
+msgid "Strange time column name!"
+msgstr "Странное название временной колонки!"
+
+#: ias_file_check.py:178
+msgid "Missing values: {}"
+msgstr "Пропущены временные метки: {}"
+
+#: ias_file_check.py:181
+msgid "Extra values: {}, lines: {}"
+msgstr "Лишние временные метки: {}, строки: {}"
+
+#: ias_file_check.py:208
+msgid "Select CSV, XLS or XLSX file."
+msgstr "Выберите файл CSV, XLS или XLSX."
+
+#: ias_file_check.py:219
+msgid "Several lists in data file!"
+msgstr "Несколько листов в файле данных!"
+
+#: ias_file_check.py:226
+msgid "Not enough columns, please check your file. If you are using csv - make sure that it uses comma as a separator."
+msgstr "Недостаточно столбцов, проверьте ваш файл. Если вы используете csv, убедитесь, что он использует запятую в качестве разделителя."
+
+#: ias_file_check.py:238
+msgid "No column {} in the file!"
+msgstr "В файле нет столбца {}!"
+
+#: ias_file_check.py:247
+msgid "No  final timestamp checks for {}, please fix all errors to complete this step."
+msgstr "Для {} не проверена итоговая метка времени, исправьте все ошибки, чтобы завершить этот шаг."
+
+#: ias_file_check.py:259
+msgid "The column {} is empty."
+msgstr "Столбец {} пуст."
+
+#: ias_file_check.py:264 ias_file_check.py:271
+msgid "INF val in {} at the position {}"
+msgstr "INF  в {} в строке {}"
+
+#: ias_file_check.py:277
+msgid "Non numerical values in {} at lines {}"
+msgstr "Нечисловые значения в {} в строках {}"
+
+#: ias_file_check.py:280
+msgid "{} errors in total, check logs!"
+msgstr "{} ошибок суммарно, проверьте логи!"
+
+#: ias_file_check.py:281
+msgid "Check linked vars for {}, missing cols: {}"
+msgstr "Проверьте связанные колонки для переменной {}, пропущены: {}"
+
+#: ias_file_check.py:302
+msgid "The column {} has only -9999 values."
+msgstr "Колонка {} содержит только -9999."
