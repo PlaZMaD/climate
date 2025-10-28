@@ -15,7 +15,9 @@ class InputFileConfig(FFBaseModel):
     """ generate new timestamps in case of errors """
     repair_time: bool = None
     """ can replace -9999 to np.nan """
+    # TODO 1 config: some options can be None on load, but better not during run; how to deal with it fluently?
     missing_data_codes: list[str | int] = None
+    skip_validation: bool = None
     
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
     # time_converter: Callable[[Any], Any]

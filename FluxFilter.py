@@ -279,6 +279,7 @@ if not config.from_file:
     config.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
     config.csf.repair_time = True
     
+    config.ias.skip_validation = False
     config.ias.missing_data_codes = [-9999]
     config.ias.repair_time = True
 # %% [markdown] id="DtxFTNnEfENz"

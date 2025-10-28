@@ -27,6 +27,7 @@ logger.setLevel(logging.INFO)
 
 # TODO 2 V: (meeting) add filter on fetch data?
 
+# TODO 2 refactor: rename file to ias_check
 
 def set_lang(language):
     # TODO E 3 replaced to Path, verify bundle still works

@@ -105,9 +105,12 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def import_ias(fpath: Path, time_col: str, ias: InputFileConfig, debug: bool):
-    if not debug:    
+def import_ias(fpath: Path, time_col: str, ias: InputFileConfig, skip_validation: bool, debug: bool):
+    if skip_validation:
+        ff_log.warning('IAS validation is skipped due to user option.')
+    elif not debug:
         check_ias(fpath)
+
     nrows = None if not debug else DEBUG_NROWS
     df = load_table_logged(fpath, nrows=nrows)
         
@@ -133,7 +136,7 @@ def import_iases(config: FFConfig):
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.debug) 
+    dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.ias.skip_validation, config.debug) 
            for fpath, _ in config.input_files.items()}
 
     df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
