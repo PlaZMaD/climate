@@ -1,4 +1,4 @@
-# version on which config was created 
+# do not change
 version: '1.0.2'
 # fast mode loading just a few months of data
 debug: false
