@@ -107,6 +107,7 @@ class EddyImgPostProcess:
         self.raw_img_duplicates: list[Path] = []
     
     def ungrid_heatmap(self, img):
+        # TODO 2 refactor: count -> n_tiles
         tile_count = self.total_years + 1
         row_count = (tile_count - 1) // 3 + 1
         tiles_2d = ungrid_image(img, nx=3, ny=row_count)

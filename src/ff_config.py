@@ -88,7 +88,7 @@ class FFConfig(BaseConfig):
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
-    ias: InputFileConfig = InputFileConfig.model_construct()
+    ias: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
     csf: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None

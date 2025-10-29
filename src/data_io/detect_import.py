@@ -149,8 +149,8 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
     
     if len(paths) > 1:
         paths_info = ensure_list(paths, transform_func=lambda x: str(Path(x).name))
-        ff_log.warning(f'Multiple file names can be used to auto detect site: {paths_info}, \n'
-                       'Using the first one or specify auto options.')
+        ff_log.warning(f'Multiple file names can be used to auto detect site name: {paths_info}, \n'
+                       'Using the first one or specify manually in the options.')
     
     if len(paths) >= 1:
         ias_site_name_auto, ias_out_version_auto = parser(paths[0].name)

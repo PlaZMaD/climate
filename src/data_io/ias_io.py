@@ -11,8 +11,8 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
 from src.data_io.ias_error_check import set_lang, check_ias
 from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.time_series_loader import repair_time, cleanup_df
-from src.data_io.utils.time_series_utils import merge_time_series
-from src.ff_config import FFConfig, InputFileConfig
+from src.data_io.utils.time_series_utils import merge_time_series, detect_datetime_format
+from src.ff_config import FFConfig, InputFileConfig, MergedDateTimeFileConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_log
@@ -24,11 +24,12 @@ IAS_EXPORT_MIN_ROWS = 5
 # DONE column order improved
 # DONE V: implement merge for any amount of iases
 # DONE ias: years skipped if IAS data does not contain next year extra row V: could be necessary to fix bug QOA: fix
+# DONE E: use TIMESTAMP_START for datetime, not end, nor mid
 
 # TODO 1 test: merge for any amount of iases
 # TODO 1 test: more ias export to match import after export 1y fixed
 # TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
-# TODO 1 ias: Unsupported by notebook IAS vars - disappeared from 1.0.0
+# TODO 1 ias: Unsupported by notebook IAS vars - disappeared from 1.0.0 (debug?)
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
@@ -105,7 +106,7 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def import_ias(fpath: Path, time_col: str, ias: InputFileConfig, skip_validation: bool, debug: bool):
+def import_ias(fpath: Path, out_datetime_col: str, ias: MergedDateTimeFileConfig, skip_validation: bool, debug: bool):
     if skip_validation:
         ff_log.warning('IAS validation is skipped due to user option.')
     elif not debug:
@@ -113,20 +114,23 @@ def import_ias(fpath: Path, time_col: str, ias: InputFileConfig, skip_validation
 
     nrows = None if not debug else DEBUG_NROWS
     df = load_table_logged(fpath, nrows=nrows)
-        
-    # TODO 2 test check conversion is to TIMESTAMP_START E: eddypro = TIMESTAMP_START, not end, nor mid    
-    df[time_col] = pd.to_datetime(df['TIMESTAMP_START'], format='%Y%m%d%H%M')
-    df = df.drop(['TIMESTAMP_START', 'TIMESTAMP_END', 'DTime'], axis='columns')
+    
+    assert out_datetime_col not in COLS_IAS_TIME
+    assert out_datetime_col not in df.columns
+    dt_fmt = detect_datetime_format(df[ias.datetime_col], ias.try_datetime_formats)
+    df[out_datetime_col] = pd.to_datetime(df[ias.datetime_col], format=dt_fmt)
+    df = df.drop(COLS_IAS_TIME, axis='columns')
+    
     if ias.repair_time:
-        df = repair_time(df, time_col)
+        df = repair_time(df, out_datetime_col)
     
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
     ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    df = ias_table_extend_year(df, time_col, -9999)
+    df = ias_table_extend_year(df, out_datetime_col, -9999)
     
     df = cleanup_df(df, ias.missing_data_codes)
     
-    df = import_ias_process_cols(df, time_col)
+    df = import_ias_process_cols(df, out_datetime_col)
     return df
 
 
@@ -139,6 +143,7 @@ def import_iases(config: FFConfig):
     dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.ias.skip_validation, config.debug) 
            for fpath, _ in config.input_files.items()}
 
+    # TODO 1 check chunks are preserved and not overriden by nan rows 
     df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
     
     # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
@@ -156,6 +161,7 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col, min_rows):
     first_year = dt_vals.dt.year.min()
     last_year = dt_vals.dt.year.max()
     
+    # TODO 1 count skips nans?
     drop_first = dt_vals.where(dt_vals.dt.year == first_year).count() < min_rows
     drop_last = dt_vals.where(dt_vals.dt.year == last_year).count() < min_rows
     if drop_first and last_year > first_year:

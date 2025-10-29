@@ -281,6 +281,8 @@ if not config.from_file:
     
     config.ias.skip_validation = False
     config.ias.missing_data_codes = [-9999]
+    config.ias.datetime_col = 'TIMESTAMP_START'
+    config.ias.try_datetime_formats = '%Y%m%d%H%M'
     config.ias.repair_time = True
 # %% [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
