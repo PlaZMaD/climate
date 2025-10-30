@@ -8,11 +8,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.data_io.data_import_modes import InputFileType
+from src.config.config_types import InputFileType
 from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.utils.time_series_utils import repair_time, detect_datetime_format
-from src.ff_logger import ff_log
-from src.ff_config import FFConfig
+from src.ff_logger import ff_logger
+from src.config.ff_config import FFConfig
 
 
 def preprocess_time_csf(df: pd.DataFrame, src_time_col, try_fmts, tgt_time_col):
@@ -65,7 +65,7 @@ def merge_time_series_biomet(df_orig: pd.DataFrame, df_biomet: pd.DataFrame, tim
     same_cols = {col for col in df.columns if col.lower() in df_biomet.columns.str.lower()}
     same_cols = same_cols - {time_col}
     if len(same_cols) > 0:
-        ff_log.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
+        ff_logger.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
         df = df.drop(list(same_cols), axis=1)
 
     df = df.join(df_biomet, how='outer', rsuffix='_meteo')

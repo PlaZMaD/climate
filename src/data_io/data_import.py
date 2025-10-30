@@ -1,10 +1,10 @@
 from src.helpers.py_collections import format_dict
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 from src.data_io.csf_import import import_csf
-from src.data_io.data_import_modes import ImportMode
+from src.config.config_types import ImportMode
 from src.data_io.eddypro_loader import load_eddypro
 from src.data_io.ias_io import import_iases
-from src.ff_config import FFConfig
+from src.config.ff_config import FFConfig
 
 
 # info on all imports:
@@ -59,6 +59,6 @@ def import_data(config: FFConfig):
     
     paths = format_dict(config.input_files, separator=': ')
     # DONE logs:  fix log
-    ff_log.info(f'Data imported from files: {paths} \n')
+    ff_logger.info(f'Data imported from files: {paths} \n')
        
     return res

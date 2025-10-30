@@ -3,19 +3,19 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.data_io.data_import_modes import DEBUG_NROWS
+from src.config.config_types import DEBUG_NROWS
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
-from src.data_io.ias_error_check import set_lang, check_ias
+from src.data_io.ias_data_check import set_lang, check_ias
 from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.time_series_loader import repair_time, cleanup_df
 from src.data_io.utils.time_series_utils import merge_time_series, detect_datetime_format
-from src.ff_config import FFConfig, InputFileConfig, MergedDateTimeFileConfig
+from src.config.ff_config import FFConfig, MergedDateTimeFileConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 
 IAS_EXPORT_MIN_ROWS = 5
 
@@ -93,7 +93,7 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     unknown_cols = df.columns.difference(known_ias_cols)
     if len(unknown_cols) > 0:
         msg = 'Неизвестные ИАС переменные: \n', str(unknown_cols)
-        ff_log.warning(msg)
+        ff_logger.warning(msg)
     
     unused_cols = df.columns.intersection(COLS_IAS_UNUSED_NORENAME_IMPORT)
     if len(unused_cols) > 0:
@@ -111,10 +111,10 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
 
 
 def import_ias(fpath: Path, out_datetime_col: str, ias: MergedDateTimeFileConfig, skip_validation: bool, debug: bool):
-    ff_log.info('\n' f'Loading {fpath}')
+    ff_logger.info('\n' f'Loading {fpath}')
     
     if skip_validation:
-        ff_log.warning('IAS validation is skipped due to user option.')
+        ff_logger.warning('IAS validation is skipped due to user option.')
     elif not debug:
         check_ias(fpath)
 
@@ -131,7 +131,7 @@ def import_ias(fpath: Path, out_datetime_col: str, ias: MergedDateTimeFileConfig
     if ias.repair_time:
         df = repair_time(df, out_datetime_col, fill_gaps=False)
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
-    ff_log.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_logger.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
     # TODO 2 ias: test no longer required and cleanup
     # df = ias_table_extend_year(df, out_datetime_col, -9999)
@@ -152,7 +152,7 @@ def import_iases(config: FFConfig):
            for fpath, _ in config.input_files.items()}
  
     if len(dfs) > 1:
-        ff_log.info('Merging data from files...')
+        ff_logger.info('Merging data from files...')
     df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
     if config.ias.repair_time:
         df = repair_time(df, config.time_col, fill_gaps=True)
@@ -261,13 +261,13 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
         # save_data = save_data.fillna(-9999)
         if len(save_data.index) >= IAS_EXPORT_MIN_ROWS:
             save_data.to_csv(fpath, index=False)
-            ff_log.info(f'IAS file saved to {fpath}')
+            ff_logger.info(f'IAS file saved to {fpath}')
         else:
             fpath.unlink(missing_ok=True)
             
             # TODO 3 QOA logs: is it ok to simply put in logs most of the script outputs? (removing many dupe prints will be ok)
             # print(f'not enough data for {year}')
-            ff_log.info(f'{year} not saved, not enough data!')
+            ff_logger.info(f'{year} not saved, not enough data!')
     # ias_year = df[time_col].dt.year.min()
     # fname = f'{site_name}_{ias_year}_{ias_out_version}.csv'
     # ias_df.to_csv(os.path.join('output',fname), index=False)

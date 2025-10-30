@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pyinstaller.exe --onefile --hidden-import openpyxl.cell._writer --windowed --add-data "locale;locale" --add-data "regulation.ico;."
 # <a href="https://www.flaticon.com/free-icons/rules" title="rules icons">Rules icons created by Flat Icons - Flaticon</a>
-import gettext
+from gettext import translation, gettext as _
 import logging
 import re
 import sys
@@ -22,12 +22,9 @@ logger.setLevel(logging.INFO)
 
 # TODO 1 QOA: (meeting) add option which disables ias check; ckeck line below
 # DONE: allows -9999 in any cols, is this better?
-
 # DONE merge into src.data_io.table_loader -> load_table_from_file
 
 # TODO 2 V: (meeting) add filter on fetch data?
-
-# TODO 2 refactor: rename file to ias_check
 
 def set_lang(language):
     # TODO E 3 replaced to Path, verify bundle still works
@@ -37,7 +34,7 @@ def set_lang(language):
     locales_dir = bundle_dir / 'locale'
     assert locales_dir.exists()
     
-    lang = gettext.translation('messages', locales_dir, fallback=True, languages=[language])
+    lang = translation('messages', locales_dir, fallback=True, languages=[language])
     lang.install()
 
 
@@ -268,7 +265,7 @@ def check_ias_file(fpath, mode: IasCheckMode):
         return 0
     
     check_column = column_checker(columns)
-    total_errors = total_errors + check_column
+    total_errors += check_column
     
     time_checks = []
     final_time_checks = []
@@ -288,7 +285,7 @@ def check_ias_file(fpath, mode: IasCheckMode):
             logger.warning(
                 _("No  final timestamp checks for {}, please fix all errors to complete this step.").format(col))
     
-    total_errors = total_errors + np.sum(time_checks) + np.sum(final_time_checks)
+    total_errors += np.sum(time_checks) + np.sum(final_time_checks)
     col_errors = 0
     
     for col in columns:
@@ -329,7 +326,7 @@ def check_ias_file(fpath, mode: IasCheckMode):
             col_errors += 1
             logger.error(_("Non numerical values in {} at lines {}").format(col, wrong_vals.to_numpy()))
     
-    total_errors = total_errors + col_errors
+    total_errors += col_errors
     logger.info(_("{} errors in total, check logs!").format(total_errors))
     
     return total_errors

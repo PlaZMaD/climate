@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 
 from bglabutils import basic as bg
-from src.ff_config import FFConfig, FFGlobals
-from src.ff_logger import ff_log
+from src.config.ff_config import FFConfig, FFGlobals
+from src.ff_logger import ff_logger
 
 
 def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, config: FFConfig):
@@ -20,7 +20,7 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
             bg.calc_rolling(df['ppfd_1_1_1'], rolling_window=10, step=gl.points_per_day, min_periods=4)
         ).fillna(-99999)
     else:
-        ff_log.info(f"FAT file will have no PPFD")
+        ff_logger.info(f"FAT file will have no PPFD")
         fat_output_template.pop('PPFD')
     
     if not config._has_meteo:
@@ -50,6 +50,6 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
             fat_fpath.unlink(missing_ok=True)
             
             print(f"not enough data for {year}")
-            ff_log.info(f"{year} not saved, not enough data!")
+            ff_logger.info(f"{year} not saved, not enough data!")
     
-    ff_log.info(f"FAT file saved to {fat_fpath}")
+    ff_logger.info(f"FAT file saved to {fat_fpath}")

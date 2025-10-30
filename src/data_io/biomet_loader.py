@@ -1,5 +1,5 @@
 from bglabutils import basic as bg
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 
 
 def load_biomet(config_meteo, data_freq):
@@ -11,12 +11,12 @@ def load_biomet(config_meteo, data_freq):
     
     meteo_freq = data_meteo.index.freq
     print("Диапазон времени метео: ", data_meteo.index[[0, -1]])
-    ff_log.info(f"MeteoData loaded from {config_meteo['path']}")
-    ff_log.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_logger.info(f"MeteoData loaded from {config_meteo['path']}")
+    ff_logger.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
     if data_freq != meteo_freq:
         print("Resampling meteo data")
-        ff_log.info(f"Resampling meteo data")
+        ff_logger.info(f"Resampling meteo data")
         data_meteo = data_meteo.asfreq(data_freq)
     
     return data_meteo

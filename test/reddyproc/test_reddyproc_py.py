@@ -4,7 +4,7 @@ import pytest
 
 import src.helpers.os_helpers  # noqa: F401
 import src.ipynb_globals as ig
-from src.ff_config import FFConfig, RepOutInfo, FFGlobals, RepConfig
+from src.config.ff_config import FFConfig, RepOutInfo, FFGlobals, RepConfig
 from src.helpers.env_helpers import setup_r_env
 from test.reddyproc.helpers.io_helpers import find_rep_file
 

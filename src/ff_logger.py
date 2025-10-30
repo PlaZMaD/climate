@@ -25,8 +25,7 @@ def debug_stdout_to_log(debug_log_fpath):
     sys.stdout = Logger()
 '''
 
-# TODO 3 refactor: ff_logger
-ff_log = logging.getLogger('FF')
+ff_logger = logging.getLogger('FF')
 
 
 def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
@@ -65,4 +64,4 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
     # logging.getLogger('rpy2').addFilter(lambda r: 'PATH' not in r.getMessage())
        
     logging.getLogger('bglabutils').setLevel(level=level)    
-    ff_log.setLevel(level=level)
+    ff_logger.setLevel(level=level)

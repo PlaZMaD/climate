@@ -103,7 +103,7 @@ class FFBaseModel(AnnotatedBaseModel):
 class BaseConfig(FFBaseModel):
     # TODO 1 bool vs Annotated[bool, Field(exclude=True)] = None
     from_file: Annotated[bool, Field(exclude=True)] = None
-    default_path: Annotated[Path, Field(exclude=True)] = None
+    default_fpath: Annotated[Path, Field(exclude=True)] = None
     
     @classmethod
     def get_yaml(cls) -> YAML:
@@ -144,14 +144,14 @@ class BaseConfig(FFBaseModel):
         config_auto.input_files = 'auto'
         config_auto.import_mode = 'AUTO'
         config_auto.site_name = 'auto'
-        config_auto.ias_out_version = 'auto'
+        config_auto.ias_out_fname_ver_suffix = 'auto'
         config_auto.reddyproc.site_id = ''
         config_auto.reddyproc.input_file = ''
         
         cls.save_to_yaml(config_auto, Path(fpath))
     
     @classmethod
-    def load_or_init(cls, load_path: str | Path | None, default_path: Path, init_debug: bool, init_version: str) -> Self:
+    def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:
         if load_path == 'auto':
             load_path = find_unique_file(Path('.'), '*config*.yaml')
         
@@ -172,7 +172,7 @@ class BaseConfig(FFBaseModel):
             config = cls.model_construct(debug=init_debug, version=init_version)
             config.from_file = False
         
-        assert default_path.exists()
-        config.default_path = default_path
+        assert default_fpath.exists()
+        config.default_fpath = default_fpath
         
         return config

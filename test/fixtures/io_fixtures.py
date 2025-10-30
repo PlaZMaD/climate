@@ -1,6 +1,6 @@
 # To use same dir on each test by default, edit:
 # PyCharm -> pytest default template -> Additional pytest options:
-# -s -p no:warnings --basetemp=${TEMP}\pytest
+# -s -p no:warnings --tb=short --basetemp=${TEMP}\pytest
 import glob
 import os
 import shutil

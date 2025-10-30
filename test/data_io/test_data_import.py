@@ -6,12 +6,11 @@ import pytest
 import src.helpers.os_helpers  # noqa: F401
 from src.data_io import ias_io
 from src.data_io.data_import import import_data
-from src.data_io.data_import_modes import ImportMode
+from src.config.config_types import ImportMode
 from src.data_io.detect_import import try_auto_detect_input_files, AutoImportException
-from src.ff_config import FFConfig, FFGlobals
+from src.config.ff_config import FFConfig, FFGlobals
 from src.ff_logger import init_logging
 from src.helpers.io_helpers import ensure_empty_dir
-from test.test_config import os_view_path
 
 # TODO 2 generate or period test data, allow data_chunks in gitignore
 TEST_DATA_CHUNKS_DIR = 'test/fixtures/data_chunks'
@@ -35,7 +34,7 @@ def test_auto_detect_input_files(tmp_path):
     config.input_files = 'auto'
     config.has_meteo = True
     config.site_name = 'auto'
-    config.ias_out_version = 'auto'
+    config.ias_out_fname_ver_suffix = 'auto'
     
     with pytest.raises(AutoImportException, match='No import modes possible'):
         try_auto_detect_input_files(config, gl)
@@ -45,7 +44,7 @@ def test_auto_detect_input_files(tmp_path):
     config.input_files = 'auto'
     config.has_meteo = True
     config.site_name = 'auto'
-    config.ias_out_version = 'auto'
+    config.ias_out_fname_ver_suffix = 'auto'
     
     prepare_import_test_data(tmp_path, ['CSF_tv_fy4_2024.xlsx', 'Biomet_tv_fy4_2023.csv'])
     
@@ -70,7 +69,7 @@ def test_fo_import(tmp_path):
     config.has_meteo = True
     
     config.site_name = 'auto'
-    config.ias_out_version = 'auto'
+    config.ias_out_fname_ver_suffix = 'auto'
     
     config.eddypro_fo.missing_data_codes = [-9999]
     config.eddypro_fo.date_col = 'date'
@@ -121,7 +120,7 @@ def test_ias_import(tmp_path):
     config.has_meteo = True
     
     config.site_name = 'auto'
-    config.ias_out_version = 'auto'
+    config.ias_out_fname_ver_suffix = 'auto'
     
     config.ias.skip_validation = True
     config.ias.missing_data_codes = [-9999]
@@ -157,7 +156,7 @@ def test_csf_input(tmp_path):
     config.has_meteo = True
     
     config.site_name = 'auto'
-    config.ias_out_version = 'auto'
+    config.ias_out_fname_ver_suffix = 'auto'
     
     config.csf.missing_data_codes = [-9999, 'NAN']
     config.csf.datetime_col = 'TIMESTAMP'

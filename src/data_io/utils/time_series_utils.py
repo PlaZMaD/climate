@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 from src.helpers.py_collections import ensure_list, format_dict
 
 # DONE repair time also repairs file gaps
@@ -50,7 +50,7 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
     df = df[~df.index.duplicated(keep='first')]
     
     if not tmp_index.equals(df.index):
-        ff_log.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
+        ff_logger.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
 
     # TODO 1 QOA test: shouldn't start/end time errors be not allowed at all?
     # can be optimised, also what if years are reversed?
@@ -60,12 +60,12 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
     index_start = valid_index.min()
     first_index = valid_index.iloc[0]
     if first_index != index_start:
-        ff_log.warning(f'First time entry {first_index} is not the earliest {index_start}. Using the earliest. Time order is incorrect.')
+        ff_logger.warning(f'First time entry {first_index} is not the earliest {index_start}. Using the earliest. Time order is incorrect.')
 
     index_end = valid_index.max()
     last_index = valid_index.iloc[-1]
     if last_index != index_end:
-        ff_log.warning(f'Last time entry {last_index} is not the oldest {index_end}. Using the oldest. Time order is incorrect.')
+        ff_logger.warning(f'Last time entry {last_index} is not the oldest {index_end}. Using the oldest. Time order is incorrect.')
             
     index_rebuild = pd.date_range(start=index_start, end=index_end, freq=pd.to_timedelta(freq))  
     abnormal_values = valid_index.index.difference(index_rebuild)
@@ -73,7 +73,7 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
     if len(abnormal_values) > 1:
         raise Exception(f'Time index contains irregular values not fitting to frequency: {abnormal_values}.')
     elif len(abnormal_values) == 1:
-        ff_log.warning(f'Time index contains irregular value not matching to frequency: {abnormal_values}. Value excluded.')
+        ff_logger.warning(f'Time index contains irregular value not matching to frequency: {abnormal_values}. Value excluded.')
 
     if not fill_gaps:
         index_rebuild = index_rebuild.intersection(valid_index)
@@ -132,7 +132,7 @@ def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
     guesses = ensure_list(guesses)
     if len(guesses) == 1:
         fmt = guesses[0]
-        ff_log.info(f'Using datetime format {fmt}')
+        ff_logger.info(f'Using datetime format {fmt}')
         return fmt
     
     if col.size < MIN_DATETIME_ROWS:
@@ -159,7 +159,7 @@ def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
                         f'Trying to apply them to column data: \n{start_chunk}')
     else:
         if len(guesses) > 1:
-            ff_log.info(f'Detected datetime format {ok_formats[0]}')
+            ff_logger.info(f'Detected datetime format {ok_formats[0]}')
         return ok_formats[0]
 
 

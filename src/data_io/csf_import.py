@@ -3,13 +3,13 @@ import re
 import numpy as np
 import pandas as pd
 
-from src.data_io.data_import_modes import InputFileType, ImportMode
+from src.config.config_types import InputFileType, ImportMode
 from src.data_io.biomet_loader import load_biomet
 from src.data_io.utils.time_series_utils import datetime_parser
 from src.data_io.time_series_loader import preload_time_series, repair_time, merge_time_series_biomet
-from src.ff_config import FFConfig
+from src.config.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
     COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
@@ -26,7 +26,7 @@ def check_csf_col_names(df: pd.DataFrame):
     unknown_cols = df.columns.difference(known_csf_cols)
     if len(unknown_cols) > 0:
         msg = 'Неизвестные CSF переменные: \n', str(unknown_cols)
-        ff_log.warning(msg)
+        ff_logger.warning(msg)
         # raise NotImplementedError(msg)
     
     unused_cols = df.columns.intersection(COLS_CSF_UNUSED_NORENAME_IMPORT)
@@ -56,7 +56,7 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
             if not match:
                 continue
             if col in rename_map:
-                ff_log.warning(f'Column {col} matches regex rename patterns twice or more: {rename_map} and {expr}.')
+                ff_logger.warning(f'Column {col} matches regex rename patterns twice or more: {rename_map} and {expr}.')
             rename_map[col] = tgt_name
     
     df.rename(columns=rename_map, inplace=True)
@@ -83,7 +83,7 @@ def import_csf(config: FFConfig):
     if config.csf.repair_time:
         df_csf = repair_time(df_csf, config.time_col)
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
-    ff_log.info('Time range: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_logger.info('Time range: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     data_freq = df_csf.index.freq
     
     c_bm = config.eddypro_biomet

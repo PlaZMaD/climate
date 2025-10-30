@@ -1,9 +1,9 @@
 import bglabutils.basic as bg
 from src.data_io.biomet_loader import load_biomet
 from src.data_io.utils.time_series_utils import datetime_parser, date_time_parser
-from src.ff_logger import ff_log
-from src.data_io.data_import_modes import ImportMode, InputFileType, DEBUG_NROWS
-from src.ff_config import FFConfig
+from src.ff_logger import ff_logger
+from src.config.config_types import ImportMode, InputFileType, DEBUG_NROWS
+from src.config.ff_config import FFConfig
 
 
 # TODO 1 in the ipynb, u_star is not yet renamed at the next line?
@@ -39,7 +39,7 @@ def load_eddypro(config: FFConfig):
     data_freq = df.index.freq
     
     print("Диапазон времени full_output: ", df.index[[0, -1]])
-    ff_log.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_logger.info("Time range for full_output: " + " - ".join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
     has_meteo = (config.import_mode == ImportMode.EDDYPRO_FO_AND_BIOMET)
     if has_meteo:

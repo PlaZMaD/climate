@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated
 
-from src.data_io.data_import_modes import ImportMode, InputFileType
-from src.helpers.config_io import FFBaseModel, BaseConfig
+from src.config.config_types import ImportMode, InputFileType
+from src.config.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
 
 
@@ -98,8 +98,9 @@ class FFConfig(BaseConfig):
     has_meteo: bool = None
     
     site_name: str = None
-    # TODO 2 refactor to to ias_out_ver_suffix 
-    ias_out_version: str = None
+ 
+    ias_out_fname_ver_suffix: str = None
+    ias_export_intervals: str = None
     
     qc: dict = None
     filters: FiltersConfig = FiltersConfig.model_construct()

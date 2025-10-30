@@ -11,7 +11,7 @@ all global ipynb vars should be re-declared under ig.* for clarity
 
 do not declare variables here, only describe
 """
-from src.ff_config import FFConfig, FFGlobals, RepConfig  # noqa: F401
+from src.config.ff_config import FFConfig, FFGlobals, RepConfig  # noqa: F401
 from src.helpers.io_helpers import ensure_empty_dir  # noqa: F401
 from src.reddyproc.preprocess_rg import prepare_rg  # noqa: F401
 from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess  # noqa: F401
