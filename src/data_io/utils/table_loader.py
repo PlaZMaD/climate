@@ -117,7 +117,8 @@ def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.Data
         # raise SystemExit vs
         raise
     
-    ff_log.info(f'File {fpath} loaded.\n')
+    # TODO 1 move to csf
+    ff_log.info(f'File {fpath} loaded.')
     
     # TODO 3 df.index.freq and df.name: unconventional attrs required for script, probably subclass to solve this    
     

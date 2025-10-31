@@ -35,7 +35,14 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
     class FFFormatter(logging.Formatter):
         def format(self, record):
             if record.levelno > logging.INFO:
-                return f"[{record.levelname}] {record.getMessage()}"
+                msg = record.getMessage()
+                prefix = f'[{record.levelname}] '
+                
+                if msg.startswith('\n'):
+                    msg.lstrip('\n')
+                    prefix = '\n' + prefix
+                
+                return prefix + msg
             return record.getMessage()
     
     if fpath:

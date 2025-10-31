@@ -111,6 +111,8 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
 
 
 def import_ias(fpath: Path, out_datetime_col: str, ias: MergedDateTimeFileConfig, skip_validation: bool, debug: bool):
+    ff_log.info('\n' f'Loading {fpath}')
+    
     if skip_validation:
         ff_log.warning('IAS validation is skipped due to user option.')
     elif not debug:
@@ -149,6 +151,8 @@ def import_iases(config: FFConfig):
     dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.ias.skip_validation, config.debug) 
            for fpath, _ in config.input_files.items()}
  
+    if len(dfs) > 1:
+        ff_log.info('Merging data from files...')
     df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
     if config.ias.repair_time:
         df = repair_time(df, config.time_col, fill_gaps=True)
