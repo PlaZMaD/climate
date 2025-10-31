@@ -30,15 +30,15 @@ def get_freq(df, time_col):
     raise Exception('Unexpected or unordered time column contents: cannot detect frequency.')
 
 
-def repair_time(df: pd.DataFrame, time_col):
+def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
     """ 
     source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
     df.index could be both pd.RangeIndex or pd.DatetimeIndex (if converted previously) 
     """
     
     # TODO 3 more transparent rework could be handy:
-    #  with support of repair=False and separation of checks, repairs, and standard routines E: ok
-    
+    # with support of repair=False and separation of checks, repairs, and standard routines E: ok
+     
     if df[time_col].size < MIN_DATETIME_ROWS:
         raise Exception(f'Need at least {MIN_DATETIME_ROWS} rows in data for time repair.')
     
@@ -50,15 +50,35 @@ def repair_time(df: pd.DataFrame, time_col):
     df = df[~df.index.duplicated(keep='first')]
     
     if not tmp_index.equals(df.index):
-        print("Duplicated indexes! check lines:", tmp_index[tmp_index.duplicated()])
-    
+        ff_log.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
+
     # TODO 1 QOA test: shouldn't start/end time errors be not allowed at all?
     # can be optimised, also what if years are reversed?
     coerced_index: pd.Series = pd.to_datetime(df[time_col], errors='coerce')    
     valid_index = coerced_index.dropna()
     
-    fixed_index = pd.date_range(start=valid_index.iloc[0], end=valid_index.iloc[-1], freq=pd.to_timedelta(freq))
-    df_fixed = pd.DataFrame(index=fixed_index)
+    index_start = valid_index.min()
+    first_index = valid_index.iloc[0]
+    if first_index != index_start:
+        ff_log.warning(f'First time entry {first_index} is not the earliest {index_start}. Using the earliest. Time order is incorrect.')
+
+    index_end = valid_index.max()
+    last_index = valid_index.iloc[-1]
+    if last_index != index_end:
+        ff_log.warning(f'Last time entry {last_index} is not the oldest {index_end}. Using the oldest. Time order is incorrect.')
+            
+    index_rebuild = pd.date_range(start=index_start, end=index_end, freq=pd.to_timedelta(freq))  
+    abnormal_values = valid_index.index.difference(index_rebuild)
+    
+    if len(abnormal_values) > 1:
+        raise Exception(f'Time index contains irregular values not fitting to frequency: {abnormal_values}.')
+    elif len(abnormal_values) == 1:
+        ff_log.warning(f'Time index contains irregular value not matching to frequency: {abnormal_values}. Value excluded.')
+
+    if not fill_gaps:
+        index_rebuild = index_rebuild.intersection(valid_index)
+            
+    df_fixed = pd.DataFrame(index=index_rebuild)
     df_fixed = df_fixed.join(df, how='left')
     
     assert isinstance(df_fixed.index, pd.DatetimeIndex)
@@ -174,11 +194,11 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     """
     dfs: list of (name, df) from the highest intersection priority to the lowest
     merge is done by time_col from each df
-    returns merged time series or None if failure 
+    returns merged time series or None if failure
+    should not repair time gaps after merge, it's separate operation 
     """
     # TODO 1 ensure cols are renamed (to script name, .columns.str.lower()) before merge
-    # TODO 1 ensure time is repaired (index.freq) before merge
-    # TODO 1 process ovelaps properly
+
     if len(named_dfs) == 0:
         return None
     elif len(named_dfs) == 1:
@@ -207,11 +227,6 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
         df = pd.concat(dfs, axis=0)
         df[time_col] = df.index
         # df = df.sort_index()
-        df = repair_time(df, time_col)
-    
-    # repair_time from different years should fill gaps
-    # TODO 1 ias: new test for multiyeardata 
-    assert df[time_col].isna().sum() == 0
     
     '''
     if df[df_biomet.columns[-1]].isna().sum() == len(df.index):

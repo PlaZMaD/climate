@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import src.helpers.os_helpers  # noqa: F401
+from src.data_io import ias_io
 from src.data_io.data_import import import_data
 from src.data_io.data_import_modes import ImportMode
 from src.data_io.detect_import import try_auto_detect_input_files, AutoImportException
@@ -129,13 +130,14 @@ def test_ias_import(tmp_path):
     config.ias.repair_time = True
     
     config.time_col = 'datetime'
-    
+    # TODO 1 VPD_PI_1_1_1 not rename in import?
     # TODO 2 ias test: both overlap and gap for ias
     prepare_import_test_data(tmp_path, ['tv_fy4_2024_v01.xlsx', 'tv_fy4_2022_1.csv', 'tv_fy4_2022_2.xlsx'])
     
     _, import_mode, _, _, _ = try_auto_detect_input_files(config, gl)
     assert import_mode == ImportMode.IAS
     # with pytest.raises(Exception, match='None of date or time formats worked'):
+    ias_io.COLS_IAS_TIME = []
     data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
     
     # os_view_path(tmp_path)

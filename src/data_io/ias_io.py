@@ -25,13 +25,16 @@ IAS_EXPORT_MIN_ROWS = 5
 # DONE V: implement merge for any amount of iases
 # DONE ias: years skipped if IAS data does not contain next year extra row V: could be necessary to fix bug QOA: fix
 # DONE E: use TIMESTAMP_START for datetime, not end, nor mid
+# DONE check merge chunks are preserved and not overriden by nan rows
+# DONE test: merge for any amount of iases
 
-# TODO 1 test: merge for any amount of iases
 # TODO 1 test: more ias export to match import after export 1y fixed
 # TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
 # TODO 1 ias: Unsupported by notebook IAS vars - disappeared from 1.0.0 (debug?)
 
 
+# TODO 1 ias: test no longer required and cleanup or move to export rebuild
+'''
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
     # TODO QOA 1 appeared to be bugfix of bug introduced in 0.9.3, which skipped last year of IAS export
     # V: possible bug, probably no data should be lost and just filled with empty
@@ -53,6 +56,7 @@ def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
         df.loc[next_timestamp] = new_row
         df.index.freq = freq
     return df
+'''
 
 
 def import_ias_cols_conversions(df: pd.DataFrame) -> pd.DataFrame:
@@ -121,12 +125,14 @@ def import_ias(fpath: Path, out_datetime_col: str, ias: MergedDateTimeFileConfig
     df[out_datetime_col] = pd.to_datetime(df[ias.datetime_col], format=dt_fmt)
     df = df.drop(COLS_IAS_TIME, axis='columns')
     
+    # TODO 2 ias: abstract better: time gaps should be filled after merge of multiple files, but index should be done before? 
     if ias.repair_time:
-        df = repair_time(df, out_datetime_col)
-    
+        df = repair_time(df, out_datetime_col, fill_gaps=False)
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
-    ff_log.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    df = ias_table_extend_year(df, out_datetime_col, -9999)
+    ff_log.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    
+    # TODO 2 ias: test no longer required and cleanup
+    # df = ias_table_extend_year(df, out_datetime_col, -9999)
     
     df = cleanup_df(df, ias.missing_data_codes)
     
@@ -142,9 +148,12 @@ def import_iases(config: FFConfig):
     
     dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.ias.skip_validation, config.debug) 
            for fpath, _ in config.input_files.items()}
-
-    # TODO 1 check chunks are preserved and not overriden by nan rows 
+ 
     df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
+    if config.ias.repair_time:
+        df = repair_time(df, config.time_col, fill_gaps=True)
+    
+    assert df[config.time_col].isna().sum() == 0
     
     # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
@@ -208,7 +217,7 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     # TODO 1 remove after reference data update finished
-    # var_cols.sort()
+    var_cols.sort()
     
     df = export_ias_prepare_time_cols(df, time_col, IAS_EXPORT_MIN_ROWS)
     

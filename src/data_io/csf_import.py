@@ -83,7 +83,7 @@ def import_csf(config: FFConfig):
     if config.csf.repair_time:
         df_csf = repair_time(df_csf, config.time_col)
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
-    ff_log.info('Time range for full_output: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    ff_log.info('Time range: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     data_freq = df_csf.index.freq
     
     c_bm = config.eddypro_biomet
