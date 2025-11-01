@@ -221,13 +221,10 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     # TODO 1 remove after reference data update finished
-    var_cols.sort()
+    # var_cols.sort()
     
     df = export_ias_prepare_time_cols(df, time_col, IAS_EXPORT_MIN_ROWS)
-    
-    # must be done after time extension due to new nans added
-    df = df.fillna(-9999)
-    
+      
     # TODO 1 ias: why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
     #  OA: not important cols
     # were they modified during run?
@@ -247,7 +244,10 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     if 'SW_IN_1_1_1' in df.columns:
         # assert df['SW_IN_1_1_1'] == data_swin_1_1_1
         df['SW_IN_1_1_1'] = data_swin_1_1_1
-    
+
+    # must be done after all cols added or modified
+    df = df.fillna(-9999)
+
     col_list_ias = COLS_IAS_TIME + var_cols + [time_col]
     print(col_list_ias)
     df = df[col_list_ias]
