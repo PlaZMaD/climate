@@ -252,7 +252,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
 config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.2_default.yaml',
-                               init_debug=False, init_version='1.0.2')
+                               init_debug=False, init_version='1.0.3')
 
 if not config.from_file:
     config.input_files = 'auto'
@@ -1257,7 +1257,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # %% id="E4rv4ucOX8Yz"
-FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml')
+FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml', add_comments=True)
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

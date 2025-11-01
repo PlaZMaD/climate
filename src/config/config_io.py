@@ -126,19 +126,20 @@ class BaseConfig(FFBaseModel):
             return loaded_yaml
     
     @classmethod
-    def save_to_yaml(cls, config: BaseModel, fpath: Path):
+    def save_to_yaml(cls, config: BaseModel, fpath: Path, add_comments: bool):
         save_dict = config.model_dump(mode='json')                
         config_yaml = config_to_yaml(save_dict, path=[])
         
-        default_config = cls.load_from_yaml(config.default_path, return_model=False)
-        _, config_yaml = copy_comments(default_config, config_yaml)
+        if add_comments:
+            default_config = cls.load_from_yaml(config.default_fpath, return_model=False)        
+            _, config_yaml = copy_comments(default_config, config_yaml)
         
         with open(fpath, "w") as fl:
             yaml = cls.get_yaml()            
             yaml.dump(config_yaml, fl)
     
     @classmethod
-    def save(cls: Self, config, fpath: str | Path):
+    def save(cls: Self, config, fpath: str | Path, add_comments: bool):
         # TODO 1 hardcoded temp fix, restore auto options in some better way
         config_auto = copy(config)
         config_auto.input_files = 'auto'
@@ -148,7 +149,9 @@ class BaseConfig(FFBaseModel):
         config_auto.reddyproc.site_id = ''
         config_auto.reddyproc.input_file = ''
         
-        cls.save_to_yaml(config_auto, Path(fpath))
+        cls.save_to_yaml(config_auto, Path(fpath), add_comments)
+        if ENV.LOCAL and add_comments:
+            cls.save_to_yaml(config_auto, Path(fpath).with_stem(fpath.stem + '_short'), add_comments=False)
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:
