@@ -11,6 +11,15 @@ from src.helpers.py_collections import ensure_list, format_dict
 MIN_DATETIME_ROWS = 12
 
 
+def format_year_interval(from_year: int, to_year: int):
+    # 2022, 2022->2022 
+    # 2023, 2025 -> 23-25
+    if from_year == to_year:
+        return f'from_year'
+    else:
+        return f'{from_year % 100}-{to_year % 100}'
+
+
 def get_freq(df, time_col):
     """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
     

@@ -126,6 +126,8 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
+from src.config.config_types import IasExportIntervals
+
 # #%load_ext autoreload
 # #%autoreload 2
 
@@ -251,8 +253,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.2_default.yaml',
-                               init_debug=False, init_version='1.0.3')
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default.yaml',
+                               init_debug=False, init_version='1.0.4')
 
 if not config.from_file:
     config.input_files = 'auto'
@@ -943,14 +945,17 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
 # %% id="yaLoIQmtzaYd"
+if not config.from_file:
+    config.ias_export_intervals = IasExportIntervals.YEAR 
+
 if config.has_meteo:
     ias_df: pd.DataFrame = plot_data.copy()
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
     
-    export_ias(gl.out_dir, config.site_name, config.ias_out_fname_ver_suffix, ias_df, time_col=time_col,
-               data_swin_1_1_1=data['swin_1_1_1'])
+    export_ias(gl.out_dir, config.site_name, config.ias_out_fname_ver_suffix, config.ias_export_intervals, 
+               ias_df, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
 
 # %% [markdown] id="Pm8hiMrb_wRW"
 # ## Файл для FAT

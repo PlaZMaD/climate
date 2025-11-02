@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from src.config.config_types import ImportMode, InputFileType
+from src.config.config_types import ImportMode, InputFileType, IasExportIntervals
 from src.config.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
 
@@ -17,7 +17,6 @@ class InputFileConfig(FFBaseModel):
     """ can replace -9999 to np.nan """
     # TODO 1 config: some options can be None on load, but better not during run; how to deal with it fluently?
     missing_data_codes: list[str | int] = None
-    skip_validation: bool = None
     
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
     # time_converter: Callable[[Any], Any]
@@ -28,6 +27,11 @@ class InputFileConfig(FFBaseModel):
 class MergedDateTimeFileConfig(InputFileConfig):
     datetime_col: str = None
     try_datetime_formats: str | list[str] = None
+
+
+class IASImportConfig(MergedDateTimeFileConfig):
+    skip_validation: bool = None
+
 
 
 class SeparateDateTimeFileConfig(InputFileConfig):
@@ -88,7 +92,7 @@ class FFConfig(BaseConfig):
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
-    ias: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
+    ias: IASImportConfig = IASImportConfig.model_construct()
     csf: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
@@ -100,7 +104,7 @@ class FFConfig(BaseConfig):
     site_name: str = None
  
     ias_out_fname_ver_suffix: str = None
-    ias_export_intervals: str = None
+    ias_export_intervals: IasExportIntervals = None
     
     qc: dict = None
     filters: FiltersConfig = FiltersConfig.model_construct()

@@ -20,6 +20,12 @@ class InputFileType(Enum):
     IAS = 'IAS'
 
 
+class IasExportIntervals(Enum):
+    ALL = 'ALL'
+    YEAR = 'YEAR'
+    MONTH = 'MONTH'
+
+
 # TODO 3 ensure cut is applied to all import types
 # DEBUG_NROWS = 31 * 3 * 24 * 2 * 2
 DEBUG_NROWS = 31 * 3 * 24 * 2

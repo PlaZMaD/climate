@@ -1,9 +1,14 @@
+import itertools
+from datetime import timedelta
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pandas._libs.tslibs.offsets import YearEnd
+from pandas.tseries.offsets import YearBegin, MonthBegin, MonthEnd
 
-from src.config.config_types import DEBUG_NROWS
+from src.config.config_types import DEBUG_NROWS, IasExportIntervals
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
@@ -11,8 +16,8 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
 from src.data_io.ias_data_check import set_lang, check_ias
 from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.time_series_loader import repair_time, cleanup_df
-from src.data_io.utils.time_series_utils import merge_time_series, detect_datetime_format
-from src.config.ff_config import FFConfig, MergedDateTimeFileConfig
+from src.data_io.utils.time_series_utils import merge_time_series, detect_datetime_format, format_year_interval
+from src.config.ff_config import FFConfig, IASImportConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_logger
@@ -110,7 +115,7 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def import_ias(fpath: Path, out_datetime_col: str, ias: MergedDateTimeFileConfig, skip_validation: bool, debug: bool):
+def import_ias(fpath: Path, out_datetime_col: str, ias: IASImportConfig, skip_validation: bool, debug: bool):
     ff_logger.info('\n' f'Loading {fpath}')
     
     if skip_validation:
@@ -167,27 +172,69 @@ def import_iases(config: FFConfig):
     return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
-def export_ias_prepare_time_cols(df: pd.DataFrame, time_col, min_rows):
-    # possibly will be applied later to each year separately
+def prepare_time_intervals(df: pd.DataFrame, time_col, min_rows, export_intervals: IasExportIntervals):
+    """
+    If too small chunks are on interval (year, month) start and end, removes them 
+    And snaps starting and ending time rows to year or month 
+    """
+    
+    deltas = df[time_col] - df[time_col].shift(1)
+    if np.any(deltas.values < 0):
+        ff_logger.critical('Dara records datetime unexpectedly non-monotonic, IAS export cannot extend intervals.')
+        return df
+    if df.index.freq != timedelta(minutes=30):
+        ff_logger.critical('Dara records frequency is not 30 min, IAS export cannot fix intervals.')
+        return df
+
+    # test:
+    # df = df.iloc[100: -100]
+    # export_intervals = IasExportIntervals.MONTH
     
     dt_vals = df[time_col]
-    first_year = dt_vals.dt.year.min()
-    last_year = dt_vals.dt.year.max()
+    dt_start = dt_vals.iat[0].floor('D')
+    dt_end = dt_vals.iat[-1].ceil('D') - df.index.freq 
+    new_dt_start = dt_start
+    new_dt_end = dt_end
+
+    first_year_idx = (dt_vals.dt.year == dt_start.year)
+    last_year_idx = (dt_vals.dt.year == dt_end.year)
+    first_month_idx = first_year_idx & (dt_vals.dt.month == dt_start.month)
+    last_month_idx = last_year_idx & (dt_vals.dt.month == dt_end.month)
     
-    # TODO 1 count skips nans?
-    drop_first = dt_vals.where(dt_vals.dt.year == first_year).count() < min_rows
-    drop_last = dt_vals.where(dt_vals.dt.year == last_year).count() < min_rows
-    if drop_first and last_year > first_year:
-        first_year += 1
-    if drop_last and last_year > first_year:
-        last_year -= 1
-    
-    new_time_index = pd.date_range(start=f'01.01.{first_year}',
-                                   end=f'01.01.{last_year + 1}',
+    if export_intervals == IasExportIntervals.YEAR:
+        new_dt_start = YearBegin().rollback(dt_start)
+        # ias end is first timestamp of the next year
+        new_dt_end = YearEnd().rollforward(dt_end) + df.index.freq
+
+        if first_year_idx.sum() < min_rows:
+            new_dt_start = YearBegin().rollforward(dt_start)
+        if dt_end.year > dt_start.year and last_year_idx.sum() < min_rows:
+            new_dt_end = YearEnd().rollback(dt_end) + df.index.freq
+            
+    elif export_intervals == IasExportIntervals.MONTH:
+        new_dt_start = MonthBegin.rollback(dt_start)
+        new_dt_end = MonthEnd.rollforward(dt_end)
+        
+        if first_month_idx.sum() < min_rows:
+            new_dt_start = MonthBegin.rollforward(dt_start)
+        
+        if last_month_idx.sum() < min_rows:
+            new_dt_end = MonthEnd.rollback(dt_end)        
+            
+    elif export_intervals == IasExportIntervals.ALL:
+        return df
+
+    new_time_index = pd.date_range(start=new_dt_start, end=new_dt_end,
                                    freq=df.index.freq, inclusive='left')
     df_new_time = pd.DataFrame(index=new_time_index)
     df = df_new_time.join(df, how='left')
-    df[time_col] = df.index
+    df[time_col] = df.index        
+        
+    return df
+        
+
+def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
+    # possibly will be applied later to each year separately
     
     df['TIMESTAMP_START'] = df[time_col].dt.strftime('%Y%m%d%H%M')
     time_end = df[time_col] + pd.Timedelta(0.5, 'h')
@@ -207,7 +254,8 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col, min_rows):
     return df
 
 
-def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time_col: str, data_swin_1_1_1):
+def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: IasExportIntervals, 
+               df: pd.DataFrame, time_col: str, data_swin_1_1_1):
     # TODO 2 cols: check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
     
@@ -222,8 +270,9 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     # TODO 1 remove after reference data update finished
     # var_cols.sort()
-    
-    df = export_ias_prepare_time_cols(df, time_col, IAS_EXPORT_MIN_ROWS)
+
+    df = prepare_time_intervals(df, time_col, IAS_EXPORT_MIN_ROWS, ias_export_intervals)
+    df = export_ias_prepare_time_cols(df, time_col)
       
     # TODO 1 ias: why they were separate ifs? move to COLS_IAS_EXPORT_MAP?
     #  OA: not important cols
@@ -251,24 +300,44 @@ def export_ias(out_dir: Path, site_name, ias_out_version, df: pd.DataFrame, time
     col_list_ias = COLS_IAS_TIME + var_cols + [time_col]
     print(col_list_ias)
     df = df[col_list_ias]
+    
+    export_files = {}
+    
+    if ias_export_intervals == IasExportIntervals.ALL:
+        years = df.index.year.unique()
+        str_years_range = format_year_interval(years.min(), years.max())        
+        fname = f'{site_name}_{str_years_range}_{ias_out_version}.csv'
         
-    for year in df.index.year.unique():
-        fname = f'{site_name}_{year}_{ias_out_version}.csv'
-        fpath = out_dir / fname
-        
-        save_data = df.loc[df[time_col].dt.year == year]
-        save_data = save_data.drop(time_col, axis=1)
-        # save_data = save_data.fillna(-9999)
-        if len(save_data.index) >= IAS_EXPORT_MIN_ROWS:
-            save_data.to_csv(fpath, index=False)
-            ff_logger.info(f'IAS file saved to {fpath}')
-        else:
-            fpath.unlink(missing_ok=True)
+        index_rng = df.index
+        export_files[fname] = index_rng
+    elif ias_export_intervals == IasExportIntervals.YEAR:
+        for year in df.index.year.unique():
+            fname = f'{site_name}_{year}_{ias_out_version}.csv'
             
+            index_rng = df[time_col].dt.year == year
+            export_files[fname] = index_rng
+    elif ias_export_intervals == IasExportIntervals.MONTH:
+        for year in df.index.year.unique():
+            for month in df.loc[df.index.year == year].index.month.unique():
+                fname = f'{site_name}_{month:02d}.{year}_{ias_out_version}.csv'
+                
+                index_rng = (df[time_col].dt.year == year) & (df[time_col].dt.month == month)
+                export_files[fname] = index_rng
+
+    for fname, index_rng in export_files.items():
+        fpath = out_dir / fname
+        fpath.unlink(missing_ok=True)
+        
+        if len(index_rng) < IAS_EXPORT_MIN_ROWS:
             # TODO 3 QOA logs: is it ok to simply put in logs most of the script outputs? (removing many dupe prints will be ok)
             # print(f'not enough data for {year}')
-            ff_logger.info(f'{year} not saved, not enough data!')
-    # ias_year = df[time_col].dt.year.min()
-    # fname = f'{site_name}_{ias_year}_{ias_out_version}.csv'
-    # ias_df.to_csv(os.path.join('output',fname), index=False)
-    # ff_log.info(f'IAS file saved to {os.path.join("output",ias_filename)}.csv')
+            cur_interval_name = ias_export_intervals.value.lower()
+            ff_logger.info(f'{cur_interval_name}: {fname} not saved, not enough data!')
+            continue
+        
+        save_data = df.loc[index_rng]
+        save_data = save_data.drop(time_col, axis=1)
+        
+        save_data.to_csv(fpath, index=False)
+        ff_logger.info(f'IAS file saved to {fpath}')
+            
