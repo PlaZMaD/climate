@@ -126,8 +126,6 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
-from src.config.config_types import IasExportIntervals
-
 # #%load_ext autoreload
 # #%autoreload 2
 
@@ -142,8 +140,9 @@ import bglabutils.basic as bg
 # import bglabutils.boosting as bb
 # import textwrap
 
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, colab_xor_demo_files
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
+from src.config.config_types import IasExportIntervals
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
@@ -207,6 +206,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
+colab_xor_demo_files()
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 
