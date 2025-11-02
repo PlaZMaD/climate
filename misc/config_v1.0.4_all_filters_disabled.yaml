@@ -1,4 +1,4 @@
-version: '1.0.2'
+version: '1.0.4'
 debug: false
 input_files: 'auto'
 eddypro_fo:
@@ -16,16 +16,20 @@ eddypro_biomet:
 ias:
     repair_time: true
     missing_data_codes: [-9999]
+    datetime_col: 'TIMESTAMP_START'
+    try_datetime_formats: '%Y%m%d%H%M'
+    skip_validation: false
 csf:
     repair_time: true
     missing_data_codes: [-9999, NAN]
     datetime_col: 'TIMESTAMP'
     try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
-import_mode: 'EDDYPRO_FO_AND_BIOMET'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
+import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
 time_col: 'datetime'
 has_meteo: true
 site_name: 'auto'
-ias_out_version: 'auto'
+ias_out_fname_ver_suffix: 'auto'
+ias_export_intervals: 'YEAR'
 qc:
     # h: 1
     h: 9
@@ -135,7 +139,7 @@ reddyproc:
     longitude: 32.6
     timezone: 3.0
     temperature_data_variable: 'Tair'
-    site_id: 'tv_fy4'
+    site_id: ''
     u_star_method: 'RTw'
     is_to_apply_gap_filling: true
     input_file: ''
