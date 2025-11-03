@@ -1,42 +1,39 @@
 version: '1.0.4'
 debug: false
-input_files: 'auto'
-eddypro_fo:
-    repair_time: true
-    missing_data_codes: [-9999]
-    time_col: 'time'
-    try_time_formats: ['%H:%M', '%H:%M:%S']
-    date_col: 'date'
-    try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
-eddypro_biomet:
-    repair_time: true
-    missing_data_codes: [-9999]
-    datetime_col: 'TIMESTAMP_1'
-    try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
-ias:
-    repair_time: true
-    missing_data_codes: [-9999]
-    datetime_col: 'TIMESTAMP_START'
-    try_datetime_formats: '%Y%m%d%H%M'
-    skip_validation: false
-csf:
-    repair_time: true
-    missing_data_codes: [-9999, NAN]
-    datetime_col: 'TIMESTAMP'
-    try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
-import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
-time_col: 'datetime'
-has_meteo: true
-site_name: 'auto'
-ias_out_fname_ver_suffix: 'auto'
-ias_export_intervals: 'YEAR'
-qc:
-    h: 1
-    le: 1
-    co2_flux: 1
-    ch4_flux: 1
-    nee: 1
+data_import:
+    input_files: 'auto'
+    eddypro_fo:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    eddypro_biomet:
+        repair_time: true
+        missing_data_codes: [-9999]
+        datetime_col: 'TIMESTAMP_1'
+        try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    ias:
+        repair_time: true
+        missing_data_codes: [-9999]
+        datetime_col: 'TIMESTAMP_START'
+        try_datetime_formats: '%Y%m%d%H%M'
+        skip_validation: false
+    csf:
+        repair_time: true
+        missing_data_codes: [-9999, NAN]
+        datetime_col: 'TIMESTAMP'
+        try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
+        empty_co2_strg: true
+    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    time_col: 'datetime'
+data_export:
+    ias: {out_fname_ver_suffix: auto, split_intervals: YEAR}
+metadata:
+    site_name: 'auto'
 filters:
+    qc: {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
     meteo:
         CO2SS_min: 80.0
         p_rain_limit: 0.1
@@ -99,8 +96,10 @@ filters:
         - [01.01.2023 00:00, 26.03.2023 00:00]
         - [13.11.2023 00:00, 31.12.2023 00:00]
     man_ranges: []
-calc_nee: true
-calc_with_strg: false
+calc:
+    has_meteo: true
+    calc_nee: true
+    calc_with_strg: false
 reddyproc:
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01

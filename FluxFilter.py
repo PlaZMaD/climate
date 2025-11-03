@@ -253,7 +253,7 @@ colab_xor_demo_files()
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default.yaml',
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default_ru.yaml',
                                init_debug=False, init_version='1.0.4')
 
 if not config.from_file:
