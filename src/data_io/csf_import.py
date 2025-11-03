@@ -5,7 +5,8 @@ import pandas as pd
 
 from src.config.config_types import InputFileType, ImportMode
 from src.data_io.biomet_loader import load_biomet
-from src.data_io.utils.time_series_utils import datetime_parser
+from src.data_io.eddypro_loader import load_biomets
+from src.data_io.utils.time_series_utils import datetime_parser, merge_time_series
 from src.data_io.time_series_loader import preload_time_series, repair_time, merge_time_series_biomet
 from src.config.ff_config import FFConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
@@ -43,9 +44,7 @@ def import_rename_csf_cols(df: pd.DataFrame, time_col):
     df.rename(columns=COLS_CSF_IMPORT_MAP, inplace=True)
     # print('Переменные после загрузки: \n', df.columns.to_list()) # duplicate
     
-    known_meteo_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
-    biomet_cols_index = df.columns.intersection(known_meteo_cols)
-    return df, biomet_cols_index
+    return df
 
 
 def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
@@ -70,63 +69,47 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
 
 def import_csf(config: FFConfig):
     # TODO 1 finish transfer to abstract loader
-    # biomets = {k: v for k, v in config.input_files.items() if v == InputFileType.EDDYPRO_BIOMET}
-    csfs = {k: v for k, v in config.input_files.items() if v == InputFileType.CSF}
 
-    
-    if len(csfs) != 1:
-        raise NotImplementedError(
-            'Multiple csf files detected. Multiple run or combining multiple files is not supported yet.')
-    
-    df_csf = [preload_time_series(fpath, ftype, config) for fpath, ftype in csfs.items()][0]
+    dfs_csf = {fpath.name: preload_time_series(fpath, ftype, config) 
+               for fpath, ftype in config.input_files.items() if ftype == InputFileType.CSF}
 
+    for fpath, df in dfs_csf.items():
+        df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
+        check_csf_col_names(df)        
+        df = import_rename_csf_cols(df, config.time_col)
+        df = repair_time(df, config.time_col, fill_gaps=False)
+        dfs_csf[fpath] = df
+       
+    if len(dfs_csf) > 1:
+        ff_logger.info('Merging data from files...')
+    df_csf = merge_time_series(dfs_csf, config.time_col, no_duplicate_cols=False)
     if config.csf.repair_time:
-        df_csf = repair_time(df_csf, config.time_col)
+        df_csf = repair_time(df_csf, config.time_col, fill_gaps=True)
+
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     data_freq = df_csf.index.freq
-    
-    c_bm = config.eddypro_biomet
+    ff_logger.info('Колонки в CSF \n'
+                   f'{df_csf.columns.values}')
+    # print("Колонки в CSF \n", df_csf.columns.to_list())
+      
     bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
-    has_meteo = (config.import_mode == ImportMode.CSF_AND_BIOMET)
+    df_bm, has_meteo = load_biomets(bm_paths, config.time_col, data_freq, config.eddypro_biomet)
+                  
     if has_meteo:
-        bg_bm_config = {
-            'path': bm_paths,
-            'debug': False,
-            '-9999_to_nan': '-9999' in c_bm.missing_data_codes,
-            'time': {
-                'column_name': config.time_col,
-                'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
-            },
-            'repair_time': c_bm.repair_time,
-        }
-        df_biomet = load_biomet(bg_bm_config, data_freq)
-    else:
-        df_biomet = None
-       
-       
-    df_csf = regex_fix_col_names(df_csf, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
-    check_csf_col_names(df_csf)        
-    df_csf, biomet_cols_index = import_rename_csf_cols(df_csf, config.time_col)
-    
-    
-    # TODO 1 switch to abstract merge + abstract loader instead of csf and biomet specific 
-    # df = merge_time_series(dfs, df_biomet)
-    print("Колонки в CSF \n", df_csf.columns.to_list())        
-    if has_meteo:
-        print("Колонки в метео \n", df_biomet.columns.to_list())
-        df, has_meteo = merge_time_series_biomet(df_csf, df_biomet, config.time_col)
+        df, has_meteo = merge_time_series_biomet(df_csf, df_bm, config.time_col)
     else:
         df = df_csf
     
-    biomet_columns = []
-    if has_meteo:
-        biomet_columns = df_biomet.columns.str.lower()
-        
+    # csf can also contain meteo columns        
+    # biomet_columns = df_bm.columns.str.lower()    
+    known_meteo_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
+    biomet_columns = df.columns.intersection(known_meteo_cols)
+    
     # TODO 2 after merge or after load?
     if df[config.time_col].isna().sum() > 0:
         raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
     
-    return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
+    return df, config.time_col, biomet_columns, df.index.freq, has_meteo
 
 

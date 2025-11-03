@@ -82,8 +82,8 @@ def load_eddypro(config: FFConfig):
 
     if ENV.LOCAL and has_meteo:
         # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
-        df_test = merge_time_series_biomet(df_fo, df_bm, time_col)
-        assert df_test == df
+        df_test, has_meteo = merge_time_series_biomet(df_fo, df_bm, time_col)
+        assert len(df_test.compare(df)) == 0
         
     # reddyproc requires 3 months
     if config.debug and DEBUG_NROWS:
