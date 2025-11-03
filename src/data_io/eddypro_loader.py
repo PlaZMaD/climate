@@ -26,10 +26,11 @@ def load_biomets(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFileConf
         },
         'repair_time': c_bm.repair_time,
     }
-    data_meteo = load_biomet(bg_bm_config, data_freq)
-    ff_logger.info('Колонки в метео \n', data_meteo.columns.to_list())
-        
-    return data_meteo, True
+    dfs = load_biomet(bg_bm_config, data_freq)
+    ff_logger.info('Колонки в метео \n'
+                   f'{dfs.columns.values}')
+            
+    return dfs, True
 
 
 # TODO 1 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
@@ -61,7 +62,8 @@ def load_eddypro(config: FFConfig):
     
     print('Диапазон времени full_output: ', df.index[[0, -1]])
     ff_logger.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    ff_logger.info('Колонки в FullOutput \n' + df.columns.to_list())
+    ff_logger.info('Колонки в FullOutput \n'
+                   f'{df.columns.values}')
 
     bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
     data_meteo, has_meteo = load_biomets(bm_paths, config.time_col, data_freq, config.eddypro_biomet)
@@ -73,7 +75,7 @@ def load_eddypro(config: FFConfig):
         df[time_col] = df.index
         df = bg.repair_time(df, time_col)
         if df[data_meteo.columns[-1]].isna().sum() == len(df.index):
-            print('Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False')
+            ff_logger.info('Bad meteo df range, overriding option has_meteo to False')
             has_meteo = False
     
     # reddyproc requires 3 months
