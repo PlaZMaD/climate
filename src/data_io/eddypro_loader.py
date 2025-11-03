@@ -1,9 +1,11 @@
 import bglabutils.basic as bg
 from src.data_io.biomet_loader import load_biomet
+from src.data_io.time_series_loader import merge_time_series_biomet
 from src.data_io.utils.time_series_utils import datetime_parser, date_time_parser
 from src.ff_logger import ff_logger
 from src.config.config_types import ImportMode, InputFileType, DEBUG_NROWS
 from src.config.ff_config import FFConfig, MergedDateTimeFileConfig
+from src.helpers.env_helpers import ENV
 
 
 # TODO 1 in the ipynb, u_star is not yet renamed at the next line?
@@ -56,34 +58,39 @@ def load_eddypro(config: FFConfig):
         },
         'repair_time': c_fo.repair_time,
     }
-    df, time_col = bg.load_df(bg_fo_config)
-    df = df[next(iter(df))]  # т.к. изначально у нас словарь
-    data_freq = df.index.freq
+    df_fo, time_col = bg.load_df(bg_fo_config)
+    df_fo = df_fo[next(iter(df_fo))]  # т.к. изначально у нас словарь
+    data_freq = df_fo.index.freq
     
-    print('Диапазон времени full_output: ', df.index[[0, -1]])
-    ff_logger.info('Time range for full_output: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    print('Диапазон времени full_output: ', df_fo.index[[0, -1]])
+    ff_logger.info('Time range for full_output: ' + ' - '.join(df_fo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     ff_logger.info('Колонки в FullOutput \n'
-                   f'{df.columns.values}')
+                   f'{df_fo.columns.values}')
 
     bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
-    data_meteo, has_meteo = load_biomets(bm_paths, config.time_col, data_freq, config.eddypro_biomet)
-    
-    # TODO 3 switch to common time series merge from utils
-    # merge into common DataFrame
+    df_bm, has_meteo = load_biomets(bm_paths, config.time_col, data_freq, config.eddypro_biomet)
+      
     if has_meteo:
-        df = df.join(data_meteo, how='outer', rsuffix='_meteo')
+        df = df_fo.join(df_bm, how='outer', rsuffix='_meteo')
         df[time_col] = df.index
         df = bg.repair_time(df, time_col)
-        if df[data_meteo.columns[-1]].isna().sum() == len(df.index):
-            ff_logger.info('Bad meteo df range, overriding option has_meteo to False')
+        if df[df_bm.columns[-1]].isna().sum() == len(df.index):
+            ff_logger.info('Bad meteo df_fo range, overriding option has_meteo to False')
             has_meteo = False
-    
+    else:
+        df = df_fo
+
+    if ENV.LOCAL and has_meteo:
+        # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
+        df_test = merge_time_series_biomet(df_fo, df_bm, time_col)
+        assert df_test == df
+        
     # reddyproc requires 3 months
     if config.debug and DEBUG_NROWS:
         df = df[0: min(DEBUG_NROWS, len(df))]
     
     biomet_columns = []
     if has_meteo:
-        biomet_columns = data_meteo.columns.str.lower()
+        biomet_columns = df_bm.columns.str.lower()
     
     return df, time_col, biomet_columns, data_freq, has_meteo
