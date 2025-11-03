@@ -6,7 +6,7 @@ and to separate operations like time series repair or merge years from specific 
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import gettext
+from gettext import gettext as _
 
 from src.helpers.pd_helpers import find_changed_el
 from src.ff_logger import ff_logger

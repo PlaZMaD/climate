@@ -1,38 +1,16 @@
 import bglabutils.basic as bg
-from src.data_io.biomet_loader import load_biomet
+from src.data_io.biomet_loader import load_biomets
 from src.data_io.time_series_loader import merge_time_series_biomet
-from src.data_io.utils.time_series_utils import datetime_parser, date_time_parser
+from src.data_io.utils.time_series_utils import date_time_parser
 from src.ff_logger import ff_logger
-from src.config.config_types import ImportMode, InputFileType, DEBUG_NROWS
-from src.config.ff_config import FFConfig, MergedDateTimeFileConfig
+from src.config.config_types import InputFileType, DEBUG_NROWS
+from src.config.ff_config import FFConfig
 from src.helpers.env_helpers import ENV
 
 
 # TODO 1 in the ipynb, u_star is not yet renamed at the next line?
 # cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
 # ppfd_in_1_1_1 will be renamed to ppfd_1_1_1, 
-
-
-def load_biomets(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFileConfig):
-    if len(bm_paths) == 0:
-        return None, False
-    
-    bg_bm_config = {
-        'path': bm_paths,
-        # reddyproc requires 90 days, cut moved to the end of this function
-        'debug': False,
-        '-9999_to_nan': -9999 in c_bm.missing_data_codes,
-        'time': {
-            'column_name': tgt_time_col,
-            'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
-        },
-        'repair_time': c_bm.repair_time,
-    }
-    dfs = load_biomet(bg_bm_config, data_freq)
-    ff_logger.info('Колонки в метео \n'
-                   f'{dfs.columns.values}')
-            
-    return dfs, True
 
 
 # TODO 1 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?

@@ -43,13 +43,13 @@ def min_max_filter(data_in, filters_db_in, config):
     return data, filters_db
 
 
-def qc_filter(data_in, filters_db_in, config):
+def qc_filter(data_in, filters_db_in, cfg_qc):
     # #@unroll_filters_db
     
     data = data_in.copy()
     filters_db = filters_db_in.copy()
     
-    for col, limits in config.items():
+    for col, limits in cfg_qc.items():
         if col not in data.columns:
             print(f"No column with name {col}, skipping...")
             continue
@@ -63,15 +63,15 @@ def qc_filter(data_in, filters_db_in, config):
             print(f"No qc_{col} in data")
             continue
         if col != 'nee':
-            data.loc[data[f"qc_{col}"] > config[col], f"{col}_qcfilter"] = 0
+            data.loc[data[f"qc_{col}"] > cfg_qc[col], f"{col}_qcfilter"] = 0
         else:
-            data.loc[data[f"qc_co2_flux"] > config['co2_flux'], f"nee_qcfilter"] = 0
+            data.loc[data[f"qc_co2_flux"] > cfg_qc['co2_flux'], f"nee_qcfilter"] = 0
         
         if f"{col}_qcfilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_qcfilter")
         else:
             print("filter already exist but will be overwritten")
-    ff_logger.info(f"qc_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"qc_filter applied with the next config: \n {cfg_qc}  \n")
     return data, filters_db
 
 

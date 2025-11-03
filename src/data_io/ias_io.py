@@ -1,12 +1,9 @@
-import itertools
 from datetime import timedelta
-from enum import Enum
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pandas._libs.tslibs.offsets import YearEnd
-from pandas.tseries.offsets import YearBegin, MonthBegin, MonthEnd
+from pandas.tseries.offsets import YearBegin, YearEnd, MonthBegin, MonthEnd
 
 from src.config.config_types import DEBUG_NROWS, IasExportIntervals
 from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS

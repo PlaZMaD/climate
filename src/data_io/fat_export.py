@@ -52,4 +52,4 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
             print(f"not enough data for {year}")
             ff_logger.info(f"{year} not saved, not enough data!")
     
-    ff_logger.info(f"FAT file saved to {fat_fpath}")
+        ff_logger.info(f"FAT file saved to {fat_fpath}")

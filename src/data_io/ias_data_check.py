@@ -26,6 +26,7 @@ logger.setLevel(logging.INFO)
 
 # TODO 2 V: (meeting) add filter on fetch data?
 
+
 def set_lang(language):
     # TODO E 3 replaced to Path, verify bundle still works
     # get the bundle dir if bundled or simply the __file__ dir if not bundled

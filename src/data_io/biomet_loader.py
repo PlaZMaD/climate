@@ -1,4 +1,6 @@
 from bglabutils import basic as bg
+from src.config.ff_config import MergedDateTimeFileConfig
+from src.data_io.utils.time_series_utils import datetime_parser
 from src.ff_logger import ff_logger
 
 
@@ -20,3 +22,25 @@ def load_biomet(config_meteo, data_freq):
         data_meteo = data_meteo.asfreq(data_freq)
     
     return data_meteo
+
+
+def load_biomets(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFileConfig):
+    if len(bm_paths) == 0:
+        return None, False
+    
+    bg_bm_config = {
+        'path': bm_paths,
+        # reddyproc requires 90 days, cut moved to the end of this function
+        'debug': False,
+        '-9999_to_nan': -9999 in c_bm.missing_data_codes,
+        'time': {
+            'column_name': tgt_time_col,
+            'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
+        },
+        'repair_time': c_bm.repair_time,
+    }
+    dfs = load_biomet(bg_bm_config, data_freq)
+    ff_logger.info('Колонки в метео \n'
+                   f'{dfs.columns.values}')
+            
+    return dfs, True

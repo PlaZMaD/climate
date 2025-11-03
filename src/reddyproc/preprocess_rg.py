@@ -21,8 +21,9 @@ def prepare_rg(cfg: RepConfig):
     
     data = pd.read_csv(cfg.input_file, header=0, names=csv_header.columns, skiprows=1, sep=' ')
     
-    datetimes = pd.to_datetime({'year': data['Year'], 'month': 1, 'day': 1}, utc=True) - pd.to_timedelta(1, unit='d') + \
-                pd.to_timedelta(data['DoY'], unit='d') + pd.to_timedelta(data['Hour'] - cfg.timezone, unit='h')
+    datetimes = (pd.to_datetime({'year': data['Year'], 'month': 1, 'day': 1}, utc=True) 
+                 - pd.to_timedelta(1, unit='d') + pd.to_timedelta(data['DoY'], unit='d') 
+                 + pd.to_timedelta(data['Hour'] - cfg.timezone, unit='h'))
     altitude_degs = solar.get_altitude_fast(cfg.latitude, cfg.longitude, datetimes)
     altitude_degs[altitude_degs < 0] = 0.001
     

@@ -18,11 +18,9 @@ from src.config.ff_config import FFConfig
 def preprocess_time_csf(df: pd.DataFrame, src_time_col, try_fmts, tgt_time_col):
     """ Only init time column, no checks or repairs """
     fmt = detect_datetime_format(df[src_time_col], try_fmts)
+    df[tgt_time_col] = pd.to_datetime(df[src_time_col], format=fmt)
     
-    src_time_col_bkp = src_time_col + '_STR'
-    
-    df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
-    df[tgt_time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format=fmt)
+    df.rename(columns={src_time_col: src_time_col + '_STR'}, inplace=True)
     return df
 
 

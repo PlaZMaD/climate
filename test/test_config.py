@@ -10,11 +10,11 @@ from src.config.ff_config import FFConfig
 from src.ff_logger import init_logging
 
 
-def os_view_path(filename):
+def os_view_path(fpath):
     try:
-        os.startfile(filename)
+        os.startfile(fpath)
     except:
-        subprocess.Popen(['xdg-open', filename])
+        subprocess.Popen(['xdg-open', fpath])
 
 
 @pytest.mark.usefixtures('tmp_path')

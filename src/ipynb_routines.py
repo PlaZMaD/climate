@@ -133,11 +133,11 @@ def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
     if ENV.LOCAL:
         print('Reminder: local screen resolution for plotly render can be adjusted.')
         
-        dir = local_out_dir
-        dir.mkdir(parents=True, exist_ok=True)
+        dpath = local_out_dir
+        dpath.mkdir(parents=True, exist_ok=True)
         
         fname = args['config']['toImageButtonOptions']['filename']
-        fpath = dir / (fname + '.png')
+        fpath = dpath / (fname + '.png')
         self.write_image(format='png', width=1920, file=fpath)
 
 

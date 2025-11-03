@@ -42,8 +42,8 @@ def try_parse_csf_fname(fname: str):
         site_name = match1.group(1)
     else:
         ff_logger.warning(f'Cannot parse csf file name {fname} for site name, using defaults.\n'
-                       "   Try to rename csf input file to match 'siteid_CSF_YYYY.ext' pattern, \n"
-                       f"  for example, {txt_examples}.")
+                          "   Try to rename csf input file to match 'siteid_CSF_YYYY.ext' pattern, \n"
+                          f"  for example, {txt_examples}.")
         site_name = 'unknown_site'
     
     ias_out_version = None

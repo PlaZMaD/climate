@@ -1,6 +1,8 @@
 # To use same dir on each test by default, edit:
 # PyCharm -> pytest default template -> Additional pytest options:
 # -s -p no:warnings --tb=short --basetemp=${TEMP}\pytest
+
+'''
 import glob
 import os
 import shutil
@@ -8,7 +10,7 @@ import tempfile
 from pathlib import Path
 import pytest
 
-'''
+
 @pytest.mark.usefixtures('tmp_path')
 @pytest.fixture
 def use_fixture_path(tmp_path: Path, src_path: Path, masks: list[str] = None):

@@ -24,7 +24,6 @@ def intersect_list(items: list, valid_items: list) -> list:
     return [el for el in items if el in valid_items]
 
 
-
 def invert_dict(d: dict):
     vals = d.values()
     vals_set = set(vals)

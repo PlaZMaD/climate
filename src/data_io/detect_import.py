@@ -62,8 +62,8 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     else:
         guesses = '\n'.join([f'row: {i} match: {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
         ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
-                       f'{guesses} \n'
-                       f'Consider specifying file types manually according to import cell description.')
+                          f'{guesses} \n'
+                          f'Consider specifying file types manually according to import cell description.')
         return InputFileType.UNKNOWN
 
 
@@ -150,7 +150,7 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
     if len(paths) > 1:
         paths_info = ensure_list(paths, transform_func=lambda x: str(Path(x).name))
         ff_logger.warning(f'Multiple file names can be used to auto detect site name: {paths_info}, \n'
-                       'Using the first one or specify manually in the options.')
+                          'Using the first one or specify manually in the options.')
     
     if len(paths) >= 1:
         ias_site_name_auto, ias_out_version_auto = parser(paths[0].name)
@@ -195,7 +195,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     config.ias_out_fname_ver_suffix = change_if_auto(config.ias_out_fname_ver_suffix, auto_ias_ver,
                                                      ok_msg=f'Auto detected ias version: {auto_ias_ver}')
     
-    # TODO 2 _has_meteo vs has_meteo, duplicates in import toutines 
+    # TODO 1 _has_meteo vs has_meteo, duplicates in import routines 
     config._has_meteo = config.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
     return config.input_files, config.import_mode, config.site_name, config.ias_out_fname_ver_suffix, config._has_meteo
 
