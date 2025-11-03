@@ -113,8 +113,8 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
     
     if InputFileType.CSF in input_ftypes:
         if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
-            # possible_input_modes += [ImportMode.CSF]
-            ff_logger.warning('Found CSF, but biomet is missing. Biomet data is required to use CSF import mode.')
+            possible_input_modes += [ImportMode.CSF]
+            ff_logger.critical('CSF without biomet is yet experimental mode.')
         else:
             possible_input_modes += [ImportMode.CSF_AND_BIOMET]
     
@@ -136,7 +136,7 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
         IM.EDDYPRO_FO: IFT.EDDYPRO_FO,
         IM.EDDYPRO_FO_AND_BIOMET: IFT.EDDYPRO_FO,
         IM.IAS: IFT.IAS,
-        # IM.CSF: IFT.CSF,
+        IM.CSF: IFT.CSF,
         IM.CSF_AND_BIOMET: IFT.CSF
     }[import_mode]
     parser = {

@@ -51,8 +51,7 @@ def import_data(config: FFConfig):
         res = load_eddypro(config)
     elif config.import_mode == ImportMode.IAS:
         res = import_iases(config)
-    # elif config.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
-    elif config.import_mode in [ImportMode.CSF_AND_BIOMET]:
+    elif config.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
         res = import_csf(config)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
