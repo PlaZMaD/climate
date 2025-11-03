@@ -280,6 +280,7 @@ if not config.from_file:
     config.csf.datetime_col = 'TIMESTAMP'
     config.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
     config.csf.repair_time = True
+    config.csf.empty_co2_strg = True
     
     config.ias.skip_validation = False
     config.ias.missing_data_codes = [-9999]

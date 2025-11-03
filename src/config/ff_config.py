@@ -33,6 +33,9 @@ class IASImportConfig(MergedDateTimeFileConfig):
     skip_validation: bool = None
 
 
+class CSFImportConfig(MergedDateTimeFileConfig):
+    empty_co2_strg: bool = None
+
 
 class SeparateDateTimeFileConfig(InputFileConfig):
     time_col: str = None
@@ -93,7 +96,7 @@ class FFConfig(BaseConfig):
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
     ias: IASImportConfig = IASImportConfig.model_construct()
-    csf: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
+    csf: CSFImportConfig = CSFImportConfig.model_construct()
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
     time_col: str = None

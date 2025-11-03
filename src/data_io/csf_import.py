@@ -100,6 +100,11 @@ def import_csf(config: FFConfig):
         df, has_meteo = merge_time_series_biomet(df_csf, df_bm, config.time_col)
     else:
         df = df_csf
+            
+    # repair postprocessing
+    if config.csf.empty_co2_strg and 'co2_strg' not in df.columns:
+        df['co2_strg'] = np.nan
+        ff_logger.info('co2_strg not found, adding empty column.')
     
     # csf can also contain meteo columns        
     # biomet_columns = df_bm.columns.str.lower()    
