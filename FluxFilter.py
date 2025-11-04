@@ -134,6 +134,7 @@ import pandas as pd
 
 if Path('scripts').exists():
     from scripts import src
+    
     sys.modules['src'] = src
     repo_dir = Path('scripts')
 else:
@@ -143,9 +144,10 @@ import bglabutils.basic as bg
 # import bglabutils.boosting as bb
 # import textwrap
 
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, \
+    colab_xor_demo_data
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
-from src.config.config_types import IasExportIntervals, InputFileType # noqa: F401
+from src.config.config_types import IasExportIntervals, InputFileType, ColabDemoMixPolicy  # noqa: F401
 from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
@@ -203,7 +205,6 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # Текстовый файл конфигурации (формат .yaml) образуется после пробега скрипта среди выходных файлов, его также можно выложить на гугл-диск и прописать в третьей команде !gdown
 
 # %% id="KMu4IqY45HG6"
-
 # Загрузка файла full output или CSF или ИАС
 # https://drive.google.com/file/d/1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB/view?usp=sharing
 # !gdown 1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB
@@ -215,7 +216,6 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # Загрузка любых других файлов (конфигурации, данных, и т.д.)
 # https://drive.google.com/file/d/*/view?usp=sharing
 # # !gdown *
-
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 
@@ -266,8 +266,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default_ru.yaml',
-                               init_debug=False, init_version='1.0.4')
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.5_default_ru.yaml',
+                               init_debug=False, init_version='1.0.5')
 
 if not config.from_file:
     config.data_import.input_files = 'auto'
@@ -301,7 +301,10 @@ if not config.from_file:
     config.data_import.ias.try_datetime_formats = '%Y%m%d%H%M'
     config.data_import.ias.repair_time = True
     
-    
+    config.data_import.mixed_demo_policy = ColabDemoMixPolicy.AUTO_DELETE_DEMO
+
+colab_xor_demo_data(gl.input_dir, config.data_import.mixed_demo_policy)
+
 # %% [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
 
@@ -972,7 +975,8 @@ if not config.from_file:
 
 if config.calc.has_meteo:
     swin_vals = data['swin_1_1_1'] if 'swin_1_1_1' in data.columns else None
-    export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.data_export.ias.split_intervals,
+    export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix,
+               config.data_export.ias.split_intervals,
                df_ias_export, time_col=time_col, swin_vals=swin_vals)
 
 # %% [markdown] id="Pm8hiMrb_wRW"

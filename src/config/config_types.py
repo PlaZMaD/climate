@@ -26,6 +26,10 @@ class IasExportIntervals(Enum):
     MONTH = 'MONTH'
 
 
+class ColabDemoMixPolicy(Enum):
+    STOP_RUN = 'STOP_RUN'
+    AUTO_DELETE_DEMO = 'AUTO_DELETE_DEMO'
+
 # TODO 3 ensure cut is applied to all import types
 # DEBUG_NROWS = 31 * 3 * 24 * 2 * 2
 DEBUG_NROWS = 31 * 3 * 24 * 2

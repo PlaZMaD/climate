@@ -2,20 +2,21 @@
 Module specifically for Google Colab.
 During local runs, all functions here are to be mocked or cancelled.
 """
+from enum import Enum
 from pathlib import Path
 
+from src.config.config_types import ColabDemoMixPolicy
 from src.ff_logger import ff_logger
-from src.data_io.detect_import import SUPPORTED_FILE_EXTS_LOWER
+from src.data_io.detect_import import get_supported_data_files
 from src.helpers.env_helpers import colab_only, ENV
-
+from src.helpers.py_collections import format_dict
 
 # TODO 1 repair replacing auto in colab 
 # TODO 1 import in colab directly after specifying data)import config
 # TODO 1 import statistical distributions check vs default data
 
 # TODO 3 %autoreload stopped to work in colab, any replacement?
-DEMO_DATA_FILES = {'eddy_pro result_SSB 2023.csv', 'BiometFy4_2023.csv'}
-
+DEMO_DATA_FILE_SIZES = {'eddy_pro_full output_Fy4_2023_demo.csv': 14948833, 'BiometFy4_2023_demo.csv': 1216730}
 
 if ENV.COLAB:
     from google.colab import output
@@ -90,16 +91,56 @@ async function resize_output() {
 get_ipython().events.register('post_run_cell', resize_output)
 """
 
-''' unused, an experiment to avoid users to comment out gdown on every colab opening
-@colab_only
-def colab_xor_demo_files():
-    input_files = list(Path('.').glob('*.*'))
-    supported_input_files = {str(file) for file in input_files if file.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER}
-    if DEMO_DATA_FILES & supported_input_files:
-        if supported_input_files - DEMO_DATA_FILES:
-            ff_logger.info('Both demo data files and user files are found in the input folder. Demo files will be removed.')
-            for fpath in DEMO_DATA_FILES:
-                Path(fpath).unlink(missing_ok=True)
-        else:
-            ff_logger.info('No user files are found in the input folder. Script will be using demo data.')
+''' possibly can be used  before gdown to track better which exactly files were downloaded
+# @colab_only
+def colab_track_uploads(input_dir: Path) -> dict[Path: int]:
+    files = get_supported_data_files(input_dir)
+    file_sizes = {f: f.stat().st_size for f in files}
+    return file_sizes    
 '''
+
+
+# @colab_only
+def colab_xor_demo_data(input_dir: Path, mixed_demo_policy: ColabDemoMixPolicy):
+    fpaths = get_supported_data_files(input_dir)
+    fsizes = {fp: fp.stat().st_size for fp in fpaths}
+    
+    '''
+    gdown_files = {fp for fp in fsizes.keys() if fp not in fsizes_before_gdown}
+    updated_files = {fp for fp in fsizes_before_gdown.keys() if fsizes_before_gdown[fp] != fsizes[fp]}
+    previous_files = {fp for fp in fsizes_before_gdown.keys() if fp not in updated_files}
+    '''
+    demo_files = {fp for fp, sz in fsizes.items() if DEMO_DATA_FILE_SIZES.get(str(fp), None) == sz}
+    user_files = {fp for fp in fsizes.keys() if fp not in demo_files}
+    
+    mixed = (demo_files and user_files)
+    if not mixed:
+        return
+    if mixed and mixed_demo_policy == ColabDemoMixPolicy.STOP_RUN:
+        raise Exception(
+            'Demo files are mixed with user files. Consider disabling gdown commands for the demo files: !gdown -> # !gdown ')
+    
+    info_str = [
+        (demo_files, 'demo data'),
+        (user_files, 'user data'),
+        # (previous_files, 'file uploaded manually or from the previous run'),
+        # (gdown_files, 'downloaded via gdown'),
+        # (updated_files, 'updated via gdown')         
+    ]
+    
+    fsummary = {}
+    for fp in fsizes.keys():
+        finfo = [info for arr, info in info_str if fp in arr]
+        fsummary |= {str(fp): ', '.join(finfo)}
+    
+    ff_logger.info('\n' +
+                   'Demo data is mixed with other files. Demo data will be removed: \n' +
+                   format_dict(fsummary, separator=': ', item_separator='\n') +
+                   '\n')
+    
+    del_files = set()
+    mixed_demo = len(demo_files) < len(fpaths)
+    if mixed_demo and mixed_demo_policy == ColabDemoMixPolicy.AUTO_DELETE_DEMO:
+        for fp in demo_files:
+            del_files |= {fp}
+            fp.unlink(missing_ok=True)

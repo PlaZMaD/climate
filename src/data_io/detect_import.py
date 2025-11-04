@@ -13,6 +13,10 @@ from src.config.ff_config import FFConfig, FFGlobals
 from src.helpers.io_helpers import ensure_path
 from src.helpers.py_collections import ensure_list, format_dict
 
+
+# DONE 1 _has_meteo vs has_meteo, duplicates in import routines
+
+
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
 
@@ -69,10 +73,15 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         return InputFileType.UNKNOWN
 
 
+def get_supported_data_files(in_dir: Path) -> list[Path]:
+    """ Does not include config files """
+    root_files = list(Path(in_dir).glob('*.*'))
+    return [f for f in root_files if f.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER]
+
+
 def detect_known_files(input_dir=None, from_list: list[Path] = None) -> dict[Path, InputFileType]:
     if not from_list:
-        root_files = list(Path(input_dir).glob('*.*'))
-        input_files = [f for f in root_files if f.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER]
+        input_files = get_supported_data_files(input_dir)
     else:
         input_files = from_list
     input_file_types = {f: detect_file_type(f) for f in input_files}
@@ -193,14 +202,21 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     if cfg_imp.input_files == 'auto':
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files(input_dir=gl.input_dir)
-        input_files_info = format_dict(input_files_auto, separator=': ')
-        cfg_imp.input_files = change_if_auto(cfg_imp.input_files, input_files_auto,
-                                             ok_msg=f'Detected input files: {input_files_info}')
+        
+        input_files_info = format_dict(input_files_auto, separator=': ', item_separator='\n')
+        ok_msg = ('Detected input files: \n'
+                  f'{input_files_info} \n')
+        
+        cfg_imp.input_files = change_if_auto(cfg_imp.input_files, input_files_auto, ok_msg=ok_msg)
+        
     elif type(cfg_imp.input_files) in [list, str]:
         user_fpaths = ensure_list(cfg_imp.input_files, transform_func=ensure_path)
+        
         cfg_imp.input_files = detect_known_files(from_list=user_fpaths)
+        
     elif type(cfg_imp.input_files) is dict:
         cfg_imp.input_files = {Path(fpath): ftype for fpath, ftype in cfg_imp.input_files.items()}
+        
     else:
         raise ValueError(f'{cfg_imp.input_files=}')
     
@@ -214,8 +230,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
                                         ok_msg=f'Auto detected site name: {auto_site_name}')
     cfg_exp.ias.out_fname_ver_suffix = change_if_auto(cfg_exp.ias.out_fname_ver_suffix, auto_ias_ver,
                                                       ok_msg=f'Auto detected ias version: {auto_ias_ver}')
-    
-    # TODO 1 _has_meteo vs has_meteo, duplicates in import routines 
+     
     has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
     return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, has_meteo
 

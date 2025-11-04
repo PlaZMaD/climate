@@ -4,7 +4,8 @@ from typing import Annotated
 from pydantic import field_validator, BaseModel
 from pydantic_core.core_schema import ValidationInfo
 
-from src.config.config_types import ImportMode, InputFileType, IasExportIntervals
+
+from src.config.config_types import ImportMode, InputFileType, IasExportIntervals, ColabDemoMixPolicy
 from src.config.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
 
@@ -115,6 +116,7 @@ class ImportConfig(BaseConfig):
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
     time_col: str = None
+    mixed_demo_policy: ColabDemoMixPolicy = None
 
 
 class CalcConfig(BaseConfig):

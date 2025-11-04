@@ -12,6 +12,7 @@ from pathlib import Path
 from warnings import warn
 
 from IPython import get_ipython
+from IPython.core.magic import register_cell_magic
 from IPython.display import display, HTML, SVG
 from PIL import Image
 from ipywidgets import widgets, HBox
@@ -159,3 +160,12 @@ def setup_plotly(out_dir):
         
         go.Figure.show = lambda self, **args: _plotly_show_override(self, local_dir, **args)
         print(f"Pure py plotly renderer is set to: {renderers.default}.")
+
+
+''' unused variant of canceling one cell run, while not canceling all ipynb
+@register_cell_magic
+def skip_if(line, cell):
+    if eval(line):
+        return
+    get_ipython().run_cell(cell)
+'''
