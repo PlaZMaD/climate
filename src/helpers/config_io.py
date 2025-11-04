@@ -58,6 +58,24 @@ def config_to_yaml(x, path, max_len=5):
     return x
 
 
+def copy_comments(src_x, tgt_x):
+    """ Nested comments transfer """
+        
+    if isinstance(tgt_x, CommentedMap):
+        tgt_x.ca.items.update(src_x.ca.items)
+
+        v_types = {type(v) for v in tgt_x.values()}
+        if v_types <= {str, int, float}:
+            pass
+        else:            
+            for k in tgt_x.keys():
+                if k in src_x.keys():
+                    _, tgt_x[k] = copy_comments(src_x[k], tgt_x[k])
+        return src_x, tgt_x
+    
+    return src_x, tgt_x
+
+
 class AnnotatedBaseModel(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         # Annotated[*, ["info"]] -> Annotated[*, {'desc': "info"}]
@@ -83,7 +101,9 @@ class FFBaseModel(AnnotatedBaseModel):
 
 
 class BaseConfig(FFBaseModel):
+    # TODO 1 bool vs Annotated[bool, Field(exclude=True)] = None
     from_file: Annotated[bool, Field(exclude=True)] = None
+    default_path: Annotated[Path, Field(exclude=True)] = None
     
     @classmethod
     def get_yaml(cls) -> YAML:
@@ -94,16 +114,25 @@ class BaseConfig(FFBaseModel):
         return yaml
     
     @classmethod
-    def load_from_yaml(cls, fpath: Path):
+    def load_from_yaml(cls, fpath: Path, return_model=True):
         with open(fpath, 'r') as fl:
             yaml = cls.get_yaml()
             loaded_yaml = yaml.load(fl)
-        return cls.model_validate(loaded_yaml)
+        
+        model = cls.model_validate(loaded_yaml)
+        if return_model:
+            return model
+        else:
+            return loaded_yaml
     
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path):
-        save_dict = config.model_dump(mode='json')        
+        save_dict = config.model_dump(mode='json')                
         config_yaml = config_to_yaml(save_dict, path=[])
+        
+        default_config = cls.load_from_yaml(config.default_path, return_model=False)
+        _, config_yaml = copy_comments(default_config, config_yaml)
+        
         with open(fpath, "w") as fl:
             yaml = cls.get_yaml()            
             yaml.dump(config_yaml, fl)
@@ -122,7 +151,7 @@ class BaseConfig(FFBaseModel):
         cls.save_to_yaml(config_auto, Path(fpath))
     
     @classmethod
-    def load_or_init(cls, load_path: str | Path | None, init_debug: bool, init_version: str) -> Self:
+    def load_or_init(cls, load_path: str | Path | None, default_path: Path, init_debug: bool, init_version: str) -> Self:
         if load_path == 'auto':
             load_path = find_unique_file(Path('.'), '*config*.yaml')
         
@@ -142,5 +171,8 @@ class BaseConfig(FFBaseModel):
             
             config = cls.model_construct(debug=init_debug, version=init_version)
             config.from_file = False
+        
+        assert default_path.exists()
+        config.default_path = default_path
         
         return config

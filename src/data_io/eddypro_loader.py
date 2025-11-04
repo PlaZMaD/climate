@@ -24,7 +24,7 @@ def load_eddypro(config: FFConfig):
     
     bg_fo_config = {
         'path': fo_paths,
-        # reddyproc requires 90 days, see this function below
+        # reddyproc requires 90 days, cut moved to the end of this function
         'debug': False,
         '-9999_to_nan': -9999 in c_fo.missing_data_codes,
         'time': {
@@ -45,6 +45,7 @@ def load_eddypro(config: FFConfig):
     if has_meteo:
         bg_bm_config = {
             'path': bm_paths,
+            # reddyproc requires 90 days, cut moved to the end of this function
             'debug': False,
             '-9999_to_nan': -9999 in c_bm.missing_data_codes,
             'time': {

@@ -22,6 +22,9 @@ from src.helpers.env_helpers import ipython_only, ENV
 from src.helpers.image_tools import grid_images
 from src.helpers.io_helpers import ensure_empty_dir
 
+# TODO 2 (meeting) something about NEE vs REP order, ask OA
+# TODO 2 add an option to shift all input time, possibly try correlation with Rg
+
 # TODO 2 repo: create readme and changelog for releases
 # TODO 1 test: more comparisons if 1y truncate changed set(data.columns) - set(COLS_IAS_EXPORT_MAP.keys()) - set(COLS_IAS_EXPORT_MAP.values())
 

@@ -102,25 +102,24 @@
 # from google.colab import userdata
 # key = userdata.get('registry_key')
 
-# %pip install pysolar
-# %pip install ruamel.yaml
-# %pip install plotly-resampler dateparser >> /dev/null
+# %pip install -q ruamel.yaml pysolar plotly-resampler dateparser
 # # %pip install --index-url https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 # %pip install --index-url https://gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
 
-# py -> ipynb conversion is great to keep only .py in git, this can be used if it's easy to override any function in colab cells
+# !rm -rf sample_data
+# !rm -rf scripts
 
-# !git -c init.defaultBranch=main init
-# !git sparse-checkout init
-# !git sparse-checkout set src locale
-# !git remote add origin https://github.com/PlaZMaD/climate.git
-# !git fetch --depth 1 origin main
-# !git -c advice.detachedHead=false checkout FETCH_HEAD
+# %env clone_br=main
+# %env clone_repo=https://github.com/PlaZMaD/climate.git
+# !git clone -b $clone_br -n --depth=1 --filter=tree:0 $clone_repo scripts
+# !git -C scripts sparse-checkout set --no-cone src locale misc
+# !git -C scripts checkout &> /dev/null
 
 # %% id="Ywv5kp0rzanK"
 import logging
 import re
 import sys
+
 from pathlib import Path
 
 import matplotlib.pylab as plt
@@ -130,8 +129,12 @@ import pandas as pd
 # #%load_ext autoreload
 # #%autoreload 2
 
-repo_dir = Path('.')
-sys.path.append(str(repo_dir))
+if Path('scripts').exists():
+    from scripts import src
+    sys.modules['src'] = src
+    repo_dir = Path('scripts')
+else:
+    repo_dir = Path('.')    
 
 import bglabutils.basic as bg
 # import bglabutils.boosting as bb
@@ -248,7 +251,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto',
+config = FFConfig.load_or_init(load_path='auto', default_path=gl.repo_dir / 'misc/config_v1.0.2_default.yaml',
                                init_debug=False, init_version='1.0.2')
 
 if not config.from_file:

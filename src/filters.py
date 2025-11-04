@@ -443,6 +443,7 @@ def meteorological_rain_filter(
 
 
 def quantile_filter(data_in, filters_db_in, config):
+    # TODO 2 why [0, 1] quantile produces 0 and 1 row? nan?
     # #@unroll_filters_db
     
     if len(config) == 0:

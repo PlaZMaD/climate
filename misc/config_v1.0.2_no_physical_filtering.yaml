@@ -27,26 +27,44 @@ has_meteo: true
 site_name: 'auto'
 ias_out_version: 'auto'
 qc:
-    h: 1
-    le: 1
-    co2_flux: 1
-    ch4_flux: 1
-    nee: 1
+    # h: 1
+    h: 9
+    # le: 1
+    le: 9
+    # co2_flux: 1
+    co2_flux: 9
+    # ch4_flux: 1
+    ch4_flux: 9
+    # nee: 1
+    nee: 9
 filters:
     meteo:
-        CO2SS_min: 80.0
-        p_rain_limit: 0.1
-        rain_forward_flag: 2
-        use_day_filter: true
-        use_night_filter: true
-        day_nee_max: 5
-        night_nee_min: -5
-        day_swin_limit: 10
-        night_h_limits: [-50, 20]
-        night_le_limits: [-50, 20]
-        winter_nee_limits: [0, 5]
-        winter_ch4_flux_limits: [-1, 1]
-        CH4SS_min: 20.0
+        # CO2SS_min: 80.0
+        CO2SS_min: -9999
+        # p_rain_limit: 0.1
+        p_rain_limit: 9999
+        # rain_forward_flag: 2
+        rain_forward_flag: 0
+        # use_day_filter: true
+        use_day_filter: false
+        # use_night_filter: true
+        use_night_filter: false
+        # day_nee_max: 5
+        day_nee_max: 9999
+        # night_nee_min: -5
+        night_nee_min: -9999
+        # day_swin_limit: 10
+        day_swin_limit: 9999
+        # night_h_limits: [-50, 20]
+        night_h_limits: [-9999, 9999]
+        # night_le_limits: [-50, 20]	
+        night_le_limits: [-9999, 9999]
+        # winter_nee_limits: [0, 5]
+        winter_nee_limits: [-9999, 9999]
+        # winter_ch4_flux_limits: [-1, 1]
+        winter_ch4_flux_limits: [-9999, 9999]
+        # CH4SS_min: 20.0
+        CH4SS_min:  9999
     min_max:
         co2_flux: [-40, 40]
         co2_strg: [-20, 20]
@@ -92,9 +110,13 @@ filters:
         ppfd_1_1_1: {z: 8.0, hampel_window: 10}
         nee: {z: 5.5, hampel_window: 10}
     winter_date_ranges:
-        - [01.01.2023 00:00, 26.03.2023 00:00]
-        - [13.11.2023 00:00, 31.12.2023 00:00]
-    man_ranges: []
+        []
+        # - [01.01.2023 00:00, 26.03.2023 00:00]
+        # - [13.11.2023 00:00, 31.12.2023 00:00]
+    man_ranges: 
+        []
+        # - ['1.5.2023 00:00', '1.6.2023 00:00']
+        # - ['25.8.2023 12:00', '25.8.2023 12:00']
 calc_nee: true
 calc_with_strg: false
 reddyproc:

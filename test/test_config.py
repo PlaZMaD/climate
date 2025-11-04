@@ -1,6 +1,8 @@
 import logging
 import os
 import subprocess
+from pathlib import Path
+
 import pytest
 
 from src.data_io.data_import_modes import ImportMode
@@ -19,7 +21,9 @@ def os_view_path(filename):
 def test_config_io(tmp_path):
     init_logging(level=logging.INFO, fpath=tmp_path / 'log.log', to_stdout=True)
     
-    config = FFConfig.load_or_init(load_path='misc/default_config.yaml', init_debug=False, init_version='1.0')
+    config = FFConfig.load_or_init(load_path='misc/config_v1.0.2_all_filters_disabled.yaml', 
+                                   default_path=Path('misc/config_v1.0.2_default.yaml'),
+                                   init_debug=False, init_version='1.0.2')
     # config = FFConfig.load_or_init(load_path='', init_debug=False, init_version='1.0')
     
     config._enable_tracking = True
@@ -51,15 +55,16 @@ def test_config_io(tmp_path):
     config.qc['ch4_flux'] = 0
     
     config.qc = {'should': 'work'}
-    config.qc = {'should': 'not work'}
+    config.qc = {'test3': 'test2'}
     
     FFConfig.save(config, tmp_path / 'test_all.yaml')
     
     test_config = FFConfig.load_or_init(tmp_path / 'test_all.yaml',
-                                        init_debug=None, init_version=None)
+                                        default_path=Path('misc/config_v1.0.2_default.yaml'),
+                                        init_debug=False, init_version='1.0.2')
     test_config._load_path = None
     
-    assert test_config.import_mode == ImportMode.CSF_AND_BIOMET
-    assert test_config.input_files == ['ya_ckd_FO_2015_test.csv', 'ya_ckd_biomet_2015.csv']
+    assert test_config.import_mode == ImportMode.AUTO
+    assert test_config.qc['test3'] == 'test2' 
     
     os_view_path(tmp_path)

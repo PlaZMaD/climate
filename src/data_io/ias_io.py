@@ -28,6 +28,7 @@ IAS_EXPORT_MIN_ROWS = 5
 # TODO 1 test: merge for any amount of iases
 # TODO 1 test: more ias export to match import after export 1y fixed
 # TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
+# TODO 1 ias: Unsupported by notebook IAS vars - disappeared from 1.0.0
 
 
 def ias_table_extend_year(df: pd.DataFrame, time_col, na_placeholder):
