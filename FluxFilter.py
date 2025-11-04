@@ -140,7 +140,7 @@ import bglabutils.basic as bg
 # import bglabutils.boosting as bb
 # import textwrap
 
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, colab_xor_demo_files
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, no_input_files
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
 from src.config.config_types import IasExportIntervals
 from src.ff_logger import init_logging, ff_logger
@@ -197,16 +197,15 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # Здесь нужно прописать символы из ссылки на файл biomet
 
 # %% id="KMu4IqY45HG6"
-
-# Загрузка файла full output
-# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
-# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
-
-# Загрузка файла biomet
-# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
-# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
-
-colab_xor_demo_files()
+if no_input_files(input_dir='.'):
+    # Загрузка файла full output
+    # https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
+    # !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
+    
+    # Загрузка файла biomet
+    # https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
+    # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+    pass
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 

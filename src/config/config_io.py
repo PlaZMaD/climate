@@ -12,6 +12,7 @@ from src.helpers.io_helpers import find_unique_file
 # comments io support, import defaults, diff export, time conversion function vs safety 
 
 METADATA_KEY = '_meta_description'
+CONFIG_GLOB = '*config*.yaml'
 
 
 def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
@@ -160,7 +161,7 @@ class BaseConfig(FFBaseModel):
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:
         if load_path == 'auto':
-            load_path = find_unique_file(Path('.'), '*config*.yaml')
+            load_path = find_unique_file(Path('.'), CONFIG_GLOB)
         
         if load_path:
             config = cls.load_from_yaml(Path(load_path))
