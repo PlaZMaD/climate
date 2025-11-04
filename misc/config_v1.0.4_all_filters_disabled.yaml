@@ -1,47 +1,39 @@
-version: '1.0.3'
+version: '1.0.4'
 debug: false
-input_files: 'auto'
-eddypro_fo:
-    repair_time: true
-    missing_data_codes: [-9999]
-    time_col: 'time'
-    try_time_formats: ['%H:%M', '%H:%M:%S']
-    date_col: 'date'
-    try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
-eddypro_biomet:
-    repair_time: true
-    missing_data_codes: [-9999]
-    datetime_col: 'TIMESTAMP_1'
-    try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
-ias:
-    repair_time: true
-    missing_data_codes: [-9999]
-    datetime_col: 'TIMESTAMP_START'
-    try_datetime_formats: '%Y%m%d%H%M'
-    skip_validation: false
-csf:
-    repair_time: true
-    missing_data_codes: [-9999, NAN]
-    datetime_col: 'TIMESTAMP'
-    try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
-import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
-time_col: 'datetime'
-has_meteo: true
-site_name: 'auto'
-ias_out_fname_ver_suffix: 'auto'
-ias_export_intervals: 'YEAR'
-qc:
-    # h: 1
-    h: 9
-    # le: 1
-    le: 9
-    # co2_flux: 1
-    co2_flux: 9
-    # ch4_flux: 1
-    ch4_flux: 9
-    # nee: 1
-    nee: 9
+data_import:
+    input_files: 'auto'
+    eddypro_fo:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    eddypro_biomet:
+        repair_time: true
+        missing_data_codes: [-9999]
+        datetime_col: 'TIMESTAMP_1'
+        try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    ias:
+        repair_time: true
+        missing_data_codes: [-9999]
+        datetime_col: 'TIMESTAMP_START'
+        try_datetime_formats: '%Y%m%d%H%M'
+        skip_validation: false
+    csf:
+        repair_time: true
+        missing_data_codes: [-9999, NAN]
+        datetime_col: 'TIMESTAMP'
+        try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
+        empty_co2_strg: true
+    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    time_col: 'datetime'
+data_export:
+    ias: {out_fname_ver_suffix: auto, split_intervals: YEAR}
+metadata:
+    site_name: 'auto'
 filters:
+    qc: {}
     meteo:
         # CO2SS_min: 80.0
         CO2SS_min: -9999
@@ -99,10 +91,11 @@ filters:
         # ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
         # nee: {sigmas: 2, window: 10, min_periods: 4}
     quantile:
+        {}
         # co2_flux: [0.01, 0.99]
         # ch4_flux: [0.01, 0.99]
         # co2_strg: [0.01, 0.99]
-        co2_strg: [0.0, 1.0]
+        # co2_strg: [0.0, 1.0]
         # nee: [0.01, 0.99]
     madhampel:
         {}
@@ -125,8 +118,10 @@ filters:
         []
         # - ['1.5.2023 00:00', '1.6.2023 00:00']
         # - ['25.8.2023 12:00', '25.8.2023 12:00']
-calc_nee: true
-calc_with_strg: false
+calc:
+    has_meteo: true
+    calc_nee: true
+    calc_with_strg: false
 reddyproc:
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01

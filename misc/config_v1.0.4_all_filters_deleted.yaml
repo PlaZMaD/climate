@@ -1,6 +1,6 @@
 version: '1.0.4'
 debug: false
-data_in:
+data_import:
     input_files: 'auto'
     eddypro_fo:
         repair_time: true
@@ -28,9 +28,9 @@ data_in:
         empty_co2_strg: true
     import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
     time_col: 'datetime'
-data_out:
+data_export:
     ias: {out_fname_ver_suffix: auto, split_intervals: YEAR}
-meta:
+metadata:
     site_name: 'auto'
 filters:
 

@@ -664,7 +664,8 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
     # tmp_data['co2_strg_tmp'] = tmp_data['co2_strg_tmp'].interpolate(limit=3)
     # tmp_data['co2_strg_tmp'].fillna(bg.calc_rolling(tmp_data['co2_strg_tmp'], rolling_window=10 , step=gl.points_per_day, min_periods=4))
     basic_plot(tmp_data, ['co2_strg_tmp'], config.metadata.site_name, tmp_filter_db, steps_per_day=gl.points_per_day)
-    print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
+    if 'co2_strg_tmp_quantilefilter' in tmp_data:
+        print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
 
 # %% id="2IQ7W6pslYF-"
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
