@@ -39,7 +39,7 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
     ).fillna(-99999)
     
     for year in df.index.year.unique():
-        fat_filename = f"FAT_{config.site_name}_{year}.csv"
+        fat_filename = f"FAT_{config.metadata.site_name}_{year}.csv"
         fat_fpath = gl.out_dir / fat_filename
         pd.DataFrame(fat_output_template).to_csv(fat_fpath, index=False)
         save_data = df.loc[df[time_col].dt.year == year]

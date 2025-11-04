@@ -262,7 +262,7 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     ''' horizontal
     df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
     df[time_col] = df.index
-    df = repair_time(df, config.time_col)
+    df = repair_time(df, config.data_in.time_col)
     if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
         print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
         has_meteo = False

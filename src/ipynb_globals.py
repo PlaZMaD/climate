@@ -18,7 +18,7 @@ from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess  # noqa: F4
 
 # only site name like 'tv_fy4_22.14'
 # ias_output_prefix: str = 'tv_fy4_22-14'
-# config.site_name
+# config.meta.site_name
 
 # all settings related to reddyproc integration
 # config.rep

@@ -140,17 +140,17 @@ class BaseConfig(FFBaseModel):
     @classmethod
     def save(cls: Self, config, fpath: str | Path, add_comments: bool):
         # TODO 1 hardcoded temp fix, restore auto options in some better way
-        config_auto = copy(config)
-        config_auto.input_files = 'auto'
-        config_auto.import_mode = 'AUTO'
-        config_auto.site_name = 'auto'
-        config_auto.ias_out_fname_ver_suffix = 'auto'
-        config_auto.reddyproc.site_id = ''
-        config_auto.reddyproc.input_file = ''
+        cfg_auto = copy(config)
+        cfg_auto.data_import.input_files = 'auto'
+        cfg_auto.data_import.import_mode = 'AUTO'
+        cfg_auto.metadata.site_name = 'auto'
+        cfg_auto.data_export.ias.out_fname_ver_suffix = 'auto'
+        cfg_auto.reddyproc.site_id = ''
+        cfg_auto.reddyproc.input_file = ''
         
-        cls.save_to_yaml(config_auto, Path(fpath), add_comments)
+        cls.save_to_yaml(cfg_auto, Path(fpath), add_comments)
         if ENV.LOCAL and add_comments:
-            cls.save_to_yaml(config_auto, Path(fpath).with_stem(fpath.stem + '_short'), add_comments=False)
+            cls.save_to_yaml(cfg_auto, Path(fpath).with_stem(fpath.stem + '_short'), add_comments=False)
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:

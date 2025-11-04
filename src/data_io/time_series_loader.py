@@ -41,12 +41,12 @@ def preload_time_series(fpath: Path, ftype: InputFileType, config: FFConfig) -> 
     # TODO 3 # if 'debug' in d_config.keys()
     if ftype == InputFileType.CSF:
         df = load_table_logged(fpath, header_row=1, skiprows=[2, 3])
-        df = preprocess_time_csf(df, config.csf.datetime_col, config.csf.try_datetime_formats, config.time_col)
-        df = cleanup_df(df, config.csf.missing_data_codes)
+        df = preprocess_time_csf(df, config.data_import.csf.datetime_col, config.data_import.csf.try_datetime_formats, config.data_import.time_col)
+        df = cleanup_df(df, config.data_import.csf.missing_data_codes)
     elif ftype == InputFileType.EDDYPRO_BIOMET:
         # Not switched to use this yet
         df = load_table_logged(fpath, header_row=1)
-        df = preprocess_time_biomet(df, ftype, config.time_col)
+        df = preprocess_time_biomet(df, ftype, config.data_import.time_col)
         df = cleanup_df(df, config.biomet.missing_data_codes)
     else:
         raise Exception('Unexpected file type')

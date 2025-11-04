@@ -43,20 +43,20 @@ from src.config.ff_config import FFConfig
 # DONE OA, V: ias: import VPD_PI and convert (via generalised rename lambda function though)
 
 
-# TODO 1 config.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
+# TODO 1 config.data_in.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
 
 
 def import_data(config: FFConfig):    
-    if config.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
+    if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
         res = load_eddypro(config)
-    elif config.import_mode == ImportMode.IAS:
+    elif config.data_import.import_mode == ImportMode.IAS:
         res = import_iases(config)
-    elif config.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
+    elif config.data_import.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
         res = import_csf(config)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
     
-    paths = format_dict(config.input_files, separator=': ')
+    paths = format_dict(config.data_import.input_files, separator=': ')
     # DONE logs:  fix log
     ff_logger.info(f'Data imported from files: {paths} \n')
        

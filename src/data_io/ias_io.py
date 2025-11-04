@@ -150,23 +150,23 @@ def import_iases(config: FFConfig):
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    dfs = {fpath.name: import_ias(fpath, config.time_col, config.ias, config.ias.skip_validation, config.debug) 
-           for fpath, _ in config.input_files.items()}
+    dfs = {fpath.name: import_ias(fpath, config.data_import.time_col, config.data_import.ias, config.data_import.ias.skip_validation, config.debug)
+           for fpath, _ in config.data_import.input_files.items()}
  
     if len(dfs) > 1:
         ff_logger.info('Merging data from files...')
-    df = merge_time_series(dfs, config.time_col, no_duplicate_cols=False)
-    if config.ias.repair_time:
-        df = repair_time(df, config.time_col, fill_gaps=True)
+    df = merge_time_series(dfs, config.data_import.time_col, no_duplicate_cols=False)
+    if config.data_import.ias.repair_time:
+        df = repair_time(df, config.data_import.time_col, fill_gaps=True)
     
-    assert df[config.time_col].isna().sum() == 0
+    assert df[config.data_import.time_col].isna().sum() == 0
     
     # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     
     has_meteo = True
-    return df, config.time_col, biomet_cols_index, df.index.freq, has_meteo
+    return df, config.data_import.time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
 def prepare_time_intervals(df: pd.DataFrame, time_col, min_rows, export_intervals: IasExportIntervals):

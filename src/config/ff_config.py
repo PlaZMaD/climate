@@ -72,6 +72,7 @@ class RepConfig(FFBaseModel):
 
 class FiltersConfig(FFBaseModel):
     # TODO 1 auto = initial; changed or not? make this config-wide approach
+    qc: dict = None
     meteo: dict = None
     min_max: dict = None
     window: dict = None
@@ -81,17 +82,18 @@ class FiltersConfig(FFBaseModel):
     man_ranges: list[list[str]] = None
 
 
-# TODO 1 V: yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
-# all settings by default, partial mode optional (or commented out?) if not default, comment?
-class FFConfig(BaseConfig):
-    version: str = None
-    """  True: fast load, just 3 months of data """
-    debug: bool = None
+class IASExportConfig(BaseConfig):
+    out_fname_ver_suffix: str = None
+    split_intervals: IasExportIntervals = None
+
+
+class ExportConfig(BaseConfig):
+    ias: IASExportConfig = IASExportConfig.model_construct()
     
+    
+class ImportConfig(BaseConfig):
     # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
     input_files: str | list[str] | dict[str | Path, InputFileType] = None
-    # flexible, but too complicated to edit for user?
-    # files: dict[str, InputFileConfig]
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
@@ -100,20 +102,34 @@ class FFConfig(BaseConfig):
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
     time_col: str = None
-    
+
+
+class CalcConfig(BaseConfig):
     # TODO 1 move to ig?
     has_meteo: bool = None
-    
-    site_name: str = None
- 
-    ias_out_fname_ver_suffix: str = None
-    ias_export_intervals: IasExportIntervals = None
-    
-    qc: dict = None
-    filters: FiltersConfig = FiltersConfig.model_construct()
-    
     calc_nee: bool = None
     calc_with_strg: bool = None
+
+
+class InfoConfig(BaseConfig):
+    site_name: str = None
+
+
+# TODO 1 V: yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
+# all settings by default, partial mode optional (or commented out?) if not default, comment?
+class FFConfig(BaseConfig):
+    version: str = None
+    """  True: fast load, just 3 months of data """
+    debug: bool = None
+
+    data_import: ImportConfig = ImportConfig.model_construct()
+    data_export: ExportConfig = ExportConfig.model_construct()
+       
+    metadata: InfoConfig = InfoConfig.model_construct()
+
+    filters: FiltersConfig = FiltersConfig.model_construct()
+    calc: CalcConfig = CalcConfig.model_construct()
+    
     reddyproc: RepConfig = RepConfig.model_construct()
 
 

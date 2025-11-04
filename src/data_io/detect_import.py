@@ -125,7 +125,7 @@ def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode
         mode = possible_input_modes[0]
     else:
         raise AutoImportException(f'Multiple input modes possible: {possible_input_modes}, cannot auto pick.\n'
-                                  "Remove some files or specify manually config.input_files = {...} .")
+                                  "Remove some files or specify manually config.data_in.input_files = {...} .")
     
     return mode
 
@@ -169,35 +169,38 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     # noinspection PyPep8Naming
     IM = ImportMode
     # TODO 2 do not change config here, consider moving all auto options to gl ?
+    cfg_imp = config.data_import
+    cfg_exp = config.data_export
+    cfg_meta = config.metadata
     
-    if config.input_files == 'auto':
+    if cfg_imp.input_files == 'auto':
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files(input_dir=gl.input_dir)
         input_files_info = format_dict(input_files_auto, separator=': ')
-        config.input_files = change_if_auto(config.input_files, input_files_auto,
-                                            ok_msg=f'Detected input files: {input_files_info}')
-    elif type(config.input_files) in [list, str]:
-        user_fpaths = ensure_list(config.input_files, transform_func=ensure_path)
-        config.input_files = detect_known_files(from_list=user_fpaths)
-    elif type(config.input_files) is dict:
-        config.input_files = {Path(fpath): ftype for fpath, ftype in config.input_files.items()}
+        cfg_imp.input_files = change_if_auto(cfg_imp.input_files, input_files_auto,
+                                             ok_msg=f'Detected input files: {input_files_info}')
+    elif type(cfg_imp.input_files) in [list, str]:
+        user_fpaths = ensure_list(cfg_imp.input_files, transform_func=ensure_path)
+        cfg_imp.input_files = detect_known_files(from_list=user_fpaths)
+    elif type(cfg_imp.input_files) is dict:
+        cfg_imp.input_files = {Path(fpath): ftype for fpath, ftype in cfg_imp.input_files.items()}
     else:
-        raise ValueError(f'{config.input_files=}')
+        raise ValueError(f'{cfg_imp.input_files=}')
     
-    config.import_mode = detect_input_mode(config.input_files)
-    ff_logger.info(f'Import mode: {config.import_mode}')
+    cfg_imp.import_mode = detect_input_mode(cfg_imp.input_files)
+    ff_logger.info(f'Import mode: {cfg_imp.import_mode}')
     
     # TODO 1 update cells desc to match exact config naming after updating config options
-    auto_site_name, auto_ias_ver = detect_fname_options(config.input_files, config.import_mode)
+    auto_site_name, auto_ias_ver = detect_fname_options(cfg_imp.input_files, cfg_imp.import_mode)
     
-    config.site_name = change_if_auto(config.site_name, auto_site_name,
-                                      ok_msg=f'Auto detected site name: {auto_site_name}')
-    config.ias_out_fname_ver_suffix = change_if_auto(config.ias_out_fname_ver_suffix, auto_ias_ver,
-                                                     ok_msg=f'Auto detected ias version: {auto_ias_ver}')
+    cfg_meta.site_name = change_if_auto(cfg_meta.site_name, auto_site_name,
+                                       ok_msg=f'Auto detected site name: {auto_site_name}')
+    cfg_exp.ias.out_fname_ver_suffix = change_if_auto(cfg_exp.ias.out_fname_ver_suffix, auto_ias_ver,
+                                                      ok_msg=f'Auto detected ias version: {auto_ias_ver}')
     
     # TODO 1 _has_meteo vs has_meteo, duplicates in import routines 
-    config._has_meteo = config.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
-    return config.input_files, config.import_mode, config.site_name, config.ias_out_fname_ver_suffix, config._has_meteo
+    config._has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
+    return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, config._has_meteo
 
 
 def try_auto_detect_input_files(*args, **kwargs):
