@@ -115,8 +115,13 @@ class BaseConfig(FFBaseModel):
     @classmethod
     def load_from_yaml(cls, fpath: Path, return_model=True):
         with open(fpath, 'r') as fl:
+            file_txt = fl.read()
+            fix_txt = file_txt.replace('\t', '    ')
+            if fix_txt != file_txt:
+                print('Tabs were replaced in the config.')
+            
             yaml = cls.get_yaml()
-            loaded_yaml = yaml.load(fl)
+            loaded_yaml = yaml.load(fix_txt)
         
         model = cls.model_validate(loaded_yaml)
         if return_model:
