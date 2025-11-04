@@ -2,78 +2,85 @@
 version: '1.0.4'
 # fast mode loading just a few months of data
 debug: false
-# files to read data tables:
-# 'auto' or ['BiometFy4.csv', ...] or {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, ...}
-input_files: 'auto'
-# eddypro_fo, eddypro_biomet, ias, csf:
-# repair_time: check the date-time column for gaps and monotony, and try regeneration on errors
-# missing_data_codes: will replace -9999 and/or other values to np.nan
-eddypro_fo:
-    repair_time: true
-    missing_data_codes: [-9999]
-    # name of the column in eddypro full output with time
-    time_col: 'time'
-    # guesses for the time format (leave only one entry like ['%H:%M:%S'] to set manually)
-    try_time_formats: ['%H:%M', '%H:%M:%S']
-    # name of the column in eddypro full output with date
-    date_col: 'date'
-    # guesses for the date format (leave only one entry like ['%H:%M:%S'] to set manually)
-    try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
-eddypro_biomet:
-    repair_time: true
-    missing_data_codes: [-9999]
-    # name of the column in the eddypro biomet with date
-    datetime_col: 'TIMESTAMP_1'
-    # guesses for the datetime format (leave only one entry like ['%H:%M:%S'] to set manually)
-    try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
-ias:
-    repair_time: true
-    missing_data_codes: [-9999]
-    datetime_col: 'TIMESTAMP_START'
-    try_datetime_formats: '%Y%m%d%H%M'
-    skip_validation: false
-csf:
-    repair_time: true
-    missing_data_codes: [-9999, NAN]
-    # name of the column in the csf with date
-    datetime_col: 'TIMESTAMP'
-    # guesses for the datetime format (leave only one entry like ['%H:%M:%S'] to set manually)
-    try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
-# one of supported import modes
-# 'AUTO' or one of: 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET'
-import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
-# column name for datetime with will be used after import
-time_col: 'datetime'
-# enables processing steps which requires meteo columns
-has_meteo: true
-# station name, keep 'auto' to try to detect name from file name
-site_name: 'auto'
-# version suffix used only in the ias output filename, 'auto' will try to detect suffix from ias input file name
-ias_out_fname_ver_suffix: 'auto'
-ias_export_intervals: 'YEAR'
-# filter data by quality flag
-qc:
-    h: 1
-    le: 1
-    co2_flux: 1
-    ch4_flux: 1
-    nee: 1
+data_import:
+    # files to read data tables:
+    # 'auto' or ['BiometFy4.csv', ...] or {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, ...}
+    input_files: 'auto'
+    # eddypro_fo, eddypro_biomet, ias, csf:
+    # repair_time: check the date-time column for gaps and monotony, and try regeneration on errors
+    # missing_data_codes: will replace -9999 and/or other values to np.nan
+    eddypro_fo:
+        repair_time: true
+        missing_data_codes: [-9999]
+        # name of the column in eddypro full output with time
+        time_col: 'time'
+        # guesses for the time format (leave only one entry like ['%H:%M:%S'] to set manually)
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        # name of the column in eddypro full output with date
+        date_col: 'date'
+        # guesses for the date format (leave only one entry like ['%H:%M:%S'] to set manually)
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    eddypro_biomet:
+        repair_time: true
+        missing_data_codes: [-9999]
+        # name of the column in the eddypro biomet with date
+        datetime_col: 'TIMESTAMP_1'
+        # guesses for the datetime format (leave only one entry like ['%H:%M:%S'] to set manually)
+        try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    ias:
+        repair_time: true
+        missing_data_codes: [-9999]
+        datetime_col: 'TIMESTAMP_START'
+        try_datetime_formats: '%Y%m%d%H%M'
+        skip_validation: false
+    csf:
+        repair_time: true
+        missing_data_codes: [-9999, NAN]
+        # name of the column in the csf with date
+        datetime_col: 'TIMESTAMP'
+        # guesses for the datetime format (leave only one entry like ['%H:%M:%S'] to set manually)
+        try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
+        empty_co2_strg: true	
+    # one of supported import modes
+    import_mode: 'AUTO'  # 'AUTO', 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET'
+    # column name for datetime with will be used after import
+    time_col: 'datetime'
+data_export:
+    # version suffix used only in the ias output filename, 'auto' will try to detect suffix from ias input file name
+    # split_intervals: 'YEAR'
+    ias: {out_fname_ver_suffix: auto, split_intervals: YEAR}
+metadata:
+    # station name, keep 'auto' to try to detect name from file name
+    site_name: 'auto'
 filters:
+    # applied to listed columns: by quality flag threshold
+    qc: {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
     # data filtering based on meteo conditions
     meteo:
+        # applied to  ["co2_flux", 'nee'] 
         CO2SS_min: 80.0
+        # applied to ["ch4_flux"] 
+        # CH4SS_min: None
+        # rain limit and flag are applied to ["co2_flux", 'h', 'le', 'nee', "ch4_flux"]
         p_rain_limit: 0.1
         rain_forward_flag: 2
+        # applied to ['nee']
         use_day_filter: true
+        # applied to ["h", 'le', 'nee', 'co2_flux']
         use_night_filter: true
+        # applied to itself
         day_nee_max: 5
         night_nee_min: -5
         day_swin_limit: 10
         night_h_limits: [-50, 20]
         night_le_limits: [-50, 20]
+        # applied to ['nee', 'co2_flux']
         winter_nee_limits: [0, 5]
+        # applied to ['ch4_flux']
         winter_ch4_flux_limits: [-1, 1]
         CH4SS_min: 20.0
+        # applied to ["co2_flux", 'le', 'nee']
+        # RH_max: 
     # filter by minimum and maximum acceptable values
     min_max:
         co2_flux: [-40, 40]
@@ -127,9 +134,12 @@ filters:
         - [01.01.2023 00:00, 26.03.2023 00:00]
         - [13.11.2023 00:00, 31.12.2023 00:00]
     man_ranges: []
-# Decide whether to sum co2_flux and co2_strg_filtered_filled for obtaining NEE
-calc_nee: true
-calc_with_strg: false
+calc:
+    # enables processing steps which requires meteo columns
+    has_meteo: true
+    # Decide whether to sum co2_flux and co2_strg_filtered_filled for obtaining NEE
+    calc_nee: true
+    calc_with_strg: false
 reddyproc:
     # Enabling detection of the conditions of weak turbulence
     is_to_apply_u_star_filtering: true

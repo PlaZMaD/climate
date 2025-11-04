@@ -16,9 +16,9 @@ from src.helpers.env_helpers import ENV
 # TODO 1 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
 # if moved, check ias import-export handling stands (or solve with generalised col names preprocess check?)
 def load_eddypro(config: FFConfig):
-    c_fo = config.eddypro_fo
+    c_fo = config.data_import.eddypro_fo
     
-    fo_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_FO]
+    fo_paths = [str(fpath) for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.EDDYPRO_FO]
     
     # load of eddypro = full_output, optionally with biomet
     if not set(c_fo.missing_data_codes) <= {-9999}:
@@ -30,7 +30,7 @@ def load_eddypro(config: FFConfig):
         'debug': False,
         '-9999_to_nan': -9999 in c_fo.missing_data_codes,
         'time': {
-            'column_name': config.time_col,
+            'column_name': config.data_import.time_col,
             'converter': lambda x: date_time_parser(x, c_fo.time_col, c_fo.try_time_formats,
                                                        c_fo.date_col, c_fo.try_date_formats)
         },
@@ -45,8 +45,8 @@ def load_eddypro(config: FFConfig):
     ff_logger.info('Колонки в FullOutput \n'
                    f'{df_fo.columns.values}')
 
-    bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
-    df_bm, has_meteo = load_biomets(bm_paths, config.time_col, data_freq, config.eddypro_biomet)
+    bm_paths = [str(fpath) for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
+    df_bm, has_meteo = load_biomets(bm_paths, config.data_import.time_col, data_freq, config.data_import.eddypro_biomet)
       
     if has_meteo:
         df = df_fo.join(df_bm, how='outer', rsuffix='_meteo')

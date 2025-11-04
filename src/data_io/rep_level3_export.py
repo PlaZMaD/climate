@@ -26,7 +26,7 @@ def export_rep_level3(fpath: Path, df: pd.DataFrame, time_col: str, output_templ
     # E: because they are different, 'air_temperature' is worse backup plan if 'ta_1_1_1' is missing
     # TODO 1 check other cols from description
     
-    if config.has_meteo:
+    if config.calc.has_meteo:
         df['Tair'] = df['ta_1_1_1'].fillna(-9999)
         df['rH'] = df['rh_1_1_1'].fillna(-9999)
         df['VPD'] = df['vpd_1_1_1'].fillna(-9999)

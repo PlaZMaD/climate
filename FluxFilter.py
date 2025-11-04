@@ -140,7 +140,7 @@ import bglabutils.basic as bg
 # import bglabutils.boosting as bb
 # import textwrap
 
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, colab_xor_demo_files
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, no_input_files
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
 from src.config.config_types import IasExportIntervals
 from src.ff_logger import init_logging, ff_logger
@@ -197,16 +197,15 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # Здесь нужно прописать символы из ссылки на файл biomet
 
 # %% id="KMu4IqY45HG6"
-
-# Загрузка файла full output
-# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
-# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
-
-# Загрузка файла biomet
-# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
-# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
-
-colab_xor_demo_files()
+if no_input_files(input_dir='.'):
+    # Загрузка файла full output
+    # https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
+    # !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
+    
+    # Загрузка файла biomet
+    # https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
+    # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+    pass
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 
@@ -234,7 +233,7 @@ colab_xor_demo_files()
 #
 # В автоматическом режиме (по умолчанию) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `'EDDYPRO_FO'`, `'EDDYPRO_FO_AND_BIOMET'`, `'IAS'`, `'CSF'`).  Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
 #
-# В `config.input_files` должен быть либо путь до файла (`= ['1.csv']`) при имени файла 1.csv, либо список (list) путей в случае загрузки нескольких файлов (`= ['1.csv', '2.csv']`), либо словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`.  
+# В `config.data_import.input_files` должен быть либо путь до файла (`= ['1.csv']`) при имени файла 1.csv, либо список (list) путей в случае загрузки нескольких файлов (`= ['1.csv', '2.csv']`), либо словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`.  
 # При импорте через !gdown файла с google-диска достаточно указать в одинарной кавычке *имя файла.расширение*. Не забывайте расширение .csv!  
 #
 # Проверьте порядок записи даты (год, месяц, день) и разделители даты-времени во входных файлах, открыв их в текстовом редакторе. Возможные варианты:
@@ -253,40 +252,42 @@ colab_xor_demo_files()
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default.yaml',
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default_ru.yaml',
                                init_debug=False, init_version='1.0.4')
 
 if not config.from_file:
-    config.input_files = 'auto'
+    config.data_import.input_files = 'auto'
     # alternative ways if 'auto' mode works not as expected:
-    # config.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv', 'BiometFy4_2023.csv']
-    # config.input_files = {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, 'BiometFy4_2023.csv': InputFileType.EDDYPRO_BIOMET}
+    # config.data_import.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv', 'BiometFy4_2023.csv']
+    # config.data_import.input_files = {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, 'BiometFy4_2023.csv': InputFileType.EDDYPRO_BIOMET}
     
-    config.time_col = 'datetime'
+    config.data_import.time_col = 'datetime'
     
-    config.eddypro_fo.missing_data_codes = [-9999]
-    config.eddypro_fo.date_col = 'date'
-    config.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
-    config.eddypro_fo.time_col = 'time'
-    config.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
-    config.eddypro_fo.repair_time = True
+    config.data_import.eddypro_fo.missing_data_codes = [-9999]
+    config.data_import.eddypro_fo.date_col = 'date'
+    config.data_import.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    config.data_import.eddypro_fo.time_col = 'time'
+    config.data_import.eddypro_fo.try_time_formats = ['%H:%M', '%H:%M:%S']
+    config.data_import.eddypro_fo.repair_time = True
     
-    config.eddypro_biomet.missing_data_codes = [-9999]
-    config.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
-    config.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
-    config.eddypro_biomet.repair_time = True
+    config.data_import.eddypro_biomet.missing_data_codes = [-9999]
+    config.data_import.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
+    config.data_import.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
+    config.data_import.eddypro_biomet.repair_time = True
     
-    config.csf.missing_data_codes = [-9999, 'NAN']
-    config.csf.datetime_col = 'TIMESTAMP'
-    config.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
-    config.csf.repair_time = True
-    config.csf.empty_co2_strg = True
+    config.data_import.csf.missing_data_codes = [-9999, 'NAN']
+    config.data_import.csf.datetime_col = 'TIMESTAMP'
+    config.data_import.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
+    config.data_import.csf.repair_time = True
+    config.data_import.csf.empty_co2_strg = True
     
-    config.ias.skip_validation = False
-    config.ias.missing_data_codes = [-9999]
-    config.ias.datetime_col = 'TIMESTAMP_START'
-    config.ias.try_datetime_formats = '%Y%m%d%H%M'
-    config.ias.repair_time = True
+    config.data_import.ias.skip_validation = False
+    config.data_import.ias.missing_data_codes = [-9999]
+    config.data_import.ias.datetime_col = 'TIMESTAMP_START'
+    config.data_import.ias.try_datetime_formats = '%Y%m%d%H%M'
+    config.data_import.ias.repair_time = True
+    
+    
 # %% [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
 
@@ -320,11 +321,11 @@ cols_to_investigate = [k.lower() for k in cols_to_investigate]
 
 # %% id="pPemVdWVbq2E"
 if not config.from_file:
-    config.calc_nee = True
+    config.calc.calc_nee = True
     
     # Индекс станции для названий выходных файлов, рисунков
-    config.site_name = 'auto'
-    config.ias_out_fname_ver_suffix = 'auto'
+    config.metadata.site_name = 'auto'
+    config.data_export.ias.out_fname_ver_suffix = 'auto'
 
 # %% [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные со значением флага больше порога будут исключены.
@@ -336,7 +337,7 @@ qc['le'] = 1  # Если система флагов была 1-9, поправ�
 qc['co2_flux'] = 1  # Если система флагов была 1-9, поправить
 qc['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
 if not config.from_file:
-    config.qc = qc
+    config.filters.qc = qc
 
 # %% [markdown] id="QPIFpLN_-8Uf"
 # Параметры фильтрации по метеорологическим переменным, возможные опции:
@@ -472,14 +473,15 @@ if not config.from_file:
 
 # %% id="Xw5TapK10EhR"
 res = try_auto_detect_input_files(config, gl)
-config.input_files, config.import_mode, config.site_name, config.ias_out_fname_ver_suffix, config.has_meteo = res 
-data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
+(config.data_import.input_files, config.data_import.import_mode,
+ config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.calc.has_meteo) = res 
+data, time_col, meteo_cols, data_freq, config.calc.has_meteo = import_data(config)
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 
 # %% id="C8lLDYOWzH2d"
 data.columns = data.columns.str.lower()
-if not config.has_meteo:
+if not config.calc.has_meteo:
     data["rh_1_1_1"] = data['rh']
     # TODO QOA 1 different units? Elg biomet kPa, but mean 8.6 ?  
     data["vpd_1_1_1"] = data['vpd']
@@ -632,7 +634,7 @@ for col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
         print(f"renaming {col} to ch4_signal_strength")
         data = data.rename(columns={col: 'ch4_signal_strength'})
 
-if not config.has_meteo or 'ta_1_1_1' not in data.columns:
+if not config.calc.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
     ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
@@ -647,7 +649,7 @@ if not config.has_meteo or 'ta_1_1_1' not in data.columns:
 
 # %% id="cjt05XXtbr69"
 # Пробелы длиной 3 и меньше заполняются линейно
-if config.calc_nee and 'co2_strg' in data.columns:
+if config.calc.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
     tmp_filter_db = {'co2_strg_tmp': []}
@@ -660,19 +662,20 @@ if config.calc_nee and 'co2_strg' in data.columns:
     tmp_data.loc[~get_column_filter(tmp_data, tmp_filter_db, 'co2_strg_tmp').astype(bool), 'co2_strg_tmp'] = np.nan
     # tmp_data['co2_strg_tmp'] = tmp_data['co2_strg_tmp'].interpolate(limit=3)
     # tmp_data['co2_strg_tmp'].fillna(bg.calc_rolling(tmp_data['co2_strg_tmp'], rolling_window=10 , step=gl.points_per_day, min_periods=4))
-    basic_plot(tmp_data, ['co2_strg_tmp'], config.site_name, tmp_filter_db, steps_per_day=gl.points_per_day)
-    print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
+    basic_plot(tmp_data, ['co2_strg_tmp'], config.metadata.site_name, tmp_filter_db, steps_per_day=gl.points_per_day)
+    if 'co2_strg_tmp_quantilefilter' in tmp_data:
+        print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
 
 # %% id="2IQ7W6pslYF-"
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
 if not config.from_file:
-    config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
-ff_logger.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
+    config.calc.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
+ff_logger.info(f"config.calc.calc_with_strg is set to {config.calc.calc_with_strg}")
 # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
 # %% id="ueuvsNxYdtgs"
-if config.calc_nee and 'co2_strg' in data.columns:
-    if config.calc_with_strg:
+if config.calc.calc_nee and 'co2_strg' in data.columns:
+    if config.calc.calc_with_strg:
         data['nee'] = (tmp_data['co2_flux'] + tmp_data['co2_strg_tmp']).copy()
     else:
         data['nee'] = data['co2_flux'].copy()
@@ -681,9 +684,8 @@ if config.calc_nee and 'co2_strg' in data.columns:
         cols_to_investigate.append('nee')
     
     if not config.from_file:
-        for filter_config in [config.qc, config.filters.meteo, config.filters.min_max, config.filters.window,
-                              config.filters.quantile,
-                              config.filters.madhampel]:
+        for filter_config in [config.filters.qc, config.filters.meteo, config.filters.min_max, 
+                              config.filters.window, config.filters.quantile, config.filters.madhampel]:
             if 'co2_flux' in filter_config:
                 filter_config['nee'] = filter_config['co2_flux']
 
@@ -722,7 +724,7 @@ print(plot_data.columns.to_list())
 # ## по флагам качества
 
 # %% id="GGwe7_uU1C8U"
-plot_data, filters_db = qc_filter(plot_data, filters_db, config.qc)
+plot_data, filters_db = qc_filter(plot_data, filters_db, config.filters.qc)
 
 # %% [markdown] id="M_gKSTNYyzjS"
 # ## по порогу CO2SS и CH4SS
@@ -743,18 +745,18 @@ plot_data, filters_db = meteorological_rh_filter(plot_data, filters_db, config.f
 # ## по наличию дождя
 
 # %% id="jz696mc09FlB"
-if config.has_meteo:
+if config.calc.has_meteo:
     plot_data, filters_db = meteorological_rain_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="Xy2y00P1zJtZ"
 # ## по ночным и дневным допустимым диапазонам
 
 # %% id="ED_Qh6TS0Qkc"
-if config.has_meteo:
+if config.calc.has_meteo:
     plot_data, filters_db = meteorological_night_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% id="X3Vguu8MK635"
-if config.has_meteo:
+if config.calc.has_meteo:
     plot_data, filters_db = meteorological_day_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="fzfTJdNe68Eu"
@@ -765,7 +767,7 @@ if ('winter_nee_limits' in config.filters.meteo.keys()) or ('winter_ch4_flux_lim
     plot_albedo(plot_data, filters_db)
 
 # %% id="Z_RAYINf67PO"
-if config.has_meteo:
+if config.calc.has_meteo:
     unroll_filters_db = filters_db.copy()
     if not config.from_file:
         config.filters.winter_date_ranges = [
@@ -790,14 +792,14 @@ if config.has_meteo:
 # ## по минимальным и максимальным допустимым значениям
 
 # %% id="FyJaM1zC1DDg"
-# if config.has_meteo:
+# if config.calc.has_meteo:
 plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min_max)
 
 # %% [markdown] id="j62U1dw8sTEm"
 # ## по квантилям
 
 # %% id="aNQ4XDK01DME"
-# if config.has_meteo:
+# if config.calc.has_meteo:
 plot_data, filters_db = quantile_filter(plot_data, filters_db, config.filters.quantile)
 
 # %% [markdown] id="7Sg76Bwasnb4"
@@ -872,7 +874,7 @@ col2plot = 'nee'
 
 # Или закомментировать одну строку выше и запускать повторно для переключения к следующему параметру
 if col2plot:
-    make_filtered_plot(plot_data, col2plot, col2plot, config.site_name, filters_db)
+    make_filtered_plot(plot_data, col2plot, col2plot, config.metadata.site_name, filters_db)
 else:
     print("No more data, start from the begining!")
     plot_terator = iter(cols_to_investigate)
@@ -904,7 +906,7 @@ col2plot = next(plot_terator, False)
 col2plot = ['nee', 'le']
 # Или просто запускать повторно для переключения к следующему параметру
 if col2plot:
-    basic_plot(plot_data, col2plot, config.site_name, filters_db, steps_per_day=gl.points_per_day)
+    basic_plot(plot_data, col2plot, config.metadata.site_name, filters_db, steps_per_day=gl.points_per_day)
 else:
     print("No more data, start from the begining!")
     plot_terator = iter(cols_to_investigate)
@@ -938,7 +940,7 @@ for column, filter in filters_db.items():
     filter = get_column_filter(rep_df, filters_db, column)
     rep_df.loc[~filter.astype(bool), column] = np.nan
 
-gl.rep_level3_fpath = gl.out_dir / f"REddyProc_{config.site_name}_{int(plot_data[time_col].dt.year.median())}.txt"
+gl.rep_level3_fpath = gl.out_dir / f"REddyProc_{config.metadata.site_name}_{int(plot_data[time_col].dt.year.median())}.txt"
 export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config, gl.points_per_day)
 
 # %% [markdown] id="e50f7947"
@@ -947,15 +949,15 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 
 # %% id="yaLoIQmtzaYd"
 if not config.from_file:
-    config.ias_export_intervals = IasExportIntervals.YEAR 
+    config.data_export.ias.split_intervals = IasExportIntervals.YEAR 
 
-if config.has_meteo:
+if config.calc.has_meteo:
     ias_df: pd.DataFrame = plot_data.copy()
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
     
-    export_ias(gl.out_dir, config.site_name, config.ias_out_fname_ver_suffix, config.ias_export_intervals, 
+    export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.data_export.ias.split_intervals,
                ias_df, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
 
 # %% [markdown] id="Pm8hiMrb_wRW"
@@ -966,7 +968,7 @@ if config.has_meteo:
 # ![image.png](data:image/png;base64,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)
 
 # %% id="w9hkPLkB_zd1"
-if config.has_meteo:
+if config.calc.has_meteo:
     fat_output_template = {
         'DoY': ['--'], r'u*': ['m s-1'], 'H': ['W m-2'], 'lE': ['-'], 'NEE': ['umol m-2 s-1'],
         'PPFD': ['umol m-2 s-1'], 'Ta': ['oC'], 'VPD': ['kPa'], 'PPFD_gapfilling': ['umol m-2 s-1'],
@@ -1013,7 +1015,7 @@ basic_df['DoY'] = np.round(
     basic_df[time_col].dt.dayofyear + basic_df[time_col].dt.hour / 24. + basic_df[time_col].dt.minute / 24. / 60.,
     decimals=3)
 
-if not config.has_meteo:
+if not config.calc.has_meteo:
     basic_df['ta_1_1_1'] = basic_df['air_temperature'] - 273.15
 # метео
 for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
@@ -1160,7 +1162,7 @@ from src.reddyproc.preprocess_rg import prepare_rg
 # **Дополнительные опции (согласованы с предыдущими секциями):**  
 #
 # Название станции, которое будет продублировано в названиях выходных файлов:    
-# `site_id=config.site_name`  
+# `site_id=config.meta.site_name`  
 # Файл, из которого загружаются временные ряды:  
 # `input_file=str(gl.rep_level3_fpath)`  
 # Директория, в которую инструмент пишет контрольные изображения, базовую статистику по пропускам, заполненные ряды:  
@@ -1192,7 +1194,7 @@ config_reddyproc = RepConfig(
     temperature_data_variable="Tair",
     
     # do not change
-    site_id=config.site_name,
+    site_id=config.metadata.site_name,
     u_star_method="RTw",
     is_to_apply_gap_filling=True,
     input_file=str(gl.rep_level3_fpath),
@@ -1263,7 +1265,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # %% id="E4rv4ucOX8Yz"
-FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml', add_comments=True)
+FFConfig.save(config, gl.out_dir / f'config_{config.metadata.site_name}.yaml', add_comments=True)
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

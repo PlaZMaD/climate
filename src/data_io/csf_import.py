@@ -69,21 +69,21 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
 def import_csf(config: FFConfig):
     # TODO 1 finish transfer to abstract loader
 
-    dfs_csf = {fpath.name: preload_time_series(fpath, ftype, config) 
-               for fpath, ftype in config.input_files.items() if ftype == InputFileType.CSF}
+    dfs_csf = {fpath.name: preload_time_series(fpath, ftype, config)
+               for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.CSF}
 
     for fpath, df in dfs_csf.items():
         df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
         check_csf_col_names(df)        
-        df = import_rename_csf_cols(df, config.time_col)
-        df = repair_time(df, config.time_col, fill_gaps=False)
+        df = import_rename_csf_cols(df, config.data_import.time_col)
+        df = repair_time(df, config.data_import.time_col, fill_gaps=False)
         dfs_csf[fpath] = df
        
     if len(dfs_csf) > 1:
         ff_logger.info('Merging data from files...')
-    df_csf = merge_time_series(dfs_csf, config.time_col, no_duplicate_cols=False)
-    if config.csf.repair_time:
-        df_csf = repair_time(df_csf, config.time_col, fill_gaps=True)
+    df_csf = merge_time_series(dfs_csf, config.data_import.time_col, no_duplicate_cols=False)
+    if config.data_import.csf.repair_time:
+        df_csf = repair_time(df_csf, config.data_import.time_col, fill_gaps=True)
 
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
@@ -92,16 +92,16 @@ def import_csf(config: FFConfig):
                    f'{df_csf.columns.values}')
     # print("Колонки в CSF \n", df_csf.columns.to_list())
       
-    bm_paths = [str(fpath) for fpath, ftype in config.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
-    df_bm, has_meteo = load_biomets(bm_paths, config.time_col, data_freq, config.eddypro_biomet)
+    bm_paths = [str(fpath) for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
+    df_bm, has_meteo = load_biomets(bm_paths, config.data_import.time_col, data_freq, config.data_import.eddypro_biomet)
                   
     if has_meteo:
-        df, has_meteo = merge_time_series_biomet(df_csf, df_bm, config.time_col)
+        df, has_meteo = merge_time_series_biomet(df_csf, df_bm, config.data_import.time_col)
     else:
         df = df_csf
             
     # repair postprocessing
-    if config.csf.empty_co2_strg and 'co2_strg' not in df.columns:
+    if config.data_import.csf.empty_co2_strg and 'co2_strg' not in df.columns:
         df['co2_strg'] = np.nan
         ff_logger.info('co2_strg not found, adding empty column.')
     
@@ -111,9 +111,9 @@ def import_csf(config: FFConfig):
     biomet_columns = df.columns.intersection(known_meteo_cols)
     
     # TODO 2 after merge or after load?
-    if df[config.time_col].isna().sum() > 0:
+    if df[config.data_import.time_col].isna().sum() > 0:
         raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
     
-    return df, config.time_col, biomet_columns, df.index.freq, has_meteo
+    return df, config.data_import.time_col, biomet_columns, df.index.freq, has_meteo
 
 

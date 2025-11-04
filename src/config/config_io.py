@@ -12,6 +12,7 @@ from src.helpers.io_helpers import find_unique_file
 # comments io support, import defaults, diff export, time conversion function vs safety 
 
 METADATA_KEY = '_meta_description'
+CONFIG_GLOB = '*config*.yaml'
 
 
 def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
@@ -115,8 +116,13 @@ class BaseConfig(FFBaseModel):
     @classmethod
     def load_from_yaml(cls, fpath: Path, return_model=True):
         with open(fpath, 'r') as fl:
+            file_txt = fl.read()
+            fix_txt = file_txt.replace('\t', '    ')
+            if fix_txt != file_txt:
+                print('Tabs were replaced in the config.')
+            
             yaml = cls.get_yaml()
-            loaded_yaml = yaml.load(fl)
+            loaded_yaml = yaml.load(fix_txt)
         
         model = cls.model_validate(loaded_yaml)
         if return_model:
@@ -140,22 +146,22 @@ class BaseConfig(FFBaseModel):
     @classmethod
     def save(cls: Self, config, fpath: str | Path, add_comments: bool):
         # TODO 1 hardcoded temp fix, restore auto options in some better way
-        config_auto = copy(config)
-        config_auto.input_files = 'auto'
-        config_auto.import_mode = 'AUTO'
-        config_auto.site_name = 'auto'
-        config_auto.ias_out_fname_ver_suffix = 'auto'
-        config_auto.reddyproc.site_id = ''
-        config_auto.reddyproc.input_file = ''
+        cfg_auto = copy(config)
+        cfg_auto.data_import.input_files = 'auto'
+        cfg_auto.data_import.import_mode = 'AUTO'
+        cfg_auto.metadata.site_name = 'auto'
+        cfg_auto.data_export.ias.out_fname_ver_suffix = 'auto'
+        cfg_auto.reddyproc.site_id = ''
+        cfg_auto.reddyproc.input_file = ''
         
-        cls.save_to_yaml(config_auto, Path(fpath), add_comments)
+        cls.save_to_yaml(cfg_auto, Path(fpath), add_comments)
         if ENV.LOCAL and add_comments:
-            cls.save_to_yaml(config_auto, Path(fpath).with_stem(fpath.stem + '_short'), add_comments=False)
+            cls.save_to_yaml(cfg_auto, Path(fpath).with_stem(fpath.stem + '_short'), add_comments=False)
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:
         if load_path == 'auto':
-            load_path = find_unique_file(Path('.'), '*config*.yaml')
+            load_path = find_unique_file(Path('.'), CONFIG_GLOB)
         
         if load_path:
             config = cls.load_from_yaml(Path(load_path))

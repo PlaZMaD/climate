@@ -1,6 +1,9 @@
 from pathlib import Path
 from typing import Annotated
 
+from pydantic import field_validator
+from pydantic_core.core_schema import ValidationInfo
+
 from src.config.config_types import ImportMode, InputFileType, IasExportIntervals
 from src.config.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
@@ -72,13 +75,57 @@ class RepConfig(FFBaseModel):
 
 class FiltersConfig(FFBaseModel):
     # TODO 1 auto = initial; changed or not? make this config-wide approach
-    meteo: dict = None
-    min_max: dict = None
-    window: dict = None
-    quantile: dict = None
-    madhampel: dict = None
-    winter_date_ranges: list[list[str]] = None
-    man_ranges: list[list[str]] = None
+    qc: dict = {}
+    meteo: dict = {}
+    min_max: dict = {}
+    window: dict = {}
+    quantile: dict = {}
+    madhampel: dict = {}
+    winter_date_ranges: list[list[str]] = []
+    man_ranges: list[list[str]] = []
+    
+    @field_validator('qc', 'meteo', 'min_max', 'window', 'quantile', 'madhampel', mode='before')
+    @classmethod
+    def passwords_match(cls, v: any, info: ValidationInfo) -> dict:
+        return v if v is not None else {}
+    
+    @field_validator('winter_date_ranges', 'man_ranges', mode='before')
+    @classmethod
+    def passwords_match(cls, v: any, info: ValidationInfo) -> dict:
+        return v if v is not None else []
+
+
+class IASExportConfig(BaseConfig):
+    out_fname_ver_suffix: str = None
+    split_intervals: Annotated[IasExportIntervals, gen_enum_info(IasExportIntervals)] = None
+
+
+class ExportConfig(BaseConfig):
+    ias: IASExportConfig = IASExportConfig.model_construct()
+
+
+class ImportConfig(BaseConfig):
+    # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
+    input_files: str | list[str] | dict[str | Path, InputFileType] = None
+    
+    eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
+    eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
+    ias: IASImportConfig = IASImportConfig.model_construct()
+    csf: CSFImportConfig = CSFImportConfig.model_construct()
+    
+    import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
+    time_col: str = None
+
+
+class CalcConfig(BaseConfig):
+    # TODO 1 move to ig?
+    has_meteo: bool = None
+    calc_nee: bool = None
+    calc_with_strg: bool = None
+
+
+class InfoConfig(BaseConfig):
+    site_name: str = None
 
 
 # TODO 1 V: yaml should have comments, will loading them from default config work? in annotation? auto gen from source? toml lib?
@@ -88,33 +135,22 @@ class FFConfig(BaseConfig):
     """  True: fast load, just 3 months of data """
     debug: bool = None
     
-    # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
-    input_files: str | list[str] | dict[str | Path, InputFileType] = None
-    # flexible, but too complicated to edit for user?
-    # files: dict[str, InputFileConfig]
+    data_import: ImportConfig = ImportConfig.model_construct()
+    data_export: ExportConfig = ExportConfig.model_construct()
     
-    eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
-    eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
-    ias: IASImportConfig = IASImportConfig.model_construct()
-    csf: CSFImportConfig = CSFImportConfig.model_construct()
+    metadata: InfoConfig = InfoConfig.model_construct()
     
-    import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
-    time_col: str = None
-    
-    # TODO 1 move to ig?
-    has_meteo: bool = None
-    
-    site_name: str = None
- 
-    ias_out_fname_ver_suffix: str = None
-    ias_export_intervals: IasExportIntervals = None
-    
-    qc: dict = None
+    # filters: Annotated[FiltersConfig, BeforeValidator(none_to_default_filters)] = FiltersConfig.model_construct()
     filters: FiltersConfig = FiltersConfig.model_construct()
+    calc: CalcConfig = CalcConfig.model_construct()
     
-    calc_nee: bool = None
-    calc_with_strg: bool = None
     reddyproc: RepConfig = RepConfig.model_construct()
+    
+    @field_validator('filters', mode='before')
+    @classmethod
+    def passwords_match(cls, v: any, info: ValidationInfo) -> dict:
+        return v if v is not None else FiltersConfig.model_construct()
+
 
 
 class RepOutInfo(FFBaseModel):

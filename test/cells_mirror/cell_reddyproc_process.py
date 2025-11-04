@@ -6,7 +6,7 @@ from src.ipynb_globals import *
 
 config.reddyproc = RepConfig(
     # TODO 1 ias: (meeting) ias output level2 must be not filtered; 
-    site_id=config.site_name,
+    site_id=config.metadata.site_name,
     
     is_to_apply_u_star_filtering=True,
     # if default REP cannot detect threshold, this value may be used instead; None to disable

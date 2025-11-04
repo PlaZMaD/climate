@@ -173,7 +173,7 @@ def meteorological_filter(
 
 
 def meteorological_rh_filter(
-        data_in, filters_db_in, config
+        data_in, filters_db_in, cfg_meteo
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
     # #@unroll_filters_db
@@ -199,18 +199,18 @@ def meteorological_rh_filter(
         
         data[f"{col}_rhFilter"] = filter
     
-    if 'RH_max' in config.keys() and 'rh_1_1_1' in data.columns:
-        RH_max = config['RH_max']
+    if 'RH_max' in cfg_meteo.keys() and 'rh_1_1_1' in data.columns:
+        RH_max = cfg_meteo['RH_max']
         data.loc[data['rh_1_1_1'] > RH_max, 'co2_flux_rhFilter'] = 0
         if 'nee' in data.columns:
             data.loc[data['rh_1_1_1'] > RH_max, 'nee_rhFilter'] = 0
         data.loc[data['rh_1_1_1'] > RH_max, 'le_rhFilter'] = 0
-    ff_logger.info(f"meteorological_rh_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"meteorological_rh_filter applied with the next config: \n {cfg_meteo}  \n")
     return data, filters_db
 
 
 def meteorological_night_filter(
-        data_in, filters_db_in, config
+        data_in, filters_db_in, cfg_meteo
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
     # #@unroll_filters_db
@@ -219,8 +219,8 @@ def meteorological_night_filter(
         ff_logger.info(f"meteorological_night_filter not applied, no SWIN found  \n")
         return data_in, filters_db_in
     
-    if not config['use_night_filter']:
-        ff_logger.info(f"Night filter dissabled.")
+    if 'use_night_filter' not in cfg_meteo or not cfg_meteo['use_night_filter']:
+        ff_logger.info(f"Night filter disabled.")
         return data_in, filters_db_in
     
     file_freq = data_in.index.freq
@@ -244,7 +244,7 @@ def meteorological_night_filter(
         data[f"{col}_nightFilter"] = filter
     
     if "nee" in data.columns:
-        data_night_index = data.query(f"swin_1_1_1<10&nee<{config['night_nee_min']}").index
+        data_night_index = data.query(f"swin_1_1_1<10&nee<{cfg_meteo['night_nee_min']}").index
         data.loc[data_night_index, f"nee_nightFilter"] = 0
     
     if "co2_flux" in data.columns:
@@ -252,31 +252,31 @@ def meteorological_night_filter(
         data.loc[data_night_index, f"co2_flux_nightFilter"] = 0
     
     data_night_index = data.query(
-        f"(h<{config['night_h_limits'][0]}|h>{config['night_h_limits'][1]})&swin_1_1_1<10"
+        f"(h<{cfg_meteo['night_h_limits'][0]}|h>{cfg_meteo['night_h_limits'][1]})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"h_nightFilter"] = 0
     
     data_night_index = data.query(
-        f"(h<{config['night_le_limits'][0]}|h>{config['night_le_limits'][1]})&swin_1_1_1<10"
+        f"(h<{cfg_meteo['night_le_limits'][0]}|h>{cfg_meteo['night_le_limits'][1]})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"le_nightFilter"] = 0
     
     # if 'nee' in data.columns:
     #   data_night_index = data.query(f'nee>{config["day_nee_max"]}&swin_1_1_1>=10').index
     #   data.loc[data_night_index, f"nee_nightFilter"] = 0
-    ff_logger.info(f"meteorological_night_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"meteorological_night_filter applied with the next config: \n {cfg_meteo}  \n")
     return data, filters_db
 
 
-def meteorological_day_filter(data_in, filters_db_in, config):  # , file_freq='30T'):
+def meteorological_day_filter(data_in, filters_db_in, cfg_meteo):  # , file_freq='30T'):
     # #@unroll_filters_db
     
     if "swin_1_1_1" not in data_in.columns:
         ff_logger.info(f"meteorological_day_filter not applied, no SWIN found  \n")
         return data_in, filters_db_in
     
-    if not config['use_day_filter']:
-        ff_logger.info(f"Day filter dissabled.")
+    if 'use_day_filter' not in cfg_meteo or not cfg_meteo['use_day_filter']:
+        ff_logger.info(f"Day filter disabled.")
         return data_in, filters_db_in
     
     file_freq = data_in.index.freq
@@ -300,19 +300,19 @@ def meteorological_day_filter(data_in, filters_db_in, config):  # , file_freq='3
         data[f"{col}_dayFilter"] = filter
     
     if 'nee' in data.columns:
-        data_day_index = data.query(f'nee>{config["day_nee_max"]}&swin_1_1_1>={config["day_swin_limit"]}').index
+        data_day_index = data.query(f'nee>{cfg_meteo["day_nee_max"]}&swin_1_1_1>={cfg_meteo["day_swin_limit"]}').index
         data.loc[data_day_index, f"nee_dayFilter"] = 0
-    ff_logger.info(f"meteorological_day_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"meteorological_day_filter applied with the next config: \n {cfg_meteo}  \n")
     return data, filters_db
 
 
 def meteorological_co2ss_filter(
-        data_in, filters_db_in, config
+        data_in, filters_db_in, cfg_meteo
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
     # #@unroll_filters_db
     file_freq = data_in.index.freq
-    if 'CO2SS_min' not in config.keys():
+    if 'CO2SS_min' not in cfg_meteo.keys():
         return data_in, filters_db_in
     
     data = data_in.copy()
@@ -336,22 +336,22 @@ def meteorological_co2ss_filter(
         data[f"{col}_co2ssFilter"] = filter
         
         if 'co2_signal_strength' in data.columns:
-            data.loc[data['co2_signal_strength'] < config['CO2SS_min'], f'{col}_co2ssFilter'] = 0
+            data.loc[data['co2_signal_strength'] < cfg_meteo['CO2SS_min'], f'{col}_co2ssFilter'] = 0
         
         else:
             print("No co2_signal_strength found")
-    ff_logger.info(f"meteorological_co2ss_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"meteorological_co2ss_filter applied with the next config: \n {cfg_meteo}  \n")
     return data, filters_db
 
 
 def meteorological_ch4ss_filter(
-        data_in, filters_db_in, config
+        data_in, filters_db_in, cfg_meteo
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
     # #@unroll_filters_db
     
     file_freq = data_in.index.freq
-    if 'CH4SS_min' not in config.keys():
+    if 'CH4SS_min' not in cfg_meteo.keys():
         return data_in, filters_db_in
     
     data = data_in.copy()
@@ -375,15 +375,15 @@ def meteorological_ch4ss_filter(
         data[f"{col}_ch4ssFilter"] = filter
     
     if 'ch4_signal_strength' in data.columns:
-        data.loc[data['ch4_signal_strength'] < config['CH4SS_min'], 'ch4_flux_ch4ssFilter'] = 0
+        data.loc[data['ch4_signal_strength'] < cfg_meteo['CH4SS_min'], 'ch4_flux_ch4ssFilter'] = 0
     else:
         print("No ch4_signal_strength found")
-    ff_logger.info(f"meteorological_coh4ss_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"meteorological_coh4ss_filter applied with the next config: \n {cfg_meteo}  \n")
     return data, filters_db
 
 
 def meteorological_rain_filter(
-        data_in, filters_db_in, config
+        data_in, filters_db_in, cfg_meteo
         # , file_freq='30T'):#,rain_forward_flag=3, p_rain_limit=.1,  filter_css=True):
 ):
     # #@unroll_filters_db
@@ -408,22 +408,22 @@ def meteorological_rain_filter(
         
         data[f"{col}_rainFilter"] = filter
     
-    if 'p_rain_limit' in config.keys() and 'p_rain_1_1_1' in data.columns:
+    if 'p_rain_limit' in cfg_meteo.keys() and 'p_rain_1_1_1' in data.columns:
         if 'co2_flux' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'co2_flux_rainFilter'] = 0
+            data.loc[data['p_rain_1_1_1'] > cfg_meteo['p_rain_limit'], 'co2_flux_rainFilter'] = 0
         if 'h' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'h_rainFilter'] = 0
+            data.loc[data['p_rain_1_1_1'] > cfg_meteo['p_rain_limit'], 'h_rainFilter'] = 0
         if 'le' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'le_rainFilter'] = 0
+            data.loc[data['p_rain_1_1_1'] > cfg_meteo['p_rain_limit'], 'le_rainFilter'] = 0
         if 'nee' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'nee_rainFilter'] = 0
+            data.loc[data['p_rain_1_1_1'] > cfg_meteo['p_rain_limit'], 'nee_rainFilter'] = 0
         if 'ch4_flux' in data.columns:
-            data.loc[data['p_rain_1_1_1'] > config['p_rain_limit'], 'ch4_flux_rainFilter'] = 0
+            data.loc[data['p_rain_1_1_1'] > cfg_meteo['p_rain_limit'], 'ch4_flux_rainFilter'] = 0
         
-        if 'rain_forward_flag' in config:
-            rain_forward_flag = config['rain_forward_flag']
+        if 'rain_forward_flag' in cfg_meteo:
+            rain_forward_flag = cfg_meteo['rain_forward_flag']
             for i in range(rain_forward_flag):
-                ind = data.loc[data['p_rain_1_1_1'] > config['p_rain_limit']].index.shift(i, freq=file_freq)
+                ind = data.loc[data['p_rain_1_1_1'] > cfg_meteo['p_rain_limit']].index.shift(i, freq=file_freq)
                 ind = ind.intersection(data.index)
                 if len(ind) == 0:
                     continue
@@ -438,7 +438,7 @@ def meteorological_rain_filter(
                 if 'le' in data.columns:
                     data.loc[ind, 'le_rainFilter'] = 0
     
-    ff_logger.info(f"meteorological_rain_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"meteorological_rain_filter applied with the next config: \n {cfg_meteo}  \n")
     return data, filters_db
 
 
@@ -561,16 +561,16 @@ def manual_filter(data_in, filters_db_in, col_name, man_range, value, manual_con
     return data, filters_db
 
 
-def winter_filter(data_in, filters_db_in, config, date_ranges):
+def winter_filter(data_in, filters_db_in, cfg_meteo, date_ranges):
     data = data_in.copy()
     filters_db = filters_db_in.copy()
-    if ('winter_nee_limits' not in config.keys()) and ('winter_ch4_flux_limits' not in config.keys()):
+    if ('winter_nee_limits' not in cfg_meteo.keys()) and ('winter_ch4_flux_limits' not in cfg_meteo.keys()):
         return data, filters_db
     
     printed_flag_start = False
     printed_flag_stop = False
     
-    if 'winter_nee_limits' in config.keys():
+    if 'winter_nee_limits' in cfg_meteo.keys():
         for col in ['nee', 'co2_flux']:
             if col not in data.columns:
                 print(f"No column with name {col}, skipping...")
@@ -606,8 +606,8 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
                     
                     range = pd.date_range(dt_start, dt_stop, freq=data.index.freq)
                     
-                    inds_down = data.loc[range].query(f"{col}<{config['winter_nee_limits'][0]}").index
-                    inds_up = data.loc[range].query(f"{col}>{config['winter_nee_limits'][1]}").index
+                    inds_down = data.loc[range].query(f"{col}<{cfg_meteo['winter_nee_limits'][0]}").index
+                    inds_up = data.loc[range].query(f"{col}>{cfg_meteo['winter_nee_limits'][1]}").index
                     data.loc[inds_up, f"{col}_winterFilter"] = 0
                     data.loc[inds_down, f"{col}_winterFilter"] = 0
             except KeyError:
@@ -619,7 +619,7 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
             else:
                 print("filter already exist but will be overwritten")
     
-    if 'winter_ch4_flux_limits' in config.keys():
+    if 'winter_ch4_flux_limits' in cfg_meteo.keys():
         for col in ['ch4_flux']:
             if col not in data.columns:
                 print(f"No column with name {col}, skipping...")
@@ -656,8 +656,8 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
                     
                     range = pd.date_range(dt_start, dt_stop, freq=data.index.freq)
                     
-                    inds_down = data.loc[range].query(f"{col}<{config['winter_ch4_flux_limits'][0]}").index
-                    inds_up = data.loc[range].query(f"{col}>{config['winter_ch4_flux_limits'][1]}").index
+                    inds_down = data.loc[range].query(f"{col}<{cfg_meteo['winter_ch4_flux_limits'][0]}").index
+                    inds_up = data.loc[range].query(f"{col}>{cfg_meteo['winter_ch4_flux_limits'][1]}").index
                     data.loc[inds_up, f"{col}_winterFilter"] = 0
                     data.loc[inds_down, f"{col}_winterFilter"] = 0
             except KeyError:
@@ -669,5 +669,5 @@ def winter_filter(data_in, filters_db_in, config, date_ranges):
             else:
                 print("filter already exist but will be overwritten")
     
-    ff_logger.info(f"winter_filter applied with the next config: \n {config}  \n Date range: {date_ranges} \n")
+    ff_logger.info(f"winter_filter applied with the next config: \n {cfg_meteo}  \n Date range: {date_ranges} \n")
     return data, filters_db
