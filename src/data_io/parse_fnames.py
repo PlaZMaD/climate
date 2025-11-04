@@ -1,10 +1,7 @@
 import re
 
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 from src.helpers.py_collections import format_dict
-
-
-# DONE refactor: site_name -> site_name, ias_out_version -> ias_out_version
 
 
 def preprocess_fname(fname: str) -> str:
@@ -26,7 +23,7 @@ def try_parse_ias_fname(fname: str):
         msg = (f'Cannot parse ias file name {fname} for site id and version, using defaults. \n'
                f"\t Try to rename file to match 'siteid_YYYY_vNN.ext' pattern, \n"
                f'\t for example, {txt_examples}.')
-        ff_log.warning(msg)
+        ff_logger.warning(msg)
         site_name = None
         ias_out_version = None
     return site_name, ias_out_version
@@ -44,9 +41,9 @@ def try_parse_csf_fname(fname: str):
     if match1:
         site_name = match1.group(1)
     else:
-        ff_log.warning(f'Cannot parse csf file name {fname} for site name, using defaults.\n'
-                       "   Try to rename csf input file to match 'siteid_CSF_YYYY.ext' pattern, \n"
-                       f"  for example, {txt_examples}.")
+        ff_logger.warning(f'Cannot parse csf file name {fname} for site name, using defaults.\n'
+                          "   Try to rename csf input file to match 'siteid_CSF_YYYY.ext' pattern, \n"
+                          f"  for example, {txt_examples}.")
         site_name = 'unknown_site'
     
     ias_out_version = None
@@ -70,10 +67,10 @@ def try_parse_eddypro_fname(fname: str):
         msg = (f'Cannot parse eddypro file name {fname} for site id, using default. \n'
                f"\t Try to rename file to match 'siteid_FO_YYYY.ext' or 'eddy_pro_siteid_YYYY' patterns, \n"
                f'\t for example, {txt_examples}.')
-        ff_log.warning(msg)
+        ff_logger.warning(msg)
         site_name = None
     
-    ff_log.warning('No version is expected in eddypro file name, specify manually in ias_out_version .')
+    ff_logger.warning('No version is expected in eddypro file name, specify manually in ias_out_version .')
     ias_out_version = None
     
     return site_name, ias_out_version

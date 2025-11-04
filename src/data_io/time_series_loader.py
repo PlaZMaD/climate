@@ -8,21 +8,19 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.data_io.data_import_modes import InputFileType
+from src.config.config_types import InputFileType
 from src.data_io.utils.table_loader import load_table_logged
 from src.data_io.utils.time_series_utils import repair_time, detect_datetime_format
-from src.ff_logger import ff_log
-from src.ff_config import FFConfig
+from src.ff_logger import ff_logger
+from src.config.ff_config import FFConfig
 
 
 def preprocess_time_csf(df: pd.DataFrame, src_time_col, try_fmts, tgt_time_col):
     """ Only init time column, no checks or repairs """
     fmt = detect_datetime_format(df[src_time_col], try_fmts)
+    df[tgt_time_col] = pd.to_datetime(df[src_time_col], format=fmt)
     
-    src_time_col_bkp = src_time_col + '_STR'
-    
-    df.rename(columns={'TIMESTAMP': 'TIMESTAMP_STR'}, inplace=True)
-    df[tgt_time_col] = pd.to_datetime(df['TIMESTAMP_STR'], format=fmt)
+    df.rename(columns={src_time_col: src_time_col + '_STR'}, inplace=True)
     return df
 
 
@@ -58,19 +56,20 @@ def preload_time_series(fpath: Path, ftype: InputFileType, config: FFConfig) -> 
     return df
 
 
-def merge_time_series_biomet(df_orig: pd.DataFrame, df_biomet: pd.DataFrame, time_col: str):
+def merge_time_series_biomet(df_orig: pd.DataFrame, df_biomet: pd.DataFrame, time_col: str) -> [pd.DataFrame, bool]:
     """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
     
     df = df_orig.copy()
     same_cols = {col for col in df.columns if col.lower() in df_biomet.columns.str.lower()}
     same_cols = same_cols - {time_col}
     if len(same_cols) > 0:
-        ff_log.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
+        ff_logger.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
         df = df.drop(list(same_cols), axis=1)
 
     df = df.join(df_biomet, how='outer', rsuffix='_meteo')
     df[time_col] = df.index
-    df = repair_time(df, time_col)
+    df = repair_time(df, time_col, fill_gaps=True)
+    
     if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
         print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
         return df, False

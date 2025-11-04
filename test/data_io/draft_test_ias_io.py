@@ -101,7 +101,7 @@ def test_conversion():
 def test_tmp_cols_mathcing():
     from src.data_io.ias_io import COLS_IAS_IMPORT_MAP, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT
     ias_import_cols = list(COLS_IAS_IMPORT_MAP.keys()) + COLS_IAS_TIME + COLS_IAS_UNUSED_NORENAME_IMPORT
-    from src.data_io.ias_error_check import known_columns
+    from src.data_io.ias_data_check import known_columns
     
     def first(s: str):
         if s in COLS_IAS_TIME:

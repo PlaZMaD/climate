@@ -5,24 +5,24 @@ from pathlib import Path
 
 import pytest
 
-from src.data_io.data_import_modes import ImportMode
-from src.ff_config import FFConfig
+from src.config.config_types import ImportMode
+from src.config.ff_config import FFConfig
 from src.ff_logger import init_logging
 
 
-def os_view_path(filename):
+def os_view_path(fpath):
     try:
-        os.startfile(filename)
+        os.startfile(fpath)
     except:
-        subprocess.Popen(['xdg-open', filename])
+        subprocess.Popen(['xdg-open', fpath])
 
 
 @pytest.mark.usefixtures('tmp_path')
 def test_config_io(tmp_path):
     init_logging(level=logging.INFO, fpath=tmp_path / 'log.log', to_stdout=True)
     
-    config = FFConfig.load_or_init(load_path='misc/config_v1.0.2_all_filters_disabled.yaml', 
-                                   default_path=Path('misc/config_v1.0.2_default.yaml'),
+    config = FFConfig.load_or_init(load_path='misc/config_v1.0.2_all_filters_disabled.yaml',
+                                   default_fpath=Path('misc/config_v1.0.2_default.yaml'),
                                    init_debug=False, init_version='1.0.2')
     # config = FFConfig.load_or_init(load_path='', init_debug=False, init_version='1.0')
     
@@ -60,7 +60,7 @@ def test_config_io(tmp_path):
     FFConfig.save(config, tmp_path / 'test_all.yaml')
     
     test_config = FFConfig.load_or_init(tmp_path / 'test_all.yaml',
-                                        default_path=Path('misc/config_v1.0.2_default.yaml'),
+                                        default_fpath=Path('misc/config_v1.0.2_default.yaml'),
                                         init_debug=False, init_version='1.0.2')
     test_config._load_path = None
     

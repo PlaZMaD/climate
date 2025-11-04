@@ -6,9 +6,10 @@ and to separate operations like time series repair or merge years from specific 
 from pathlib import Path
 import pandas as pd
 import numpy as np
+from gettext import gettext as _
 
 from src.helpers.pd_helpers import find_changed_el
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 
 
 def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwargs):
@@ -44,7 +45,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
         raise
     except Exception as e:
         # TODO 2 change any to UnicodeDecodeError, <header err name>?
-        ff_log.debug(f'When reading {fpath}: {e}, attempting other import mode.')
+        ff_logger.debug(f'When reading {fpath}: {e}, attempting other import mode.')
         
         if pd_read_kwargs['skiprows'] is None:
             pd_read_kwargs['skiprows'] = guess_inconsistent_csv_table_start(fpath, **fallback_io_kwargs)
@@ -53,8 +54,6 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
     
     # TODO 2 Excel sometimes saves empty columns into csv: ,,,,,,,; remove them verbose/silent
     return df
-    
-    
 
 
 def load_xls(fpath, **pd_read_kwargs):
@@ -62,7 +61,7 @@ def load_xls(fpath, **pd_read_kwargs):
     data = pd.read_excel(fpath, **pd_read_kwargs)
     if isinstance(data, dict):
         if len(data.values()) > 1:
-            ff_log.error(("Several lists in data file!"))
+            ff_logger.error(_("Several lists in data file!"))
             assert False
         else:
             data = next(iter(data.values()))
@@ -114,11 +113,12 @@ def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.Data
     try:
         data = load_table_from_file(fpath, skiprows, nrows, header_row)
     except Exception as e:
-        ff_log.exception(e)
+        ff_logger.exception(e)
         # raise SystemExit vs
         raise
     
-    ff_log.info(f'File {fpath} loaded.\n')
+    # TODO 1 move to csf
+    ff_logger.info(f'File {fpath} loaded.')
     
     # TODO 3 df.index.freq and df.name: unconventional attrs required for script, probably subclass to solve this    
     

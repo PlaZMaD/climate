@@ -2,10 +2,15 @@
 Module specifically for Google Colab.
 During local runs, all functions here are to be mocked or cancelled.
 """
+from pathlib import Path
 
+from src.ff_logger import ff_logger
+from src.data_io.detect_import import SUPPORTED_FILE_EXTS_LOWER
 from src.helpers.env_helpers import colab_only, ENV
 
 # TODO 3 %autoreload stopped to work in colab, any replacement?
+DEMO_DATA_FILES = {'eddy_pro result_SSB 2023.csv', 'BiometFy4_2023.csv'}
+
 
 if ENV.COLAB:
     from google.colab import output
@@ -79,3 +84,16 @@ async function resize_output() {
 ''')
 get_ipython().events.register('post_run_cell', resize_output)
 """
+
+
+@colab_only
+def colab_xor_demo_files():
+    input_files = list(Path('.').glob('*.*'))
+    supported_input_files = {str(file) for file in input_files if file.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER}
+    if DEMO_DATA_FILES & supported_input_files:
+        if supported_input_files - DEMO_DATA_FILES:
+            ff_logger.info('Both demo data files and user files are found in the input folder. Demo files will be removed.')
+            for fpath in DEMO_DATA_FILES:
+                Path(fpath).unlink(missing_ok=True)
+        else:
+            ff_logger.info('No user files are found in the input folder. Script will be using demo data.')

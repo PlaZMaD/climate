@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated
 
-from src.data_io.data_import_modes import ImportMode, InputFileType
-from src.helpers.config_io import FFBaseModel, BaseConfig
+from src.config.config_types import ImportMode, InputFileType, IasExportIntervals
+from src.config.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
 
 
@@ -15,6 +15,7 @@ class InputFileConfig(FFBaseModel):
     """ generate new timestamps in case of errors """
     repair_time: bool = None
     """ can replace -9999 to np.nan """
+    # TODO 1 config: some options can be None on load, but better not during run; how to deal with it fluently?
     missing_data_codes: list[str | int] = None
     
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
@@ -26,6 +27,14 @@ class InputFileConfig(FFBaseModel):
 class MergedDateTimeFileConfig(InputFileConfig):
     datetime_col: str = None
     try_datetime_formats: str | list[str] = None
+
+
+class IASImportConfig(MergedDateTimeFileConfig):
+    skip_validation: bool = None
+
+
+class CSFImportConfig(MergedDateTimeFileConfig):
+    empty_co2_strg: bool = None
 
 
 class SeparateDateTimeFileConfig(InputFileConfig):
@@ -86,17 +95,19 @@ class FFConfig(BaseConfig):
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
-    ias: InputFileConfig = InputFileConfig.model_construct()
-    csf: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
+    ias: IASImportConfig = IASImportConfig.model_construct()
+    csf: CSFImportConfig = CSFImportConfig.model_construct()
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
     time_col: str = None
     
-    # TODO 1 move to ig
+    # TODO 1 move to ig?
     has_meteo: bool = None
     
     site_name: str = None
-    ias_out_version: str = None
+ 
+    ias_out_fname_ver_suffix: str = None
+    ias_export_intervals: IasExportIntervals = None
     
     qc: dict = None
     filters: FiltersConfig = FiltersConfig.model_construct()
@@ -114,7 +125,9 @@ class RepOutInfo(FFBaseModel):
 
 class FFGlobals(FFBaseModel):
     # not yet clear if to include in user config or not
+    # TODO 2 refactor: to output_dir
     out_dir: Path
+    input_dir: Path
     repo_dir: Path
     
     points_per_day: int = None

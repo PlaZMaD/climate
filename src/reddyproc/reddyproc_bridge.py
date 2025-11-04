@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 from copy import copy
 from pathlib import Path
-from types import SimpleNamespace
 from typing import TextIO
 
 import rpy2.robjects as ro
@@ -9,8 +8,8 @@ from rpy2 import rinterface_lib as rl
 from rpy2.rinterface_lib.sexp import NULLType
 from rpy2.robjects import conversion, default_converter
 
-from src.ff_logger import ff_log
-from src.ff_config import RepConfig, RepOutInfo
+from src.ff_logger import ff_logger
+from src.config.ff_config import RepConfig, RepOutInfo
 
 
 @contextmanager
@@ -64,7 +63,7 @@ def reddyproc_and_postprocess(rep_cfg: RepConfig, repo_dir: Path):
     if changed_config:
         changed_ustar = changed_config.rx2['isToApplyUStarFiltering'][0]
         if changed_ustar != rep_cfg.is_to_apply_u_star_filtering:
-            ff_log.warning('REddyProc fallback on isToApplyUStarFiltering is detected and propagated.')
+            ff_logger.warning('REddyProc fallback on isToApplyUStarFiltering is detected and propagated.')
             rep_cfg.is_to_apply_u_star_filtering = changed_ustar
     
     new_path = draft_log_name.parent / draft_log_name.name.replace(err_prefix, roi.fnames_prefix)

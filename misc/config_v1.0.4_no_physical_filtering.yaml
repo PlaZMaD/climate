@@ -1,4 +1,4 @@
-version: '1.0.2'
+version: '1.0.4'
 debug: false
 input_files: 'auto'
 eddypro_fo:
@@ -16,16 +16,20 @@ eddypro_biomet:
 ias:
     repair_time: true
     missing_data_codes: [-9999]
+    datetime_col: 'TIMESTAMP_START'
+    try_datetime_formats: '%Y%m%d%H%M'
+    skip_validation: false
 csf:
     repair_time: true
     missing_data_codes: [-9999, NAN]
     datetime_col: 'TIMESTAMP'
     try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
-import_mode: 'EDDYPRO_FO_AND_BIOMET'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
+import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
 time_col: 'datetime'
 has_meteo: true
 site_name: 'auto'
-ias_out_version: 'auto'
+ias_out_fname_ver_suffix: 'auto'
+ias_export_intervals: 'YEAR'
 qc:
     # h: 1
     h: 9
@@ -66,53 +70,49 @@ filters:
         # CH4SS_min: 20.0
         CH4SS_min:  9999
     min_max:
-        {}
-        # co2_flux: [-40, 40]
-        # co2_strg: [-20, 20]
-        # h: [-100, 800]
-        # le: [-100, 1000]
-        # u_star: [0, 10]
-        # ta_1_1_1: [-50, 50]
-        # p_1_1_1: [0, 100]
-        # vpd_1_1_1: [0, 50]
-        # rh_1_1_1: [0, 100]
-        # swin_1_1_1: [0, 1200]
-        # ppfd_1_1_1: [0, 2400]
-        # rg_1_1_1: [0, 2400]
-        # ch4_flux: [-10, 10]
-        # nee: [-40, 40]
+        co2_flux: [-40, 40]
+        co2_strg: [-20, 20]
+        h: [-100, 800]
+        le: [-100, 1000]
+        u_star: [0, 10]
+        ta_1_1_1: [-50, 50]
+        p_1_1_1: [0, 100]
+        vpd_1_1_1: [0, 50]
+        rh_1_1_1: [0, 100]
+        swin_1_1_1: [0, 1200]
+        ppfd_1_1_1: [0, 2400]
+        rg_1_1_1: [0, 2400]
+        ch4_flux: [-10, 10]
+        nee: [-40, 40]
     window:
-        {}
-        # co2_flux: {sigmas: 2, window: 10, min_periods: 4}
-        # ch4_flux: {sigmas: 2, window: 10, min_periods: 4}
-        # ta_1_1_1: {sigmas: 4, window: 10, min_periods: 4}
-        # u_star: {sigmas: 4, window: 10, min_periods: 4}
-        # h: {sigmas: 7, window: 10, min_periods: 4}
-        # le: {sigmas: 7, window: 10, min_periods: 4}
-        # rh_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
-        # vpd_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
-        # swin_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
-        # ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
-        # nee: {sigmas: 2, window: 10, min_periods: 4}
+        co2_flux: {sigmas: 2, window: 10, min_periods: 4}
+        ch4_flux: {sigmas: 2, window: 10, min_periods: 4}
+        ta_1_1_1: {sigmas: 4, window: 10, min_periods: 4}
+        u_star: {sigmas: 4, window: 10, min_periods: 4}
+        h: {sigmas: 7, window: 10, min_periods: 4}
+        le: {sigmas: 7, window: 10, min_periods: 4}
+        rh_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
+        vpd_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
+        swin_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
+        ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
+        nee: {sigmas: 2, window: 10, min_periods: 4}
     quantile:
-        # co2_flux: [0.01, 0.99]
-        # ch4_flux: [0.01, 0.99]
-        # co2_strg: [0.01, 0.99]
-        co2_strg: [0.0, 1.0]
-        # nee: [0.01, 0.99]
+        co2_flux: [0.01, 0.99]
+        ch4_flux: [0.01, 0.99]
+        co2_strg: [0.01, 0.99]
+        nee: [0.01, 0.99]
     madhampel:
-        {}
-        # co2_flux: {z: 5.5, hampel_window: 10}
-        # ch4_flux: {z: 5.5, hampel_window: 10}
-        # le: {z: 5.5, hampel_window: 10}
-        # h: {z: 5.5, hampel_window: 10}
-        # co2_strg: {z: 5.5, hampel_window: 10}
-        # ta_1_1_1: {z: 5.5, hampel_window: 10}
-        # rh_1_1_1: {z: 5.5, hampel_window: 10}
-        # vpd_1_1_1: {z: 5.5, hampel_window: 10}
-        # swin_1_1_1: {z: 8.0, hampel_window: 10}
-        # ppfd_1_1_1: {z: 8.0, hampel_window: 10}
-        # nee: {z: 5.5, hampel_window: 10}
+        co2_flux: {z: 5.5, hampel_window: 10}
+        ch4_flux: {z: 5.5, hampel_window: 10}
+        le: {z: 5.5, hampel_window: 10}
+        h: {z: 5.5, hampel_window: 10}
+        co2_strg: {z: 5.5, hampel_window: 10}
+        ta_1_1_1: {z: 5.5, hampel_window: 10}
+        rh_1_1_1: {z: 5.5, hampel_window: 10}
+        vpd_1_1_1: {z: 5.5, hampel_window: 10}
+        swin_1_1_1: {z: 8.0, hampel_window: 10}
+        ppfd_1_1_1: {z: 8.0, hampel_window: 10}
+        nee: {z: 5.5, hampel_window: 10}
     winter_date_ranges:
         []
         # - [01.01.2023 00:00, 26.03.2023 00:00]
@@ -135,7 +135,7 @@ reddyproc:
     longitude: 32.6
     timezone: 3.0
     temperature_data_variable: 'Tair'
-    site_id: 'tv_fy4'
+    site_id: ''
     u_star_method: 'RTw'
     is_to_apply_gap_filling: true
     input_file: ''

@@ -3,60 +3,98 @@
 import numpy as np
 import pandas as pd
 
-from src.ff_logger import ff_log
+from src.ff_logger import ff_logger
 from src.helpers.py_collections import ensure_list, format_dict
+
+# DONE repair time also repairs file gaps
+
+MIN_DATETIME_ROWS = 12
+
+
+def format_year_interval(from_year: int, to_year: int):
+    # 2022, 2022->2022 
+    # 2023, 2025 -> 23-25
+    if from_year == to_year:
+        return f'from_year'
+    else:
+        return f'{from_year % 100}-{to_year % 100}'
 
 
 def get_freq(df, time_col):
     """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
     
-    try_max = 100
-    try_ind = 0
-    t_shift = 5
-    start = 1
+    max_search_len = 100
+    window_sz = 5
+    start_offset = 1
+    n_windows = min(max_search_len, len(df) - start_offset) // window_sz
+    
     deltas = df[time_col] - df[time_col].shift(1)
-    while try_ind < try_max:
-        del_arr = deltas.iloc[start + try_ind * t_shift: start + try_ind * t_shift + t_shift].values
-        if not np.all(del_arr == del_arr[0]) and del_arr[0] is not None:
-            try_ind = try_ind + 1
-            continue
-        else:
-            return del_arr[0]
+    for window_idx in range(0, n_windows):
+        ws = start_offset + window_idx * window_sz
+        window_deltas = deltas[ws: ws + window_sz].values
+        
+        freq_guess = window_deltas[0]
+        if freq_guess and np.all(window_deltas == freq_guess):
+            return freq_guess
+    raise Exception('Unexpected or unordered time column contents: cannot detect frequency.')
 
 
-def repair_time(df, time_col):
-    """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
-
+def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
+    """ 
+    source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
+    df.index could be both pd.RangeIndex or pd.DatetimeIndex (if converted previously) 
+    """
+    
     # TODO 3 more transparent rework could be handy:
-    #  with support of repair=False and separation of checks, repairs, and standard routines E: ok
+    # with support of repair=False and separation of checks, repairs, and standard routines E: ok
+     
+    if df[time_col].size < MIN_DATETIME_ROWS:
+        raise Exception(f'Need at least {MIN_DATETIME_ROWS} rows in data for time repair.')
     
     freq = get_freq(df, time_col)
+    # freq.astype('timedelta64[h]')
+    
     df = df.set_index(time_col, drop=False)
     tmp_index = df.index.copy()
     df = df[~df.index.duplicated(keep='first')]
     
     if not tmp_index.equals(df.index):
-        print("Duplicated indexes! check lines:", tmp_index[tmp_index.duplicated() == True])
+        ff_logger.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
+
+    # TODO 1 QOA test: shouldn't start/end time errors be not allowed at all?
+    # can be optimised, also what if years are reversed?
+    coerced_index: pd.Series = pd.to_datetime(df[time_col], errors='coerce')    
+    valid_index = coerced_index.dropna()
     
-    start = 0
-    stop = -1
-    while True:
-        try:
-            pd.to_datetime(df[time_col].iloc[start])
-            break
-        except:
-            start = start + 1
-            continue
-    while True:
-        try:
-            pd.to_datetime(df[time_col].iloc[stop])
-            break
-        except:
-            stop = stop - 1
-            continue
-    df_fixed = pd.DataFrame(index=pd.date_range(start=df[time_col].iloc[start], end=df[time_col].iloc[stop],
-                                                freq=pd.to_timedelta(freq)))
+    index_start = valid_index.min()
+    first_index = valid_index.iloc[0]
+    if first_index != index_start:
+        ff_logger.warning(f'First time entry {first_index} is not the earliest {index_start}. Using the earliest. Time order is incorrect.')
+
+    index_end = valid_index.max()
+    last_index = valid_index.iloc[-1]
+    if last_index != index_end:
+        ff_logger.warning(f'Last time entry {last_index} is not the oldest {index_end}. Using the oldest. Time order is incorrect.')
+            
+    index_rebuild = pd.date_range(start=index_start, end=index_end, freq=pd.to_timedelta(freq))  
+    abnormal_values = valid_index.index.difference(index_rebuild)
+    
+    if len(abnormal_values) > 1:
+        raise Exception(f'Time index contains irregular values not fitting to frequency: {abnormal_values}.')
+    elif len(abnormal_values) == 1:
+        ff_logger.warning(f'Time index contains irregular value not matching to frequency: {abnormal_values}. Value excluded.')
+
+    if not fill_gaps:
+        index_rebuild = index_rebuild.intersection(valid_index)
+            
+    df_fixed = pd.DataFrame(index=index_rebuild)
     df_fixed = df_fixed.join(df, how='left')
+    
+    assert isinstance(df_fixed.index, pd.DatetimeIndex)
+    idx = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
+    assert idx.all()
+    df_fixed[time_col] = df_fixed.index
+    
     return df_fixed
 
 
@@ -94,45 +132,48 @@ def prepare_time_series_df(df: pd.DataFrame, time_col, repair_time, target_freq)
 
 def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
     """ 
-    Attempts to detect datetime format on df column. 
-    If multiple matches fit, this is not considered as correct result. 
+    Attempts to detect datetime format on df column.
+    Skips detection if only one guess is provided. 
+    Multiple matches are not considered as correct result.
+    Required as separate function for now due because consequently passed to the library.
     """
-    # TODO 4 raise in wrapper, not here
     
     guesses = ensure_list(guesses)
     if len(guesses) == 1:
         fmt = guesses[0]
-        ff_log.info(f'Using datetime format {fmt}')
+        ff_logger.info(f'Using datetime format {fmt}')
         return fmt
     
-    rows = len(col)
-    if rows < 100:
-        raise Exception(f'Cannot detect datetime format based on less than 100 rows. Rows provided: {rows}')
+    if col.size < MIN_DATETIME_ROWS:
+        raise Exception(f'Need at least {MIN_DATETIME_ROWS} rows in data for time format detection.')
     
-    test_chunk = col[0:10]
+    start_chunk = col[: MIN_DATETIME_ROWS]
+    end_chunk = col[-MIN_DATETIME_ROWS:]
     
     ok_formats = []
     for guess in guesses:
         try:
-            pd.to_datetime(test_chunk, format=guess)
+            pd.to_datetime(start_chunk, format=guess)
+            pd.to_datetime(end_chunk, format=guess)
+            pd.to_datetime(col, format=guess)
+            ok_formats.append(guess)
         except ValueError:
             continue
-        ok_formats.append(guess)
     
     if len(ok_formats) == 0:
         raise Exception(f'None of date or time formats worked, check file contents. Formats were {guesses}, '
-                        f'Trying to apply them to column data: \n{test_chunk}')
+                        f'Trying to apply them to column data: \n{start_chunk}')
     elif len(ok_formats) > 1:
         raise Exception(f'Multiple date or time formats worked, remove excessive. Formats were {guesses}, '
-                        f'Trying to apply them to column data: \n{test_chunk}')
+                        f'Trying to apply them to column data: \n{start_chunk}')
     else:
         if len(guesses) > 1:
-            ff_log.info(f'Detected datetime format {ok_formats[0]}')
+            ff_logger.info(f'Detected datetime format {ok_formats[0]}')
         return ok_formats[0]
 
 
 def datetime_parser(df: pd.DataFrame, datetime_col: str, datetime_fmt_guesses: str | list[str]) -> pd.Series:
-    """ Parses datetime column into pd.datetime column"""    
+    """ Parses datetime column into pd.datetime column"""
     assert datetime_col is not None
     
     datetime_format = detect_datetime_format(df[datetime_col], datetime_fmt_guesses)
@@ -146,15 +187,15 @@ def date_time_parser(df: pd.DataFrame,
                      date_col: str, date_fmt_guesses: str | list[str]) -> pd.Series:
     """ Parses separate date and time columns into pd.datetime column """
     assert time_col is not None and date_col is not None
-       
+    
     date = df[date_col].astype(str)
     date_format = detect_datetime_format(date, date_fmt_guesses)
     time = df[time_col].astype(str)
     time_format = detect_datetime_format(time, time_fmt_guesses)
     
     tmp_datetime = date + " " + time
-    res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")    
-
+    res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")
+    
     return res
 
 
@@ -162,24 +203,26 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     """
     dfs: list of (name, df) from the highest intersection priority to the lowest
     merge is done by time_col from each df
-    returns merged time series or None if failure 
+    returns merged time series or None if failure
+    should not repair time gaps after merge, it's separate operation 
     """
     # TODO 1 ensure cols are renamed (to script name, .columns.str.lower()) before merge
-    # TODO 1 ensure time is repaired (index.freq) before merge
+
     if len(named_dfs) == 0:
         return None
     elif len(named_dfs) == 1:
-        return list(named_dfs.values())[0]    
-
-    # each df must have two new attributes: .name and .index.freq
+        return list(named_dfs.values())[0]
+        
+        # each df must have two new attributes: .name and .index.freq
     named_freqs = {name: df.index.freq for name, df in named_dfs.items()}
     freqs = np.array(list(named_freqs.values()))
     if not np.all(freqs == freqs[0]):
-        raise Exception(f'Aborting, different freqs in data files: {format_dict(named_freqs)}')
-    
+        raise Exception('Different freqs in data files: \n'
+                        f'{format_dict(named_freqs)}. \n'
+                        'Import canceled.')
     dfs = []
     for name, df in named_dfs.items():
-        for col in df.columns: 
+        for col in df.columns:
             df[col].attrs['source_file'] = name
         dfs += [df]
     
@@ -193,18 +236,13 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
         df = pd.concat(dfs, axis=0)
         df[time_col] = df.index
         # df = df.sort_index()
-        df = repair_time(df, time_col)
-
-    # TODO 1 ensure no datetime gaps?
-    # if to use fo and biomet from different years, this will fail on rep export; ensure this is detected earlier
-    assert df[time_col].isna().sum() == 0
-
+    
     '''
     if df[df_biomet.columns[-1]].isna().sum() == len(df.index):
         print("Bad meteo df range, skipping! Setting config_meteo ['use_biomet']=False")
         has_meteo = False
     '''
-        
+    
     '''
     cols = pd.Index([])
     for name, df in dfs:        
@@ -220,7 +258,7 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
             new_cols = new_cols - cols
         cols += new_cols
     '''
-
+    
     ''' horizontal
     df = df_csf.join(df_biomet, how='outer', rsuffix='_meteo')
     df[time_col] = df.index

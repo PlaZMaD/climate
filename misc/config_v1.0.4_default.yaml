@@ -1,5 +1,5 @@
-# version on which config was created 
-version: '1.0.2'
+# do not change
+version: '1.0.4'
 # fast mode loading just a few months of data
 debug: false
 # files to read data tables:
@@ -29,6 +29,9 @@ eddypro_biomet:
 ias:
     repair_time: true
     missing_data_codes: [-9999]
+    datetime_col: 'TIMESTAMP_START'
+    try_datetime_formats: '%Y%m%d%H%M'
+    skip_validation: false
 csf:
     repair_time: true
     missing_data_codes: [-9999, NAN]
@@ -38,7 +41,7 @@ csf:
     try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
 # one of supported import modes
 # 'AUTO' or one of: 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET'
-import_mode: 'EDDYPRO_FO_AND_BIOMET'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
+import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF_AND_BIOMET, AUTO
 # column name for datetime with will be used after import
 time_col: 'datetime'
 # enables processing steps which requires meteo columns
@@ -46,7 +49,8 @@ has_meteo: true
 # station name, keep 'auto' to try to detect name from file name
 site_name: 'auto'
 # version suffix used only in the ias output filename, 'auto' will try to detect suffix from ias input file name
-ias_out_version: 'auto'
+ias_out_fname_ver_suffix: 'auto'
+ias_export_intervals: 'YEAR'
 # filter data by quality flag
 qc:
     h: 1
@@ -145,7 +149,7 @@ reddyproc:
     # set column name of air or soil temperature for gapfilling
     temperature_data_variable: 'Tair'
     # do not change (other options are only for information and completeness)
-    site_id: 'tv_fy4'
+    site_id: ''
     u_star_method: 'RTw'
     is_to_apply_gap_filling: true
     input_file: ''

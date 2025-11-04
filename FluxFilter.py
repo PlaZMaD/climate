@@ -140,9 +140,10 @@ import bglabutils.basic as bg
 # import bglabutils.boosting as bb
 # import textwrap
 
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
-from src.ff_config import FFConfig, RepConfig, FFGlobals, InputFileType
-from src.ff_logger import init_logging, ff_log
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, colab_xor_demo_files
+from src.config.ff_config import FFConfig, RepConfig, FFGlobals
+from src.config.config_types import IasExportIntervals
+from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
@@ -150,7 +151,7 @@ from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import import_data
 from src.data_io.detect_import import try_auto_detect_input_files
 from src.data_io.ias_io import export_ias
-from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function
+from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
@@ -158,7 +159,7 @@ from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly,
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
-gl = FFGlobals(out_dir=Path('output'), repo_dir=repo_dir)
+gl = FFGlobals(out_dir=Path('output'), input_dir=Path('.'), repo_dir=repo_dir)
 ensure_empty_dir(gl.out_dir)
 
 colab_no_scroll()
@@ -205,6 +206,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
 # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
 
+colab_xor_demo_files()
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 
@@ -251,8 +253,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_path=gl.repo_dir / 'misc/config_v1.0.2_default.yaml',
-                               init_debug=False, init_version='1.0.2')
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.4_default.yaml',
+                               init_debug=False, init_version='1.0.4')
 
 if not config.from_file:
     config.input_files = 'auto'
@@ -278,8 +280,12 @@ if not config.from_file:
     config.csf.datetime_col = 'TIMESTAMP'
     config.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
     config.csf.repair_time = True
+    config.csf.empty_co2_strg = True
     
+    config.ias.skip_validation = False
     config.ias.missing_data_codes = [-9999]
+    config.ias.datetime_col = 'TIMESTAMP_START'
+    config.ias.try_datetime_formats = '%Y%m%d%H%M'
     config.ias.repair_time = True
 # %% [markdown] id="DtxFTNnEfENz"
 # ## Выбор колонок для графиков и фильтраций
@@ -318,7 +324,7 @@ if not config.from_file:
     
     # Индекс станции для названий выходных файлов, рисунков
     config.site_name = 'auto'
-    config.ias_out_version = 'auto'
+    config.ias_out_fname_ver_suffix = 'auto'
 
 # %% [markdown] id="5MK90gyzQryZ"
 # Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные со значением флага больше порога будут исключены.
@@ -465,8 +471,8 @@ if not config.from_file:
 # # Импорт и проверка данных
 
 # %% id="Xw5TapK10EhR"
-config.input_files, config.import_mode, config.site_name, config.ias_out_version, config.has_meteo = try_auto_detect_input_files(
-    config)
+res = try_auto_detect_input_files(config, gl)
+config.input_files, config.import_mode, config.site_name, config.ias_out_fname_ver_suffix, config.has_meteo = res 
 data, time_col, meteo_cols, data_freq, config.has_meteo = import_data(config)
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
@@ -494,7 +500,7 @@ for col in cols_2_check:
         continue
     error_positions = data[col].fillna(0).apply(pd.to_numeric, errors='coerce').isna()
     if error_positions.any():
-        ff_log.error(
+        ff_logger.error(
             f"""Check input files for {col} column near:\n {error_positions[error_positions == True].index.strftime('%d-%m-%Y %H:%M').values} in {'biomet' if len(meteo_cols) > 0 and col in meteo_cols else 'data'} file"""
         )
         data_type_error_flag = True
@@ -628,7 +634,7 @@ for col in ['ch4_signal_strength_7700_mean', 'CH4SS'.lower()]:
 
 if not config.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
-    ff_log.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
+    ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
@@ -661,7 +667,7 @@ if config.calc_nee and 'co2_strg' in data.columns:
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
 if not config.from_file:
     config.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
-ff_log.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
+ff_logger.info(f"config.calc_with_strg is set to {config.calc_with_strg}")
 # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
 # %% id="ueuvsNxYdtgs"
@@ -842,9 +848,9 @@ for key, filters in filters_db.items():
             # print(filter_name, filtered_amount, len(pl_data.index) - old_val)
 fdf_df = pd.DataFrame(all_filters)
 
-ff_log.info("Какая часть данных от общего количества (в %) была отфильтрована:")
+ff_logger.info("Какая часть данных от общего количества (в %) была отфильтрована:")
 df_stats = fdf_df.iloc[1] / len(plot_data) * 100
-ff_log.info('\n' + df_stats.to_string())
+ff_logger.info('\n' + df_stats.to_string())
 
 # %% [markdown] id="gA_IPavss0bq"
 # # Отрисовка рядов
@@ -940,14 +946,17 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
 
 # %% id="yaLoIQmtzaYd"
+if not config.from_file:
+    config.ias_export_intervals = IasExportIntervals.YEAR 
+
 if config.has_meteo:
     ias_df: pd.DataFrame = plot_data.copy()
     for column, filter in filters_db.items():
         filter = get_column_filter(ias_df, filters_db, column)
         ias_df.loc[~filter.astype(bool), column] = np.nan
     
-    export_ias(gl.out_dir, config.site_name, config.ias_out_version, ias_df, time_col=time_col,
-               data_swin_1_1_1=data['swin_1_1_1'])
+    export_ias(gl.out_dir, config.site_name, config.ias_out_fname_ver_suffix, config.ias_export_intervals, 
+               ias_df, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
 
 # %% [markdown] id="Pm8hiMrb_wRW"
 # ## Файл для FAT
@@ -986,7 +995,7 @@ if 'time' in plot_data.columns:
 
 all_fpath = gl.out_dir / 'output_all.csv'
 plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
-ff_log.info(f"Basic file saved to {all_fpath}")
+ff_logger.info(f"Basic file saved to {all_fpath}")
 
 # %% [markdown] id="-MSrgUD0-19l"
 # ## Файл-резюме результатов фильтрации
@@ -1065,7 +1074,7 @@ basic_df = basic_df.fillna(-9999)
 
 summary_fpath = gl.out_dir / 'output_summary.csv'
 basic_df.to_csv(summary_fpath, index=None)
-ff_log.info(f"New basic file saved to {summary_fpath}")
+ff_logger.info(f"New basic file saved to {summary_fpath}")
 # %% [markdown] id="775a473e"
 # # Обработка инструментом REddyProc
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
@@ -1254,7 +1263,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 # Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
 
 # %% id="E4rv4ucOX8Yz"
-FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml')
+FFConfig.save(config, gl.out_dir / f'config_{config.site_name}.yaml', add_comments=True)
 
 arc_path = gl.out_dir / 'FluxFilter_output.zip'
 create_archive(arc_path=arc_path, dirs=[gl.out_dir, config.reddyproc.output_dir], top_dir=gl.out_dir,

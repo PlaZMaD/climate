@@ -6,8 +6,8 @@ from IPython.core.display import Markdown
 from IPython.display import display
 from PIL import Image
 
-from src.ff_logger import ff_log
-from src.ff_config import RepConfig
+from src.ff_logger import ff_logger
+from src.config.ff_config import RepConfig
 from src.helpers.image_tools import crop_monocolor_borders, Direction, grid_images, remove_strip, \
     ungrid_image
 from src.helpers.io_helpers import tag_to_fpath
@@ -31,7 +31,7 @@ class RepImgTagHandler:
     def tag_to_img_fpath(self, tag, must_exist=True, warn_if_missing=True):
         fpath = tag_to_fpath(self.main_path, self.loc_prefix, tag, self.img_ext, must_exist)
         if warn_if_missing and not fpath:
-            ff_log.warning(f"Expected image is missing: {tag}")
+            ff_logger.warning(f"Expected image is missing: {tag}")
         
         return fpath
     
@@ -74,7 +74,7 @@ class RepImgTagHandler:
         def detect_prefix(s, prefixes):
             s = tag.partition('_')[0]
             if s not in prefixes:
-                ff_log.warning('Unexpected file name start: ' + s)
+                ff_logger.warning('Unexpected file name start: ' + s)
             return s
         
         prefixes_list = list(vars(EddyPrefixes).values())
@@ -107,17 +107,17 @@ class EddyImgPostProcess:
         self.raw_img_duplicates: list[Path] = []
     
     def ungrid_heatmap(self, img):
-        tile_count = self.total_years + 1
-        row_count = (tile_count - 1) // 3 + 1
-        tiles_2d = ungrid_image(img, nx=3, ny=row_count)
-        assert len(tiles_2d) == row_count and len(tiles_2d[0]) == 3
+        n_tiles = self.total_years + 1
+        nrows = (n_tiles - 1) // 3 + 1
+        tiles_2d = ungrid_image(img, nx=3, ny=nrows)
+        assert len(tiles_2d) == nrows and len(tiles_2d[0]) == 3
         
         tiles_ordered = [elem for row in tiles_2d for elem in row]
-        legend_tile = tiles_ordered[tile_count - 1]
+        legend_tile = tiles_ordered[n_tiles - 1]
         
-        year_tiles_stacked_vertically = grid_images(tiles_ordered[0: tile_count - 1], max_horiz=1)
+        year_tiles_stacked_vertically = grid_images(tiles_ordered[0: n_tiles - 1], max_horiz=1)
         # just a copy of same legend
-        legend_tiles_stacked_vertically = grid_images([legend_tile] * (tile_count - 1), max_horiz=1)
+        legend_tiles_stacked_vertically = grid_images([legend_tile] * (n_tiles - 1), max_horiz=1)
         return year_tiles_stacked_vertically, legend_tiles_stacked_vertically
     
     @staticmethod
@@ -252,7 +252,7 @@ class RepOutputHandler:
             else:
                 check = [ct(tag, prefix=prefix, suffix=None) for prefix in list(vars(EddyPrefixes).values())]
                 if len(check) != 1:
-                    ff_log.warning(f'Unrecognized tag: {tag}')
+                    ff_logger.warning(f'Unrecognized tag: {tag}')
     
     def on_missing_file(self, e):
         print(str(e))

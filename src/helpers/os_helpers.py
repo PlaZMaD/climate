@@ -8,7 +8,6 @@
 """
 
 import logging
-import warnings
 from os import chdir
 from pathlib import Path
 from sys import path as sys_paths
