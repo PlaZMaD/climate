@@ -643,6 +643,8 @@ if not config.calc.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
     ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
+df_ias_export = data.copy()
+
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
 
@@ -958,14 +960,9 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 if not config.from_file:
     config.data_export.ias.split_intervals = IasExportIntervals.YEAR 
 
-if config.calc.has_meteo:
-    ias_df: pd.DataFrame = plot_data.copy()
-    for column, filter in filters_db.items():
-        filter = get_column_filter(ias_df, filters_db, column)
-        ias_df.loc[~filter.astype(bool), column] = np.nan
-    
+if config.calc.has_meteo:    
     export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.data_export.ias.split_intervals,
-               ias_df, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
+               df_ias_export, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
 
 # %% [markdown] id="Pm8hiMrb_wRW"
 # ## Файл для FAT
