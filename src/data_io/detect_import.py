@@ -149,8 +149,8 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
     
     if len(paths) > 1:
         paths_info = ensure_list(paths, transform_func=lambda x: str(Path(x).name))
-        ff_logger.warning(f'Multiple file names can be used to auto detect site name: {paths_info}, \n'
-                          'Using the first one or specify manually in the options.')
+        ff_logger.info(f'Multiple file names can be used to auto detect site name: {paths_info}, \n'
+                       'Using the first one or specify manually in the options.')
     
     if len(paths) >= 1:
         ias_site_name_auto, ias_out_version_auto = parser(paths[0].name)
@@ -194,7 +194,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     auto_site_name, auto_ias_ver = detect_fname_options(cfg_imp.input_files, cfg_imp.import_mode)
     
     cfg_meta.site_name = change_if_auto(cfg_meta.site_name, auto_site_name,
-                                       ok_msg=f'Auto detected site name: {auto_site_name}')
+                                        ok_msg=f'Auto detected site name: {auto_site_name}')
     cfg_exp.ias.out_fname_ver_suffix = change_if_auto(cfg_exp.ias.out_fname_ver_suffix, auto_ias_ver,
                                                       ok_msg=f'Auto detected ias version: {auto_ias_ver}')
     

@@ -152,7 +152,7 @@ from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import import_data
 from src.data_io.detect_import import try_auto_detect_input_files
 from src.data_io.ias_io import export_ias
-from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
+from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function  # noqa: F401
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
@@ -169,7 +169,7 @@ setup_plotly(gl.out_dir)
 init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
-# To tweak any function directly in Colab: 1) run all the cells above 2) run only once line below
+# To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line 
 # ipython_edit_function(meteorological_night_filter)
 
 
