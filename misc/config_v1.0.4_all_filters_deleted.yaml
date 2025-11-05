@@ -29,7 +29,9 @@ data_import:
     import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
     time_col: 'datetime'
 data_export:
-    ias: {out_fname_ver_suffix: auto, split_intervals: YEAR}
+    ias:
+        out_fname_ver_suffix: 'auto'
+        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
 metadata:
     site_name: 'auto'
 filters:

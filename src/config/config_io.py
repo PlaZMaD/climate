@@ -12,6 +12,7 @@ from src.helpers.io_helpers import find_unique_file
 # comments io support, import defaults, diff export, time conversion function vs safety 
 
 METADATA_KEY = '_meta_description'
+BASEMODEL_KEY = '_is_basemodel'
 CONFIG_GLOB = '*config*.yaml'
 
 
@@ -21,6 +22,8 @@ def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
         meta = d[METADATA_KEY]
         del d[METADATA_KEY]
         for k, v in meta.items():
+            if k == BASEMODEL_KEY:
+                continue
             eol = []  # or smth else
             if 'desc' in v:
                 eol += [v['desc']]
@@ -29,18 +32,21 @@ def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
     return d
 
 
-def config_to_yaml(x, path, max_len=5):
+def config_to_yaml(x, path, basedepth):
     """ Nested metadata processing and improves yaml items wrapping """
     
     if isinstance(x, dict):
         res = dict_to_yaml_with_comments(x)
+        is_basemodel = METADATA_KEY in x and BASEMODEL_KEY in x[METADATA_KEY]
+        if is_basemodel:
+            basedepth = 0
         
         v_types = {type(v) for v in res.values()}
-        if v_types <= {str, int, float} and len(path) > 1:
+        if basedepth > 0 and v_types <= {str, int, float} and len(path) > 1:
             res.fa.set_flow_style()
         else:
             for k, v in res.items():
-                res[k] = config_to_yaml(v, path + [str(k)], max_len)
+                res[k] = config_to_yaml(v, path + [str(k)], basedepth + 1)
         return res
     
     if isinstance(x, list):
@@ -49,7 +55,7 @@ def config_to_yaml(x, path, max_len=5):
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:
-            res = [config_to_yaml(i, path + [str(x)], max_len) for i in x]
+            res = [config_to_yaml(i, path + [str(x)], basedepth + 1) for i in x]
         return res
 
     if isinstance(x, str):
@@ -90,6 +96,7 @@ class AnnotatedBaseModel(BaseModel):
         
         assert METADATA_KEY not in self
         config_meta = {k: v.metadata for k, v in self.model_fields.items() if v.metadata}
+        config_meta[BASEMODEL_KEY] = True
         if len(config_meta) > 0:
             res[METADATA_KEY] = config_meta
         return res
@@ -133,7 +140,7 @@ class BaseConfig(FFBaseModel):
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path, add_comments: bool):
         save_dict = config.model_dump(mode='json')                
-        config_yaml = config_to_yaml(save_dict, path=[])
+        config_yaml = config_to_yaml(save_dict, path=[], basedepth=0)
         
         if add_comments:
             default_config = cls.load_from_yaml(config.default_fpath, return_model=False)        

@@ -46,9 +46,11 @@ data_import:
     # column name for datetime with will be used after import
     time_col: 'datetime'
 data_export:
-    # version suffix used only in the ias output filename, 'auto' will try to detect suffix from ias input file name
-    # split_intervals: 'YEAR'
-    ias: {out_fname_ver_suffix: auto, split_intervals: YEAR}
+    ias:
+        # version suffix used only in the ias output filename, 'auto' will try to detect suffix from ias input file name
+        out_fname_ver_suffix: 'auto'
+        # export IAS to multiple files
+        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
 metadata:
     # station name, keep 'auto' to try to detect name from file name
     site_name: 'auto'
