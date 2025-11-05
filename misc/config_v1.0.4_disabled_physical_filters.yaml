@@ -1,0 +1,178 @@
+# технические настройки (только для опытных пользователей)
+version: '1.0.4'
+# отладочный режим (загружается только несколько месяцев данных)
+debug: false
+data_import:
+    # входные файлы: авто определение, либо список названий входных файлов, либо словарь {название: формат}
+    # возможные форматы: 'EDDYPRO_FO', 'EDDYPRO_BIOMET', 'CSF', 'IAS'
+    # 'auto' или ['BiometFy4.csv', ...] или {'eddy_pro tv_fy4 2023.csv': 'EDDYPRO_FO', ...}
+    input_files: 'auto'
+    # опции для eddypro_fo, eddypro_biomet, ias, csf:
+    # repair_time: проверка пропусков и монотонности в колонках даты-времени, попытка исправления при ошибках
+    # missing_data_codes: замена -9999 и/или других значений на np.nan
+    eddypro_fo:
+        repair_time: true
+        missing_data_codes: [-9999]
+        # имя столбца с временем в файлах eddypro-fo
+        time_col: 'time'
+        # предполагаемые форматы времени (оставьте только один, например ['%H:%M:%S'], чтобы задать вручную)
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        # имя столбца с датой в файлах eddypro-fo
+        date_col: 'date'
+        # предполагаемые форматы даты (оставьте только один, например ['%H:%M:%S'], чтобы задать вручную)
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    eddypro_biomet:
+        repair_time: true
+        missing_data_codes: [-9999]
+        # имя столбца с датой и временем (в файлах eddypro-biomet, ias, csf)
+        datetime_col: 'TIMESTAMP_1'
+        # предполагаемые составные форматы даты и времени
+        try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    ias:
+        repair_time: true
+        missing_data_codes: [-9999]
+        datetime_col: 'TIMESTAMP_START'
+        try_datetime_formats: '%Y%m%d%H%M'
+        # отключение дополнительных проверок корректности ИАС файлов
+        skip_validation: false
+    csf:
+        repair_time: true
+        missing_data_codes: [-9999, NAN]
+        datetime_col: 'TIMESTAMP'
+        try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
+        # генерация пустой колонки co2_strg, в случае ее отсутствия в CSF
+        empty_co2_strg: true
+    # автоматический или фиксированный режим импорта
+    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    # имя столбца даты-времени, используемое после импорта
+    time_col: 'datetime'
+data_export:
+    ias:
+        # версия в названиях выходных ИАС, 'auto' для попытки его чтения из имени входного файла ИАС
+        out_fname_ver_suffix: 'auto'
+        # экспорт ИАС в единый файл, либо по файлу на каждый год, либо по файлу на каждый месяц
+        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
+metadata:
+    # название станции, которое используется в названиях выходных файлов
+    # при 'auto' поддерживается определение из названий входных файлов (к примеру, шаблон для ИАС 'sitename_YYYY_vNN.ext')
+    site_name: 'auto'
+filters:
+    # фильтр по порогу флага качества {фильтруемый столбец: макс. значение флага, ...}
+    qc: # {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
+    # фильтрация данных по метеоусловиям
+    meteo:
+        # применяется к ['co2_flux', 'nee'] 
+        # CO2SS_min: 80.0
+        # лимит осадков и флаг применяются к ['co2_flux', 'h', 'le', 'nee', 'ch4_flux']
+        # p_rain_limit: 0.1
+        # уберет значения на указанное число записей вперед от фильтра p_rain_limit
+        # rain_forward_flag: 2
+        # фильтр дневных (Swin > day_swin_limit) NEE больше выставленного порога (NEE > day_nee_max)
+        # use_day_filter: true
+        # фильтр ночных (Swin < day_swin_limit) NEE меньше выставленного порога (NEE < night_nee_min)
+        # use_night_filter: true
+        # порог для NEE в дневное время (исключение интенсивной эмиссии днем)
+        # day_nee_max: 5
+        # порог для NEE в ночное время (исключение интенсивного нетто-поглощения ночью)
+        # night_nee_min: -5
+        # порог приходящей коротковолновой радиации, задающий дневные данные (может быть изменен для станций за полярным кругом)
+        # day_swin_limit: 10
+        # допустимые ночные диапазоны H и LE
+        # night_h_limits: [-50, 20]
+        # night_le_limits: [-50, 20]
+        # допустимый диапазон NEE в зимнее время, применяется к ['nee', 'co2_flux']
+        # winter_nee_limits: [0, 5]
+        # допустимый диапазон потока метана в зимнее время
+        # winter_ch4_flux_limits: [-1, 1]
+        # уберет CH4_FLUX при ch4_signal_strength ниже указанного значения
+        # CH4SS_min: 20.0
+        # уберет значения ['co2_flux', 'le', 'nee'] для которых RH_1_1_1 больше указанного порога
+        # RH_max: 
+    # фильтрация по минимальным и максимальным допустимым значениям
+    min_max:
+        co2_flux: [-40, 40]
+        co2_strg: [-20, 20]
+        h: [-100, 800]
+        le: [-100, 1000]
+        u_star: [0, 10]
+        ta_1_1_1: [-50, 50]
+        p_1_1_1: [0, 100]
+        vpd_1_1_1: [0, 50]
+        rh_1_1_1: [0, 100]
+        swin_1_1_1: [0, 1200]
+        ppfd_1_1_1: [0, 2400]
+        rg_1_1_1: [0, 2400]
+        ch4_flux: [-10, 10]
+        nee: [-40, 40]
+    # фильтрация по отклонению от среднего хода
+    window:
+        co2_flux: {sigmas: 2, window: 10, min_periods: 4}
+        ch4_flux: {sigmas: 2, window: 10, min_periods: 4}
+        ta_1_1_1: {sigmas: 4, window: 10, min_periods: 4}
+        u_star: {sigmas: 4, window: 10, min_periods: 4}
+        h: {sigmas: 7, window: 10, min_periods: 4}
+        le: {sigmas: 7, window: 10, min_periods: 4}
+        rh_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
+        vpd_1_1_1: {sigmas: 7, window: 10, min_periods: 4}
+        swin_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
+        ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
+        nee: {sigmas: 2, window: 10, min_periods: 4}
+    # фильтрация по квантилям
+    quantile:
+        co2_flux: [0.01, 0.99]
+        ch4_flux: [0.01, 0.99]
+        co2_strg: [0.01, 0.99]
+        nee: [0.01, 0.99]
+    # фильтрация выбросов MAD и Hampel
+    madhampel:
+        co2_flux: {z: 5.5, hampel_window: 10}
+        ch4_flux: {z: 5.5, hampel_window: 10}
+        le: {z: 5.5, hampel_window: 10}
+        h: {z: 5.5, hampel_window: 10}
+        co2_strg: {z: 5.5, hampel_window: 10}
+        ta_1_1_1: {z: 5.5, hampel_window: 10}
+        rh_1_1_1: {z: 5.5, hampel_window: 10}
+        vpd_1_1_1: {z: 5.5, hampel_window: 10}
+        swin_1_1_1: {z: 8.0, hampel_window: 10}
+        ppfd_1_1_1: {z: 8.0, hampel_window: 10}
+        nee: {z: 5.5, hampel_window: 10}
+    # фильтрация зимних периодов
+    winter_date_ranges:
+        # - [01.01.2023 00:00, 26.03.2023 00:00]
+        # - [13.11.2023 00:00, 31.12.2023 00:00]
+    man_ranges: []
+# общие настройки обработки (только для опытных пользователей)
+calc:
+    # включает шаги обработки, требующие метеопеременные
+    has_meteo: true
+    calc_nee: true
+    # нужно ли суммировать co2_flux и co2_strg_filtered_filled для расчета NEE
+    calc_with_strg: false
+reddyproc:
+    # включает определение условий слабой турбулентности
+    is_to_apply_u_star_filtering: true
+    # значение пользовательского порога в случаях, если порог не может быть рассчитан
+    ustar_threshold_fallback: 0.01
+    # опция позволяет использовать теоретическое значение Rg (полезна в случаях, когда данные не содержат Rg)
+    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ''
+    # итеративная оценка точности вычисленного порога u* (bootstrap)
+    is_bootstrap_u_star: false
+    # выбор метода разметки сезонов, для каждого из которых отдельно определяется уровень насыщения
+    u_star_seasoning: 'Continuous'  # WithinYear, Continuous, User
+    # включает заполнение пропусков в 30-минутных потоках
+    is_to_apply_partitioning: true
+    # включение одного или обоих методов разделения потока CO2 на валовую первичную продукцию (GPP) и дыхание экосистемы (Reco)
+    partitioning_methods: [Reichstein05, Lasslop10]  # Reichstein05, Lasslop10
+    # широта, долгота, временная зона
+    latitude: 56.5
+    longitude: 32.6
+    timezone: 3.0
+    # имя столбца температуры воздуха 'Tair' или почвы 'Tsoil' для заполнения пропусков
+    temperature_data_variable: 'Tair'
+    # не изменять (параметры только для информации и полноты)
+    site_id: ''
+    u_star_method: 'RTw'
+    is_to_apply_gap_filling: true
+    input_file: ''
+    output_dir: 'output\reddyproc'
+    log_fname_end: '_log.txt'

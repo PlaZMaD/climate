@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from src.config.config_types import ImportMode
 from src.config.ff_config import FFConfig
@@ -28,6 +29,13 @@ def test_config_io(tmp_path):
                                    init_debug=False, init_version='1.0.4')
     
     FFConfig.save(config, tmp_path / 'after_load.yaml', add_comments=True)
+    with open(tmp_path / 'after_load.yaml', 'r') as fl:
+        file_txt = fl.read()
+        yaml = FFConfig.get_yaml() 
+        loaded_yaml = yaml.load(file_txt)
+    
+    loaded_yaml['filters']['meteo'] = None
+    test_model = FFConfig.model_validate(loaded_yaml)
     
     # test for basic definition errors
     config.model_dump(mode='json')
