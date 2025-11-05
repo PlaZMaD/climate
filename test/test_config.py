@@ -20,10 +20,14 @@ def os_view_path(fpath):
 @pytest.mark.usefixtures('tmp_path')
 def test_config_io(tmp_path):
     init_logging(level=logging.INFO, fpath=tmp_path / 'log.log', to_stdout=True)
-        
-    config = FFConfig.load_or_init(load_path='misc/config_v1.0.4_all_filters_deleted.yaml',
+    
+    # load_path = 'misc/config_v1.0.4_all_filters_deleted.yaml'
+    load_path = 'auto'
+    config = FFConfig.load_or_init(load_path=load_path,
                                    default_fpath=Path('misc/config_v1.0.4_default.yaml'),
                                    init_debug=False, init_version='1.0.4')
+    
+    FFConfig.save(config, tmp_path / 'after_load.yaml', add_comments=True)
     
     # test for basic definition errors
     config.model_dump(mode='json')
@@ -58,8 +62,7 @@ def test_config_io(tmp_path):
     
     config.filters.qc = {'should': 'work'}
     config.filters.qc = {'test3': 'test2'}
-    
-    
+        
     FFConfig.save(config, tmp_path / 'test_all.yaml', add_comments=True)
     
     test_config = FFConfig.load_or_init(tmp_path / 'test_all.yaml',

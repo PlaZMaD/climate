@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, model_serializer, Field
 from ruamel.yaml import CommentedSeq, CommentedMap, YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
+from src.config.config_versions import update_config_version
 from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
 
@@ -121,7 +122,7 @@ class BaseConfig(FFBaseModel):
         return yaml
     
     @classmethod
-    def load_from_yaml(cls, fpath: Path, return_model=True):
+    def load_from_yaml(cls, fpath: Path, preprocess_func, return_model=True):
         with open(fpath, 'r') as fl:
             file_txt = fl.read()
             fix_txt = file_txt.replace('\t', '    ')
@@ -130,7 +131,10 @@ class BaseConfig(FFBaseModel):
             
             yaml = cls.get_yaml()
             loaded_yaml = yaml.load(fix_txt)
-        
+            
+        if preprocess_func:
+            loaded_yaml = preprocess_func(loaded_yaml)
+            
         model = cls.model_validate(loaded_yaml)
         if return_model:
             return model
@@ -143,7 +147,7 @@ class BaseConfig(FFBaseModel):
         config_yaml = config_to_yaml(save_dict, path=[], basedepth=0)
         
         if add_comments:
-            default_config = cls.load_from_yaml(config.default_fpath, return_model=False)        
+            default_config = cls.load_from_yaml(config.default_fpath, preprocess_func=None, return_model=False)        
             _, config_yaml = copy_comments(default_config, config_yaml)
         
         with open(fpath, "w") as fl:
@@ -171,11 +175,7 @@ class BaseConfig(FFBaseModel):
             load_path = find_unique_file(Path('.'), CONFIG_GLOB)
         
         if load_path:
-            config = cls.load_from_yaml(Path(load_path))
-            if config.version != init_version:
-                raise NotImplementedError(f'Current config version: {init_version} does not match loaded version: {config.version}. \n'
-                                          'Backwards compatibility is planned to be implemented soon. \n'
-                                          'For now, please update config fields manually to match default exported config.')
+            config = cls.load_from_yaml(Path(load_path), lambda x: update_config_version(x, init_version))
             config.from_file = True
         else:
             '''
