@@ -199,8 +199,8 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
                                                       ok_msg=f'Auto detected ias version: {auto_ias_ver}')
     
     # TODO 1 _has_meteo vs has_meteo, duplicates in import routines 
-    config._has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
-    return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, config._has_meteo
+    has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
+    return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, has_meteo
 
 
 def try_auto_detect_input_files(*args, **kwargs):
