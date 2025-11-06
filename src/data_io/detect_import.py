@@ -2,7 +2,8 @@ from pathlib import Path
 
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.config.config_types import InputFileType, ImportMode
-from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
+from src.data_io.eddypro_cols import EDDYPRO_HEADER_DETECTION_COLS
+from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_eddypro_fname, try_parse_ias_fname, try_parse_csf_fname
 from src.data_io.utils.table_loader import load_table_from_file

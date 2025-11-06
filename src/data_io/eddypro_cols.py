@@ -6,11 +6,6 @@ from src.helpers.py_collections import replace_in_dict_by_values
 
 # biomet cols are required not only in eddypro load, but also, for example, in ias check;
 # probably biomet should be reworked to just a list of special cols, but as is for now
-BIOMET_HEADER_DETECTION_COLS = [
-    # just a sample, some cols may be missing
-    'TIMESTAMP_1', 'Ta_1_1_1', 'RH_1_1_1', 'Rg_1_1_1', 'Lwin_1_1_1', 'Lwout_1_1_1',
-    'Swin_1_1_1', 'Swout_1_1_1', 'P_1_1_1'
-]
 EDDYPRO_HEADER_DETECTION_COLS = [
     # TODO 1 what is exact correct list though?
     #  it may be useful later and HEADER_DETECTION should be just a copy

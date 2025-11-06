@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.tseries.offsets import YearBegin, YearEnd, MonthBegin, MonthEnd
 
 from src.config.config_types import DEBUG_NROWS, IasExportIntervals
-from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
+from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
