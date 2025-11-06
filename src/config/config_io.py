@@ -112,7 +112,7 @@ def preprocess_yaml_text(text: str) -> str:
     fixed_text = text.replace('\t', '    ')
     if fixed_text != text:
         print('Tabs were replaced with spaces in the yaml file.')
-        return fixed_text
+    return fixed_text
 
 
 class BaseConfig(FFBaseModel):
@@ -167,6 +167,7 @@ class BaseConfig(FFBaseModel):
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:
+        """ load_path: None to force construct a dummy for consequent ipynb fill """
         if load_path == 'auto':
             load_path = find_unique_file(Path('.'), CONFIG_GLOB)
         
