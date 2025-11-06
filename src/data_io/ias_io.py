@@ -252,8 +252,10 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: IasExportIntervals, 
-               df: pd.DataFrame, time_col: str, data_swin_1_1_1):
+def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: IasExportIntervals,
+               df: pd.DataFrame, time_col: str, swin_vals):
+    # TODO 1 ff: data vs df_ias_export
+    
     # TODO 2 cols: check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
     
@@ -289,9 +291,11 @@ def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: 
     # TODO 1 ias: SW_IN_1_1_1 was data col because:
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
     # OA: RH_1_1_1 - must be exported raw, not filtered (SW_IN_1_1_1 must be exported unchanged)
-    if 'SW_IN_1_1_1' in df.columns:
+    if 'SW_IN_1_1_1' in df.columns and swin_vals is not None:
         # assert df['SW_IN_1_1_1'] == data_swin_1_1_1
-        df['SW_IN_1_1_1'] = data_swin_1_1_1
+        df['SW_IN_1_1_1'] = swin_vals
+    else:
+        ff_logger.critical('SW_IN_1_1_1 отсутствует в данных, ИАС экспортируется без SW_IN_1_1_1')
 
     # must be done after all cols added or modified
     df = df.fillna(-9999)

@@ -960,9 +960,10 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 if not config.from_file:
     config.data_export.ias.split_intervals = IasExportIntervals.YEAR 
 
-if config.calc.has_meteo:    
+if config.calc.has_meteo:
+    swin_vals = data['swin_1_1_1'] if 'swin_1_1_1' in data.columns else None 
     export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.data_export.ias.split_intervals,
-               df_ias_export, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
+               df_ias_export, time_col=time_col, swin_vals=swin_vals)
 
 # %% [markdown] id="Pm8hiMrb_wRW"
 # ## Файл для FAT
