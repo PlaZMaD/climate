@@ -65,22 +65,22 @@ def config_to_yaml(x, path, basedepth):
     return x
 
 
-def copy_comments(src_x, tgt_x):
+def copy_comments(from_el, to_el):
     """ Nested comments transfer """
         
-    if isinstance(tgt_x, CommentedMap):
-        tgt_x.ca.items.update(src_x.ca.items)
+    if isinstance(to_el, CommentedMap):
+        to_el.ca.items.update(from_el.ca.items)
 
-        v_types = {type(v) for v in tgt_x.values()}
+        v_types = {type(v) for v in to_el.values()}
         if v_types <= {str, int, float}:
             pass
         else:            
-            for k in tgt_x.keys():
-                if k in src_x.keys():
-                    _, tgt_x[k] = copy_comments(src_x[k], tgt_x[k])
-        return src_x, tgt_x
+            for k in to_el.keys():
+                if k in from_el.keys():
+                    _, to_el[k] = copy_comments(from_el[k], to_el[k])
+        return from_el, to_el
     
-    return src_x, tgt_x
+    return from_el, to_el
 
 
 class AnnotatedBaseModel(BaseModel):
@@ -108,51 +108,47 @@ class FFBaseModel(AnnotatedBaseModel):
     model_config = ConfigDict(validate_assignment=True, revalidate_instances="always", use_attribute_docstrings=True)
 
 
+def preprocess_yaml_text(text: str) -> str:
+    fixed_text = text.replace('\t', '    ')
+    if fixed_text != text:
+        print('Tabs were replaced with spaces in the yaml file.')
+        return fixed_text
+
+
 class BaseConfig(FFBaseModel):
-    # TODO 1 bool vs Annotated[bool, Field(exclude=True)] = None
     from_file: Annotated[bool, Field(exclude=True)] = None
     default_fpath: Annotated[Path, Field(exclude=True)] = None
     
     @classmethod
-    def get_yaml(cls) -> YAML:
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        yaml.indent(mapping=4, sequence=4, offset=4)
-        return yaml
+    def get_yaml_io(cls) -> YAML:
+        yaml_io = YAML()
+        yaml_io.preserve_quotes = True
+        yaml_io.default_flow_style = False
+        yaml_io.indent(mapping=4, sequence=4, offset=4)
+        return yaml_io
     
     @classmethod
-    def load_from_yaml(cls, fpath: Path, preprocess_func, return_model=True):
-        with open(fpath, 'r') as fl:
-            file_txt = fl.read()
-            fix_txt = file_txt.replace('\t', '    ')
-            if fix_txt != file_txt:
-                print('Tabs were replaced in the config.')
-            
-            yaml = cls.get_yaml()
-            loaded_yaml = yaml.load(fix_txt)
-            
-        if preprocess_func:
-            loaded_yaml = preprocess_func(loaded_yaml)
-            
-        model = cls.model_validate(loaded_yaml)
-        if return_model:
-            return model
-        else:
-            return loaded_yaml
+    def load_dict_from_yaml(cls, fpath: Path) -> dict:
+        yaml_text = fpath.read_text(encoding='utf8')
+        yaml_text = preprocess_yaml_text(yaml_text)
+        
+        yaml_io = cls.get_yaml_io()
+        yaml_dict = yaml_io.load(yaml_text)
+        return yaml_dict
     
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path, add_comments: bool):
         save_dict = config.model_dump(mode='json')                
-        config_yaml = config_to_yaml(save_dict, path=[], basedepth=0)
+        cfg_dict = config_to_yaml(save_dict, path=[], basedepth=0)
         
         if add_comments:
-            default_config = cls.load_from_yaml(config.default_fpath, preprocess_func=None, return_model=False)        
-            _, config_yaml = copy_comments(default_config, config_yaml)
+            default_cfg_dict = cls.load_dict_from_yaml(config.default_fpath)
+            assert cls.model_validate(default_cfg_dict)
+            _, cfg_dict = copy_comments(default_cfg_dict, cfg_dict)
         
         with open(fpath, "w") as fl:
-            yaml = cls.get_yaml()            
-            yaml.dump(config_yaml, fl)
+            yaml_io = cls.get_yaml_io()            
+            yaml_io.dump(cfg_dict, fl)
     
     @classmethod
     def save(cls: Self, config, fpath: str | Path, add_comments: bool):
@@ -175,8 +171,12 @@ class BaseConfig(FFBaseModel):
             load_path = find_unique_file(Path('.'), CONFIG_GLOB)
         
         if load_path:
-            config = cls.load_from_yaml(Path(load_path), lambda x: update_config_version(x, init_version))
-            config.from_file = True
+            cfg_dict = cls.load_dict_from_yaml(Path(load_path))
+            cfg_dict = update_config_version(cfg_dict, init_version)
+            
+            cfg_model = cls.model_validate(cfg_dict)            
+            
+            cfg_model.from_file = True
         else:
             '''
             if ENV.LOCAL:
@@ -184,10 +184,10 @@ class BaseConfig(FFBaseModel):
                 init_debug = True
             '''
             
-            config = cls.model_construct(debug=init_debug, version=init_version)
-            config.from_file = False
+            cfg_model = cls.model_construct(debug=init_debug, version=init_version)
+            cfg_model.from_file = False
         
         assert default_fpath.exists()
-        config.default_fpath = default_fpath
+        cfg_model.default_fpath = default_fpath
         
-        return config
+        return cfg_model

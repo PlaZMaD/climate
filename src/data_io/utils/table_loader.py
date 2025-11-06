@@ -30,6 +30,7 @@ def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
     # does not work reliably even with 10 numeric lines
     import chardet
     if 'encoding' not in pd_read_kwargs:
+        fpath.readlines...
         with open(fpath, "r+b") as fb:
             first_lines = [next(fb) for _ in range(max_header_rows)]
             <delete numeric lines ?>

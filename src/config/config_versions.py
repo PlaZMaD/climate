@@ -1,16 +1,16 @@
 from src.ff_logger import ff_logger
 
 
-def update_config_version(config: dict, need_ver) -> dict:
+def update_config_version(config: dict, tgt_ver) -> dict:
     if 'version' not in config:
         raise Exception('Unexpected config contents.')
     else:
         ver = config['version'] 
     
-    if ver == need_ver:
+    if ver == tgt_ver:
         return config
     else:
-        ff_logger.warning(f'Config version will be updated from {ver} to {need_ver}. \n' 
+        ff_logger.warning(f'Config version will be updated from {ver} to {tgt_ver}. \n' 
                           'Please verify new options by comparing new version in the outputs with your version.')
     
     if ver == '1.0.2':
@@ -65,8 +65,8 @@ def update_config_version(config: dict, need_ver) -> dict:
         config['version'] = '1.0.4'
     else:
         raise NotImplementedError(
-            f'Current config version: {need_ver} does not match loaded version: {ver}. \n'
+            f'Current config version: {tgt_ver} does not match loaded version: {ver}. \n'
             f'Backwards compatibility for {ver} is not supported. \n'
-            f'Please use default {need_ver} config and update it manually.')
+            f'Please use default {tgt_ver} config and update it manually.')
     
     return config
