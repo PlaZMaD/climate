@@ -144,6 +144,7 @@ import bglabutils.basic as bg
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
 from src.config.config_types import IasExportIntervals
+from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
@@ -644,6 +645,7 @@ if not config.calc.has_meteo or 'ta_1_1_1' not in data.columns:
     ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
 df_ias_export = data.copy()
+try_compare_stats(data, repo_dir / 'misc/expected_stats.xlsx')
 
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
