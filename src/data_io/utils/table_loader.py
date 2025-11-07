@@ -12,6 +12,10 @@ from src.helpers.pd_helpers import find_changed_el
 from src.ff_logger import ff_logger
 
 
+# TODO 2 csv: non-comma and other separators: strategy?
+# TODO 1 csv: file recognised as single column - must fail
+
+
 def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwargs):
     """ a workaround for some (incorrect) csv with multiple header columns with different width """
     

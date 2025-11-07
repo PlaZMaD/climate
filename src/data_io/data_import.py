@@ -44,6 +44,7 @@ from src.config.ff_config import FFConfig
 
 
 # TODO 1 config.data_in.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
+# TODO 1 import must recognise all the files or fail
 
 
 def import_data(config: FFConfig):    

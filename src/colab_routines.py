@@ -8,6 +8,11 @@ from src.ff_logger import ff_logger
 from src.data_io.detect_import import SUPPORTED_FILE_EXTS_LOWER
 from src.helpers.env_helpers import colab_only, ENV
 
+
+# TODO 1 repair replacing auto in colab 
+# TODO 1 import in colab directly after specifying data)import config
+# TODO 1 import statistical distributions check vs default data
+
 # TODO 3 %autoreload stopped to work in colab, any replacement?
 DEMO_DATA_FILES = {'eddy_pro result_SSB 2023.csv', 'BiometFy4_2023.csv'}
 

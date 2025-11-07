@@ -4,6 +4,9 @@ from src.data_io.utils.time_series_utils import datetime_parser
 from src.ff_logger import ff_logger
 
 
+# TODO 1 support biomet ~ with separate time date cols 
+
+
 def load_biomet(config_meteo, data_freq):
     print("Проверяем корректность временных меток. Убираем повторы, дополняем пропуски. "
           "На случай загрузки нескольких файлов. При загрузке одного делается автоматически.")
