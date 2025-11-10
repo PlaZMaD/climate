@@ -242,10 +242,10 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 #
 # **Необходимо проверить:**
 #
-# В автоматическом режиме (по умолчанию) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`).  Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
+# В автоматическом режиме (по умолчанию `config.data_import.input_files = auto`) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`). Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
 #
-# В `config.data_import.input_files` должен быть либо путь до файла (`= ['1.csv']`) при имени файла 1.csv, либо список (list) путей в случае загрузки нескольких файлов (`= ['1.csv', '2.csv']`), либо словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`.  
-# При импорте через !gdown файла с google-диска достаточно указать в одинарной кавычке *имя файла.расширение*. Не забывайте расширение .csv!  
+# В ручном режиме в `config.data_import.input_files` должен быть словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`. Не забывайте одинарные кавычки и расширение .csv!  
+# При импорте через !gdown файла с google-диска, как и при прямой загрузке, на этом шаге используется только название файлов.  
 #
 # Проверьте порядок записи даты (год, месяц, день) и разделители даты-времени во входных файлах, открыв их в текстовом редакторе. Возможные варианты:
 # 1.  Дата записана как 29.05.2024 и время как 12:00. Тогда они кодируются как
@@ -272,7 +272,7 @@ config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'mi
 if not config.from_file:
     config.data_import.input_files = 'auto'
     # alternative ways if 'auto' mode works not as expected:
-    # config.data_import.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv', 'BiometFy4_2023.csv']
+    # config.data_import.input_files = {'tv_fy4_2019_v01.xlsx': InputFileType.IAS}
     # config.data_import.input_files = {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, 'BiometFy4_2023.csv': InputFileType.EDDYPRO_BIOMET}
     
     config.data_import.time_col = 'datetime'
