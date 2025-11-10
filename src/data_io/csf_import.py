@@ -107,7 +107,7 @@ def import_csf(config: FFConfig):
         ff_logger.info('co2_strg not found, adding empty column.')
       
     # csf can also contain meteo columns
-    biomet_columns = [col for col in df_csf.columns.str.lower() if col in BIOMET_HEADER_DETECTION_COLS_LOWER]
+    biomet_columns = [col for col in df.columns.str.lower() if col in BIOMET_HEADER_DETECTION_COLS_LOWER]
     # TODO 1 csf: test psn
     has_meteo = len(biomet_columns) > 0
 
