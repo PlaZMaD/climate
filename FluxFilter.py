@@ -26,7 +26,7 @@
 # *Самая новая версия скрипта находится в репозитории https://github.com/PlaZMaD/climate/releases*  
 #
 # ## **Входные файлы**
-# Для работы скрипта требуются ряды фильтруемых и заполняемых турбулентных потоков, а также метеорологических переменных, которые позволяют отфильтровать и заполнить потоки. Ряды могут быть загружены из двух разных файлов или из одного файла.
+# Для работы скрипта требуются ряды фильтруемых и заполняемых турбулентных потоков, а также метеорологических переменных, которые позволяют отфильтровать и заполнить потоки. Ряды могут быть загружены из одного или нескольких файлов.
 # Скрипт поддерживает следующие варианты входных файлов:
 # 1) выходной файл EddyPro - full output (см. [мануал EddyPro](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) для потоков
 # 2) выходной файл CSF программы EasyFlux DL, Campbell Scientific Ink., для потоков. Файлы full output и CSF взаимно заменяемы
@@ -41,7 +41,7 @@
 # *   Файл-пример full output можно скачать [здесь](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
 # *   Файл-пример biomet можно скачать [здесь](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing)
 # *   Файл-пример CSF можно скачать *[здесь]*
-# *   Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default_ru.yaml)
+# *   Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default_ru.yaml) (открыть ссылку, нажать правой кнопкой - Сохранить как)
 # *   В файле full output должны быть 3 строки заголовка и названия переменных должны быть записаны во 2-й строке
 # *   В файле biomet должны быть 2 строки заголовка и названия переменных должны быть записаны в 1-й строке. По умолчанию без проблем читаются файлы, у которых дата и время записаны в колонке TIMESTAMP_1 в формате yyyy-mm-dd HHMM
 #
@@ -62,21 +62,23 @@
 # Через браузер:  
 # *   нажмите на кнопку директории (нижняя кнопка в левой панели под кнопкой "ключ")
 # *   перетащите один или несколько файлов (к примеру, из проводника Windows) в пустое пространство под директорией `sample_data`
-# *   закомментируйте две команды `!gdown` в разделе **Загружаем данные**  
+# *   закомментируйте (поставьте # в начале строки) две команды `!gdown` в разделе **Загружаем данные**  
 #
 # Через google-диск:  
 # *   загрузите на google-диск файлы full output, biomet, файл конфигурации и/или любые другие
 # *   откройте к ним доступ
 # *   скопируйте часть публичной ссылки в раздел **Загружаем данные** в команду !gdown
-# 
-# Вариант google-диска оптимален, если в дальнейшем тетрадь будет отправлена другим пользователям (возможен закрытый доступ только отдельным аккаунтам Google).  
-# 
-# После загрузки в разделе **Конфигурация загрузки данных** необходимо: 
+#
+# Вариант google-диска оптимален, если в дальнейшем скрипт с отредактированными пользователем параметрами и ссылками на входные файлы будет отправлен другим пользователям (возможен закрытый доступ только отдельным аккаунтам Google).  
+#
+# После загрузки в разделе **Конфигурация загрузки данных** необходимо:
 # *   если используется неавтоматический режим работы, то заменить названия входных файлов на импортируемые
-# *   проверить формат входных даты и времени 
+# *   проверить формат входных даты и времени (несколько часто встречающихся форматов распознаются по умолчанию)
 #
 # ## **Перед фильтрацией**
 # *   Можно загружать несколько файлов full output и biomet, они будут автоматически расположены по возрастанию дат-времени и слиты в одну таблицу
+# *   Можно загружать файл biomet с шагом по времени меньше получаса - например, 1 минута или 5 минут, но начинать файл нужно с числа минут :00 или :30. Метеорологические переменные будут осреднены до 30 минут
+# *   Выводится ошибка при наличии текста во входных файлах в строках ниже заголовка
 # *   Осуществляется проверка меток времени для каждого входного файла (регуляризация)
 # *   Рассчитываются VPD <-> RH, SWIN <-> RG <-> PAR в случае отсутствия
 # *   Можно работать с потоком CO2 либо проверить данные о накоплении, прибавить их к потоку CO2 и работать с NEE
@@ -135,7 +137,7 @@ if Path('scripts').exists():
     sys.modules['src'] = src
     repo_dir = Path('scripts')
 else:
-    repo_dir = Path('.')    
+    repo_dir = Path('.')
 
 import bglabutils.basic as bg
 # import bglabutils.boosting as bb
@@ -170,7 +172,7 @@ setup_plotly(gl.out_dir)
 init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
-# To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line 
+# To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line
 # ipython_edit_function(meteorological_night_filter)
 
 
@@ -192,21 +194,27 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # то команда будет записана как  
 # `!gdown 1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB`
 #
-# `#Загрузка файла full output`
-# Здесь нужно прописать символы из ссылки на файл full output
+# `#Загрузка файла full output или CSF или ИАС`
+# Здесь нужно прописать символы из ссылки на файл c потоками (full output либо CSF либо ИАС)
 #
 # `#Загрузка файла biomet`
 # Здесь нужно прописать символы из ссылки на файл biomet
+#
+# Текстовый файл конфигурации (формат .yaml) образуется после пробега скрипта среди выходных файлов, его также можно выложить на гугл-диск и прописать в третьей команде !gdown
 
 # %% id="KMu4IqY45HG6"
 
-# Загрузка файла full output
-# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
-# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
+# Загрузка файла full output или CSF или ИАС
+# https://drive.google.com/file/d/1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB/view?usp=sharing
+# !gdown 1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB
 
 # Загрузка файла biomet
-# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
-# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+# https://drive.google.com/file/d/1_ZoFgNyOZEYNdjf6rFq66HR4UXDSQ5z3/view?usp=sharing
+# !gdown 1_ZoFgNyOZEYNdjf6rFq66HR4UXDSQ5z3
+
+# Загрузка любых других файлов (конфигурации, данных, и т.д.)
+# https://drive.google.com/file/d/*/view?usp=sharing
+# # !gdown *
 
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
@@ -217,9 +225,9 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 #
 # В зависимости от загруженных файлов cкрипт поддерживает следующие режимы чтения данных:  
 # - один или несколько файлов EddyPro - full output
-# - один или несколько файлов EddyPro - full output и один или несколько файлов EddyPro - biomet
+# - один или несколько файлов EddyPro - full output и один или несколько файлов biomet, описанных в руководстве EddyPro
 # - один или несколько файлов ИАС
-# - один или несколько файлов CSF и один или несколько файлов EddyPro - biomet
+# - один или несколько файлов CSF и один или несколько файлов biomet, описанных в руководстве EddyPro
 #
 # В простых случаях (и если не загружены лишние файлы) тип файлов и их настройки будут определены автоматически. В сложных случаях или при ошибках можно попробовать вручную задать все настройки в этой ячейке.  
 #
@@ -234,10 +242,10 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 #
 # **Необходимо проверить:**
 #
-# В автоматическом режиме (по умолчанию) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`).  Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
+# В автоматическом режиме (по умолчанию `config.data_import.input_files = auto`) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`). Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
 #
-# В `config.data_import.input_files` должен быть либо путь до файла (`= ['1.csv']`) при имени файла 1.csv, либо список (list) путей в случае загрузки нескольких файлов (`= ['1.csv', '2.csv']`), либо словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`.  
-# При импорте через !gdown файла с google-диска достаточно указать в одинарной кавычке *имя файла.расширение*. Не забывайте расширение .csv!  
+# В ручном режиме в `config.data_import.input_files` должен быть словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`. Не забывайте одинарные кавычки и расширение .csv!  
+# При импорте через !gdown файла с google-диска, как и при прямой загрузке, на этом шаге используется только название файлов.  
 #
 # Проверьте порядок записи даты (год, месяц, день) и разделители даты-времени во входных файлах, открыв их в текстовом редакторе. Возможные варианты:
 # 1.  Дата записана как 29.05.2024 и время как 12:00. Тогда они кодируются как
@@ -252,7 +260,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # `config.*.repair_time` если `True`, то проверит колонку с датой-временем на пропуски и монотонность, проведет регенерацию по первой-последней точке с учетом предполагаемой длины шага (вычисляется по первым значениям ряда).  
 # `config.data_import.ias.skip_validation` если `True`, то будут отключены пред-проверки корректности ИАС  
 # `config.data_import.csf.empty_co2_strg` если `True` и в csf отсутствует колонка co2_strg, то будет добавлена колонка с пропусками  
-  
+
 
 # %% id="tVJ_DRBrlpYd"
 
@@ -264,7 +272,7 @@ config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'mi
 if not config.from_file:
     config.data_import.input_files = 'auto'
     # alternative ways if 'auto' mode works not as expected:
-    # config.data_import.input_files = ['eddypro_GHG_biomet_CO2SS_Express_full_output_2023-03-29T020107_exp.csv', 'eddypro_noHMP_full_output_2014_1-5.csv', 'BiometFy4_2023.csv']
+    # config.data_import.input_files = {'tv_fy4_2019_v01.xlsx': InputFileType.IAS}
     # config.data_import.input_files = {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, 'BiometFy4_2023.csv': InputFileType.EDDYPRO_BIOMET}
     
     config.data_import.time_col = 'datetime'
@@ -320,7 +328,7 @@ cols_to_investigate = [k.lower() for k in cols_to_investigate]
 # %% [markdown] id="wVpYvr9_fKBU"
 # ## Настройка параметров анализа данных
 #
-# Все настройки для co2_flux будут применены для nee, в случае его расчета
+# Все настройки для co2_flux будут применены для nee в случае его расчета
 
 # %% [markdown] id="FH2uRGi4p5Zj"
 # ### Фильтрация физическая
@@ -385,7 +393,7 @@ filters_meteo['night_h_limits'] = [-50, 20]
 filters_meteo['night_le_limits'] = [-50, 20]
 
 # Какие значения допускаются зимой. Для травянистых экосистем правый порог обычно ниже
-filters_meteo['winter_nee_limits'] = [0, 5]
+filters_meteo['winter_nee_limits'] = [-1, 5]
 filters_meteo['winter_ch4_flux_limits'] = [-1, 1]
 filters_meteo['CH4SS_min'] = 20.
 
@@ -480,7 +488,7 @@ if not config.from_file:
 # %% id="Xw5TapK10EhR"
 res = try_auto_detect_input_files(config, gl)
 (config.data_import.input_files, config.data_import.import_mode,
- config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.calc.has_meteo) = res 
+ config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.calc.has_meteo) = res
 data, time_col, meteo_cols, data_freq, config.calc.has_meteo = import_data(config)
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
@@ -489,7 +497,7 @@ gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 data.columns = data.columns.str.lower()
 if not config.calc.has_meteo:
     data["rh_1_1_1"] = data['rh']
-    # TODO QOA 1 different units? Elg biomet kPa, but mean 8.6 ?  
+    # TODO QOA 1 different units? Elg biomet kPa, but mean 8.6 ?
     data["vpd_1_1_1"] = data['vpd']
 
 # %% [markdown] id="ipknrLaeByCT"
@@ -651,13 +659,13 @@ try_compare_stats(data, repo_dir / 'misc/expected_stats.xlsx')
 # ## Получение NEE из потока CO2 и накопления
 
 # %% [markdown] id="lqWwGSMObro4"
-# Проверка накопления. Рассчитанное по одному уровню в EddyPro не всегда корректно. Корректность проверяется суточным ходом: должен быть рост запаса в течение ночи, резкое уменьшение утром.
+# Проверка накопления. Рассчитанное по одному уровню в EddyPro (full output - колонка co2_strg) не всегда корректно. Корректность проверяется суточным ходом: должен быть рост запаса в течение ночи, резкое уменьшение утром.
 
 # %% [markdown] id="2yqwO7Uhcjmz"
 # Фильтрация co2_strg с удалением значений выше и ниже пороговых квантилей. Заполнение пропусков co2_strg  длиной 3 точки и менее – линейной интерполяцией. Полученные отфильтрованные и заполненные значения co2_strg показываются на графике. Принятие решения, суммировать ли co2_flux и co2_strg для получения NEE или работать дальше с co2_flux.
 
 # %% id="cjt05XXtbr69"
-# Пробелы длиной 3 и меньше заполняются линейно
+# Пробелы длиной 3 30-мин интервала и меньше заполняются линейно
 if config.calc.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
@@ -693,7 +701,7 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
         cols_to_investigate.append('nee')
     
     if not config.from_file:
-        for filter_config in [config.filters.qc, config.filters.meteo, config.filters.min_max, 
+        for filter_config in [config.filters.qc, config.filters.meteo, config.filters.min_max,
                               config.filters.window, config.filters.quantile, config.filters.madhampel]:
             if 'co2_flux' in filter_config:
                 filter_config['nee'] = filter_config['co2_flux']
@@ -780,8 +788,8 @@ if config.calc.has_meteo:
     unroll_filters_db = filters_db.copy()
     if not config.from_file:
         config.filters.winter_date_ranges = [
-            ['01.01.2023 00:00', '26.03.2023 00:00'],
-            ['13.11.2023 00:00', '31.12.2023 00:00'],
+            ['01.01.2023 00:00', '26.03.2023 23:30'],
+            ['13.11.2023 00:00', '31.12.2023 23:30'],
         ]
     # date_ranges = []
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
@@ -955,15 +963,15 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 # %% [markdown] id="e50f7947"
 # ## Файл для ИАС
 # Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций  
-
+#
 # Опция `config.data_export.ias.split_intervals` позволяет выбрать количество экспортируемых файлов: по месяцам `IasExportIntervals.MONTH`, по годам `IasExportIntervals.YEAR`, все данные в одном файле `IasExportIntervals.ALL`.
 
 # %% id="yaLoIQmtzaYd"
 if not config.from_file:
-    config.data_export.ias.split_intervals = IasExportIntervals.YEAR 
+    config.data_export.ias.split_intervals = IasExportIntervals.YEAR
 
 if config.calc.has_meteo:
-    swin_vals = data['swin_1_1_1'] if 'swin_1_1_1' in data.columns else None 
+    swin_vals = data['swin_1_1_1'] if 'swin_1_1_1' in data.columns else None
     export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.data_export.ias.split_intervals,
                df_ias_export, time_col=time_col, swin_vals=swin_vals)
 
