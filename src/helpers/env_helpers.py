@@ -59,4 +59,16 @@ def setup_r_env():
     else:
         # something different, but it works
         # print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")
+
+        print("Applying 24.03.2026 patch to address Colab disabling 'remotes' package...")
+        patch_colab_r_code = """
+        sink(stdout(), type = "message")
+        if (!requireNamespace("remotes", quietly = TRUE)) {
+            install.packages("remotes", repos = "https://cran.rstudio.com/")
+        sink()
+        }
+        """
+        from rpy2 import robjects
+        robjects.r(patch_colab_r_code)
+
         pass
