@@ -200,13 +200,14 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # %% id="KMu4IqY45HG6"
 
-# Загрузка файла full output
-# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
-# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
+# Загрузка файла full output или CSF или ИАС
+# https://drive.google.com/file/d/1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB/view?usp=sharing
+# !gdown 1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB
 
 # Загрузка файла biomet
-# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
-# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+# https://drive.google.com/file/d/1_ZoFgNyOZEYNdjf6rFq66HR4UXDSQ5z3/view?usp=sharing
+# !gdown 1_ZoFgNyOZEYNdjf6rFq66HR4UXDSQ5z3
+
 
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
