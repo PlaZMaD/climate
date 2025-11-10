@@ -1,3 +1,4 @@
+import pprint
 from pathlib import Path
 
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
@@ -75,7 +76,22 @@ def detect_known_files(input_dir=None, from_list: list[Path] = None) -> dict[Pat
     else:
         input_files = from_list
     input_file_types = {f: detect_file_type(f) for f in input_files}
-    return {k: v for k, v in input_file_types.items() if v != InputFileType.UNKNOWN}
+    
+    valid_ftypes = set(InputFileType) - {InputFileType.UNKNOWN}
+    valid_ftype_names = [enum.value for enum in valid_ftypes]
+    unknown_input_files = {k: v for k, v in input_file_types.items() if v == InputFileType.UNKNOWN}
+    unknown_input_fnames = [str(k) for k in unknown_input_files.keys()]
+    input_files_pprint = pprint.pformat({str(k): v.value for k, v in input_file_types.items()})
+
+    if len(unknown_input_files) > 0:
+        raise AutoImportException('\n'
+                                  f'Files {unknown_input_fnames} are not recognised. You can try one of the following solutions: \n'
+                                  f'- Change columns to better match one of the example files in the introduction {valid_ftype_names}. \n'
+                                  '- Download and edit one of the examples, while keeping datetime format and column names. \n'
+                                  '- Specify file type manually by changing UNKNOWN to one of the known format types: \n\n'
+                                  f"config.data_import.input_files = {input_files_pprint}")
+    
+    return input_file_types
 
 
 def change_if_auto(option, new_option=None, new_option_call=None,

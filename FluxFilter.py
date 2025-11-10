@@ -143,7 +143,7 @@ import bglabutils.basic as bg
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
-from src.config.config_types import IasExportIntervals
+from src.config.config_types import IasExportIntervals, InputFileType # noqa: F401
 from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
