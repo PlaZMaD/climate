@@ -385,7 +385,7 @@ filters_meteo['night_h_limits'] = [-50, 20]
 filters_meteo['night_le_limits'] = [-50, 20]
 
 # Какие значения допускаются зимой. Для травянистых экосистем правый порог обычно ниже
-filters_meteo['winter_nee_limits'] = [0, 5]
+filters_meteo['winter_nee_limits'] = [-1, 5]
 filters_meteo['winter_ch4_flux_limits'] = [-1, 1]
 filters_meteo['CH4SS_min'] = 20.
 
@@ -780,8 +780,8 @@ if config.calc.has_meteo:
     unroll_filters_db = filters_db.copy()
     if not config.from_file:
         config.filters.winter_date_ranges = [
-            ['01.01.2023 00:00', '26.03.2023 00:00'],
-            ['13.11.2023 00:00', '31.12.2023 00:00'],
+            ['01.01.2023 00:00', '26.03.2023 23:30'],
+            ['13.11.2023 00:00', '31.12.2023 23:30'],
         ]
     # date_ranges = []
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
