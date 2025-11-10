@@ -112,7 +112,7 @@
 # !rm -rf sample_data
 # !rm -rf scripts
 
-# %env clone_br=main
+# %env clone_br=v1.0.4
 # %env clone_repo=https://github.com/PlaZMaD/climate.git
 # !git clone -b $clone_br -n --depth=1 --filter=tree:0 $clone_repo scripts
 # !git -C scripts sparse-checkout set --no-cone src locale misc
