@@ -5,6 +5,7 @@ import pandas as pd
 
 from src.config.config_types import InputFileType
 from src.data_io.biomet_loader import load_biomets
+from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS_LOWER
 from src.data_io.utils.time_series_utils import merge_time_series
 from src.data_io.time_series_loader import preload_time_series, repair_time, merge_time_series_biomet
 from src.config.ff_config import FFConfig
@@ -12,7 +13,7 @@ from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_logger
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
     COLS_CSF_KNOWN, COLS_CSF_UNUSED_NORENAME_IMPORT, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES
-from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
+
 
 # DONE repair time must be abstracted
 
@@ -104,12 +105,12 @@ def import_csf(config: FFConfig):
     if config.data_import.csf.empty_co2_strg and 'co2_strg' not in df.columns:
         df['co2_strg'] = np.nan
         ff_logger.info('co2_strg not found, adding empty column.')
-    
-    # csf can also contain meteo columns        
-    # biomet_columns = df_bm.columns.str.lower()    
-    known_meteo_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
-    biomet_columns = df.columns.intersection(known_meteo_cols)
-    
+      
+    # csf can also contain meteo columns
+    biomet_columns = [col for col in df_csf.columns.str.lower() if col in BIOMET_HEADER_DETECTION_COLS_LOWER]
+    # TODO 1 csf: test psn
+    has_meteo = len(biomet_columns) > 0
+
     # TODO 2 after merge or after load?
     if df[config.data_import.time_col].isna().sum() > 0:
         raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")

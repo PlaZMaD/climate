@@ -23,7 +23,11 @@ def export_fat(df: pd.DataFrame, fat_output_template, time_col, gl: FFGlobals, c
         ff_logger.info(f"FAT file will have no PPFD")
         fat_output_template.pop('PPFD')
     
-    if not config._has_meteo:
+    if 'PPFD_gapfilling' not in df.columns:
+        ff_logger.critical(f"PPFD_gapfilling is missing and won't be added to FAT file")
+        fat_output_template.pop('PPFD_gapfilling')
+    
+    if not config.calc.has_meteo:
         df['ta_1_1_1'] = df['air_temperature'] - 273.15
     
     df['Ta'] = df['ta_1_1_1'].fillna(-99999)

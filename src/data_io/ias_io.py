@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.tseries.offsets import YearBegin, YearEnd, MonthBegin, MonthEnd
 
 from src.config.config_types import DEBUG_NROWS, IasExportIntervals
-from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS
+from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
@@ -29,9 +29,9 @@ IAS_EXPORT_MIN_ROWS = 5
 # DONE E: use TIMESTAMP_START for datetime, not end, nor mid
 # DONE check merge chunks are preserved and not overriden by nan rows
 # DONE test: merge for any amount of iases
+# DONE test: more ias export to match import after export 1y fixed
+# DONE ias: V: implement custom split of ias on export (month, year, all years)
 
-# TODO 1 test: more ias export to match import after export 1y fixed
-# TODO 2 ias: V: implement custom split of ias on export (month, year, all years)
 # TODO 1 ias: Unsupported by notebook IAS vars - disappeared from 1.0.0 (debug?)
 
 
@@ -172,8 +172,9 @@ def import_iases(config: FFConfig):
 def prepare_time_intervals(df: pd.DataFrame, time_col, min_rows, export_intervals: IasExportIntervals):
     """
     If too small chunks are on interval (year, month) start and end, removes them 
-    And snaps starting and ending time rows to year or month 
+    And then grows starting and ending datetime to snap whole year or month 
     """
+    # TODO 3 move to utility time operations, not ias specific
     
     deltas = df[time_col] - df[time_col].shift(1)
     if np.any(deltas.values < 0):
@@ -209,14 +210,14 @@ def prepare_time_intervals(df: pd.DataFrame, time_col, min_rows, export_interval
             new_dt_end = YearEnd().rollback(dt_end) + df.index.freq
             
     elif export_intervals == IasExportIntervals.MONTH:
-        new_dt_start = MonthBegin.rollback(dt_start)
-        new_dt_end = MonthEnd.rollforward(dt_end)
+        new_dt_start = MonthBegin().rollback(dt_start)
+        new_dt_end = MonthEnd().rollforward(dt_end)
         
         if first_month_idx.sum() < min_rows:
-            new_dt_start = MonthBegin.rollforward(dt_start)
+            new_dt_start = MonthBegin().rollforward(dt_start)
         
         if last_month_idx.sum() < min_rows:
-            new_dt_end = MonthEnd.rollback(dt_end)        
+            new_dt_end = MonthEnd().rollback(dt_end)        
             
     elif export_intervals == IasExportIntervals.ALL:
         return df
@@ -251,8 +252,10 @@ def export_ias_prepare_time_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: IasExportIntervals, 
-               df: pd.DataFrame, time_col: str, data_swin_1_1_1):
+def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: IasExportIntervals,
+               df: pd.DataFrame, time_col: str, swin_vals):
+    # TODO 1 ff: data vs df_ias_export
+    
     # TODO 2 cols: check if attr/mark can be avoided and no info nessesary to attach to cols
     # E: no attrs approach was kinda intentional
     
@@ -265,7 +268,8 @@ def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: 
     
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
-    # TODO 1 remove after reference data update finished
+    
+    # TODO 1 was used to ensure no data was damaged between versions, reminder later to remove
     # var_cols.sort()
 
     df = prepare_time_intervals(df, time_col, IAS_EXPORT_MIN_ROWS, ias_export_intervals)
@@ -287,9 +291,11 @@ def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: 
     # TODO 1 ias: SW_IN_1_1_1 was data col because:
     #  was swin_1_1_1 changed during script run and unchanged data is exported? any other similar cases?
     # OA: RH_1_1_1 - must be exported raw, not filtered (SW_IN_1_1_1 must be exported unchanged)
-    if 'SW_IN_1_1_1' in df.columns:
+    if 'SW_IN_1_1_1' in df.columns and swin_vals is not None:
         # assert df['SW_IN_1_1_1'] == data_swin_1_1_1
-        df['SW_IN_1_1_1'] = data_swin_1_1_1
+        df['SW_IN_1_1_1'] = swin_vals
+    else:
+        ff_logger.critical('SW_IN_1_1_1 отсутствует в данных, ИАС экспортируется без SW_IN_1_1_1')
 
     # must be done after all cols added or modified
     df = df.fillna(-9999)

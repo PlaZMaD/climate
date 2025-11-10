@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import field_validator, BaseModel
 from pydantic_core.core_schema import ValidationInfo
 
 from src.config.config_types import ImportMode, InputFileType, IasExportIntervals
@@ -86,12 +86,12 @@ class FiltersConfig(FFBaseModel):
     
     @field_validator('qc', 'meteo', 'min_max', 'window', 'quantile', 'madhampel', mode='before')
     @classmethod
-    def passwords_match(cls, v: any, info: ValidationInfo) -> dict:
+    def none_to_dict(cls, v: any, info: ValidationInfo) -> dict:
         return v if v is not None else {}
     
     @field_validator('winter_date_ranges', 'man_ranges', mode='before')
     @classmethod
-    def passwords_match(cls, v: any, info: ValidationInfo) -> dict:
+    def none_to_list(cls, v: any, info: ValidationInfo) -> dict:
         return v if v is not None else []
 
 
@@ -148,9 +148,12 @@ class FFConfig(BaseConfig):
     
     @field_validator('filters', mode='before')
     @classmethod
-    def passwords_match(cls, v: any, info: ValidationInfo) -> dict:
-        return v if v is not None else FiltersConfig.model_construct()
-
+    def none_to_model(cls, v: any, info: ValidationInfo) -> BaseModel:
+        expected_type = cls.model_fields[info.field_name].annotation
+        if v is None and issubclass(expected_type, BaseModel):
+            return expected_type.model_construct()
+        else:
+            return v
 
 
 class RepOutInfo(FFBaseModel):

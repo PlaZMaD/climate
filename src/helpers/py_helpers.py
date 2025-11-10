@@ -66,7 +66,7 @@ def str_to_func(code: str) -> Callable:
 
 
 def gen_enum_info(enum_class) -> str:
-    return ", ".join(m.name for m in enum_class)
+    return ", ".join(f"'{m.name}'" for m in enum_class)
 
 
 def is_protected_method(name):

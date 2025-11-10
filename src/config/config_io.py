@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, model_serializer, Field
 from ruamel.yaml import CommentedSeq, CommentedMap, YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
+from src.config.config_versions import update_config_version
 from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
 
@@ -12,6 +13,7 @@ from src.helpers.io_helpers import find_unique_file
 # comments io support, import defaults, diff export, time conversion function vs safety 
 
 METADATA_KEY = '_meta_description'
+BASEMODEL_KEY = '_is_basemodel'
 CONFIG_GLOB = '*config*.yaml'
 
 
@@ -21,6 +23,8 @@ def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
         meta = d[METADATA_KEY]
         del d[METADATA_KEY]
         for k, v in meta.items():
+            if k == BASEMODEL_KEY:
+                continue
             eol = []  # or smth else
             if 'desc' in v:
                 eol += [v['desc']]
@@ -29,18 +33,21 @@ def dict_to_yaml_with_comments(d: dict) -> CommentedMap:
     return d
 
 
-def config_to_yaml(x, path, max_len=5):
+def config_to_yaml(x, path, basedepth):
     """ Nested metadata processing and improves yaml items wrapping """
     
     if isinstance(x, dict):
         res = dict_to_yaml_with_comments(x)
+        is_basemodel = METADATA_KEY in x and BASEMODEL_KEY in x[METADATA_KEY]
+        if is_basemodel:
+            basedepth = 0
         
         v_types = {type(v) for v in res.values()}
-        if v_types <= {str, int, float} and len(path) > 1:
+        if basedepth > 0 and v_types <= {str, int, float} and len(path) > 1:
             res.fa.set_flow_style()
         else:
             for k, v in res.items():
-                res[k] = config_to_yaml(v, path + [str(k)], max_len)
+                res[k] = config_to_yaml(v, path + [str(k)], basedepth + 1)
         return res
     
     if isinstance(x, list):
@@ -49,7 +56,7 @@ def config_to_yaml(x, path, max_len=5):
             res = CommentedSeq(x)
             res.fa.set_flow_style()
         else:
-            res = [config_to_yaml(i, path + [str(x)], max_len) for i in x]
+            res = [config_to_yaml(i, path + [str(x)], basedepth + 1) for i in x]
         return res
 
     if isinstance(x, str):
@@ -58,22 +65,22 @@ def config_to_yaml(x, path, max_len=5):
     return x
 
 
-def copy_comments(src_x, tgt_x):
+def copy_comments(from_el, to_el):
     """ Nested comments transfer """
         
-    if isinstance(tgt_x, CommentedMap):
-        tgt_x.ca.items.update(src_x.ca.items)
+    if isinstance(to_el, CommentedMap):
+        to_el.ca.items.update(from_el.ca.items)
 
-        v_types = {type(v) for v in tgt_x.values()}
+        v_types = {type(v) for v in to_el.values()}
         if v_types <= {str, int, float}:
             pass
         else:            
-            for k in tgt_x.keys():
-                if k in src_x.keys():
-                    _, tgt_x[k] = copy_comments(src_x[k], tgt_x[k])
-        return src_x, tgt_x
+            for k in to_el.keys():
+                if k in from_el.keys():
+                    _, to_el[k] = copy_comments(from_el[k], to_el[k])
+        return from_el, to_el
     
-    return src_x, tgt_x
+    return from_el, to_el
 
 
 class AnnotatedBaseModel(BaseModel):
@@ -90,6 +97,7 @@ class AnnotatedBaseModel(BaseModel):
         
         assert METADATA_KEY not in self
         config_meta = {k: v.metadata for k, v in self.model_fields.items() if v.metadata}
+        config_meta[BASEMODEL_KEY] = True
         if len(config_meta) > 0:
             res[METADATA_KEY] = config_meta
         return res
@@ -100,48 +108,47 @@ class FFBaseModel(AnnotatedBaseModel):
     model_config = ConfigDict(validate_assignment=True, revalidate_instances="always", use_attribute_docstrings=True)
 
 
+def preprocess_yaml_text(text: str) -> str:
+    fixed_text = text.replace('\t', '    ')
+    if fixed_text != text:
+        print('Tabs were replaced with spaces in the yaml file.')
+    return fixed_text
+
+
 class BaseConfig(FFBaseModel):
-    # TODO 1 bool vs Annotated[bool, Field(exclude=True)] = None
     from_file: Annotated[bool, Field(exclude=True)] = None
     default_fpath: Annotated[Path, Field(exclude=True)] = None
     
     @classmethod
-    def get_yaml(cls) -> YAML:
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        yaml.indent(mapping=4, sequence=4, offset=4)
-        return yaml
+    def get_yaml_io(cls) -> YAML:
+        yaml_io = YAML()
+        yaml_io.preserve_quotes = True
+        yaml_io.default_flow_style = False
+        yaml_io.indent(mapping=4, sequence=4, offset=4)
+        return yaml_io
     
     @classmethod
-    def load_from_yaml(cls, fpath: Path, return_model=True):
-        with open(fpath, 'r') as fl:
-            file_txt = fl.read()
-            fix_txt = file_txt.replace('\t', '    ')
-            if fix_txt != file_txt:
-                print('Tabs were replaced in the config.')
-            
-            yaml = cls.get_yaml()
-            loaded_yaml = yaml.load(fix_txt)
+    def load_dict_from_yaml(cls, fpath: Path) -> dict:
+        yaml_text = fpath.read_text(encoding='utf8')
+        yaml_text = preprocess_yaml_text(yaml_text)
         
-        model = cls.model_validate(loaded_yaml)
-        if return_model:
-            return model
-        else:
-            return loaded_yaml
+        yaml_io = cls.get_yaml_io()
+        yaml_dict = yaml_io.load(yaml_text)
+        return yaml_dict
     
     @classmethod
     def save_to_yaml(cls, config: BaseModel, fpath: Path, add_comments: bool):
         save_dict = config.model_dump(mode='json')                
-        config_yaml = config_to_yaml(save_dict, path=[])
+        cfg_dict = config_to_yaml(save_dict, path=[], basedepth=0)
         
         if add_comments:
-            default_config = cls.load_from_yaml(config.default_fpath, return_model=False)        
-            _, config_yaml = copy_comments(default_config, config_yaml)
+            default_cfg_dict = cls.load_dict_from_yaml(config.default_fpath)
+            assert cls.model_validate(default_cfg_dict)
+            _, cfg_dict = copy_comments(default_cfg_dict, cfg_dict)
         
         with open(fpath, "w") as fl:
-            yaml = cls.get_yaml()            
-            yaml.dump(config_yaml, fl)
+            yaml_io = cls.get_yaml_io()            
+            yaml_io.dump(cfg_dict, fl)
     
     @classmethod
     def save(cls: Self, config, fpath: str | Path, add_comments: bool):
@@ -160,16 +167,17 @@ class BaseConfig(FFBaseModel):
     
     @classmethod
     def load_or_init(cls, load_path: str | Path | None, default_fpath: Path, init_debug: bool, init_version: str) -> Self:
+        """ load_path: None to force construct a dummy for consequent ipynb fill """
         if load_path == 'auto':
             load_path = find_unique_file(Path('.'), CONFIG_GLOB)
         
         if load_path:
-            config = cls.load_from_yaml(Path(load_path))
-            if config.version != init_version:
-                raise NotImplementedError(f'Current config version: {init_version} does not match loaded version: {config.version}. \n'
-                                          'Backwards compatibility is planned to be implemented soon. \n'
-                                          'For now, please update config fields manually to match default exported config.')
-            config.from_file = True
+            cfg_dict = cls.load_dict_from_yaml(Path(load_path))
+            cfg_dict = update_config_version(cfg_dict, init_version)
+            
+            cfg_model = cls.model_validate(cfg_dict)            
+            
+            cfg_model.from_file = True
         else:
             '''
             if ENV.LOCAL:
@@ -177,10 +185,10 @@ class BaseConfig(FFBaseModel):
                 init_debug = True
             '''
             
-            config = cls.model_construct(debug=init_debug, version=init_version)
-            config.from_file = False
+            cfg_model = cls.model_construct(debug=init_debug, version=init_version)
+            cfg_model.from_file = False
         
         assert default_fpath.exists()
-        config.default_fpath = default_fpath
+        cfg_model.default_fpath = default_fpath
         
-        return config
+        return cfg_model

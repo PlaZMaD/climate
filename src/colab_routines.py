@@ -9,6 +9,7 @@ from src.data_io.detect_import import SUPPORTED_FILE_EXTS_LOWER
 from src.helpers.env_helpers import colab_only, ENV
 
 # TODO 3 %autoreload stopped to work in colab, any replacement?
+DEMO_DATA_FILES = {'eddy_pro result_SSB 2023.csv', 'BiometFy4_2023.csv'}
 
 
 if ENV.COLAB:
@@ -84,25 +85,16 @@ async function resize_output() {
 get_ipython().events.register('post_run_cell', resize_output)
 """
 
-
-def no_input_files(input_dir: str, ) -> bool:
-    input_files = list(Path(input_dir).glob('*.*'))
+''' unused, an experiment to avoid users to comment out gdown on every colab opening
+@colab_only
+def colab_xor_demo_files():
+    input_files = list(Path('.').glob('*.*'))
     supported_input_files = {str(file) for file in input_files if file.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER}
-    if len(supported_input_files) > 0:
-        ff_logger.info('Data files are found the input folder. Google Drive download commands canceled.')
-        return False
-    else:
-        ff_logger.info('Data files are not found in the input folder. Script will try to download files using  Google Drive links.')
-        return True
-
+    if DEMO_DATA_FILES & supported_input_files:
+        if supported_input_files - DEMO_DATA_FILES:
+            ff_logger.info('Both demo data files and user files are found in the input folder. Demo files will be removed.')
+            for fpath in DEMO_DATA_FILES:
+                Path(fpath).unlink(missing_ok=True)
+        else:
+            ff_logger.info('No user files are found in the input folder. Script will be using demo data.')
 '''
-DEMO_DATA_FILES = {'eddy_pro result_SSB 2023.csv', 'BiometFy4_2023.csv'}
-if DEMO_DATA_FILES & supported_input_files:
-    if supported_input_files - DEMO_DATA_FILES:
-        ff_logger.info('Both demo data files and user files are found in the input folder. Demo files will be removed.')
-        for fpath in DEMO_DATA_FILES:
-            Path(fpath).unlink(missing_ok=True)
-    else:
-        ff_logger.info('No user files are found in the input folder. Script will be using demo data.')
-'''
-

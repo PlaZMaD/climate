@@ -1,8 +1,10 @@
+import pprint
 from pathlib import Path
 
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.config.config_types import InputFileType, ImportMode
-from src.data_io.eddypro_cols import BIOMET_HEADER_DETECTION_COLS, EDDYPRO_HEADER_DETECTION_COLS
+from src.data_io.eddypro_cols import EDDYPRO_HEADER_DETECTION_COLS
+from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_eddypro_fname, try_parse_ias_fname, try_parse_csf_fname
 from src.data_io.utils.table_loader import load_table_from_file
@@ -74,7 +76,22 @@ def detect_known_files(input_dir=None, from_list: list[Path] = None) -> dict[Pat
     else:
         input_files = from_list
     input_file_types = {f: detect_file_type(f) for f in input_files}
-    return {k: v for k, v in input_file_types.items() if v != InputFileType.UNKNOWN}
+    
+    valid_ftypes = set(InputFileType) - {InputFileType.UNKNOWN}
+    valid_ftype_names = [enum.value for enum in valid_ftypes]
+    unknown_input_files = {k: v for k, v in input_file_types.items() if v == InputFileType.UNKNOWN}
+    unknown_input_fnames = [str(k) for k in unknown_input_files.keys()]
+    input_files_pprint = pprint.pformat({str(k): v.value for k, v in input_file_types.items()})
+
+    if len(unknown_input_files) > 0:
+        raise AutoImportException('\n'
+                                  f'Files {unknown_input_fnames} are not recognised. You can try one of the following solutions: \n'
+                                  f'- Change columns to better match one of the example files in the introduction {valid_ftype_names}. \n'
+                                  '- Download and edit one of the examples, while keeping datetime format and column names. \n'
+                                  '- Specify file type manually by changing UNKNOWN to one of the known format types: \n\n'
+                                  f"config.data_import.input_files = {input_files_pprint}")
+    
+    return input_file_types
 
 
 def change_if_auto(option, new_option=None, new_option_call=None,
@@ -149,8 +166,8 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
     
     if len(paths) > 1:
         paths_info = ensure_list(paths, transform_func=lambda x: str(Path(x).name))
-        ff_logger.warning(f'Multiple file names can be used to auto detect site name: {paths_info}, \n'
-                          'Using the first one or specify manually in the options.')
+        ff_logger.info(f'Multiple file names can be used to auto detect site name: {paths_info}, \n'
+                       'Using the first one or specify manually in the options.')
     
     if len(paths) >= 1:
         ias_site_name_auto, ias_out_version_auto = parser(paths[0].name)
@@ -194,13 +211,13 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     auto_site_name, auto_ias_ver = detect_fname_options(cfg_imp.input_files, cfg_imp.import_mode)
     
     cfg_meta.site_name = change_if_auto(cfg_meta.site_name, auto_site_name,
-                                       ok_msg=f'Auto detected site name: {auto_site_name}')
+                                        ok_msg=f'Auto detected site name: {auto_site_name}')
     cfg_exp.ias.out_fname_ver_suffix = change_if_auto(cfg_exp.ias.out_fname_ver_suffix, auto_ias_ver,
                                                       ok_msg=f'Auto detected ias version: {auto_ias_ver}')
     
     # TODO 1 _has_meteo vs has_meteo, duplicates in import routines 
-    config._has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
-    return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, config._has_meteo
+    has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
+    return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, has_meteo
 
 
 def try_auto_detect_input_files(*args, **kwargs):

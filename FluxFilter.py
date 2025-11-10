@@ -41,13 +41,13 @@
 # *   Файл-пример full output можно скачать [здесь](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
 # *   Файл-пример biomet можно скачать [здесь](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing)
 # *   Файл-пример CSF можно скачать *[здесь]*
-# *   Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.2/misc/default_config.yaml)
+# *   Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default_ru.yaml)
 # *   В файле full output должны быть 3 строки заголовка и названия переменных должны быть записаны во 2-й строке
 # *   В файле biomet должны быть 2 строки заголовка и названия переменных должны быть записаны в 1-й строке. По умолчанию без проблем читаются файлы, у которых дата и время записаны в колонке TIMESTAMP_1 в формате yyyy-mm-dd HHMM
 #
 # ## **Выходные файлы**
 # Форматы выходных файлов (собраны в архиве FluxFilter_output.zip и в директории output в разделе Файлы):
-# 1.   Файл базы данных ИАС уровня 2;
+# 1.   Один или несколько файлов базы данных ИАС уровня 2;
 # 2.   Входной файл для инструмента фильтрации по u*, заполнения пропусков и разделения потоков [REddyProcWeb](https://www.bgc-jena.mpg.de/5624918/Input-Format) (Институт Макса Планка, Германия). Этот же файл используется как входной для раздела "Обработка утилитами REddyProc" данного скрипта.
 # 3. Входной файл для инструмента заполнения пропусков [Flux Analysis Tool](https://atmenv.envi.osakafu-u.ac.jp/staff/ueyama/softwares/) (M. Ueyama, Япония)
 # 4. Файл output_all – все исходные переменные и все флаги применения фильтров.
@@ -62,12 +62,13 @@
 # Через браузер:  
 # *   нажмите на кнопку директории (нижняя кнопка в левой панели под кнопкой "ключ")
 # *   перетащите один или несколько файлов (к примеру, из проводника Windows) в пустое пространство под директорией `sample_data`
-# *   закомментировать две команды `!gdown` в разделе **Загружаем данные**  
+# *   закомментируйте две команды `!gdown` в разделе **Загружаем данные**  
 #
 # Через google-диск:  
-# *   загрузить на google-диск файлы full output, biomet, файл конфигурации и/или любые другие
-# *   открыть к ним доступ
-# *   скопировать часть публичной ссылки в раздел **Загружаем данные** в команду !gdown 
+# *   загрузите на google-диск файлы full output, biomet, файл конфигурации и/или любые другие
+# *   откройте к ним доступ
+# *   скопируйте часть публичной ссылки в раздел **Загружаем данные** в команду !gdown
+# 
 # Вариант google-диска оптимален, если в дальнейшем тетрадь будет отправлена другим пользователям (возможен закрытый доступ только отдельным аккаунтам Google).  
 # 
 # После загрузки в разделе **Конфигурация загрузки данных** необходимо: 
@@ -140,9 +141,10 @@ import bglabutils.basic as bg
 # import bglabutils.boosting as bb
 # import textwrap
 
-from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, no_input_files
+from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals
-from src.config.config_types import IasExportIntervals
+from src.config.config_types import IasExportIntervals, InputFileType # noqa: F401
+from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.helpers.env_helpers import setup_r_env
@@ -151,7 +153,7 @@ from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import import_data
 from src.data_io.detect_import import try_auto_detect_input_files
 from src.data_io.ias_io import export_ias
-from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap
+from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function  # noqa: F401
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
@@ -168,7 +170,7 @@ setup_plotly(gl.out_dir)
 init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # Cells can be executed separately via import * and mocking global vars import global as gl
-# To tweak any function directly in Colab: 1) run all cells above 2) uncomment and run 3) comment back:
+# To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line 
 # ipython_edit_function(meteorological_night_filter)
 
 
@@ -197,15 +199,15 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # Здесь нужно прописать символы из ссылки на файл biomet
 
 # %% id="KMu4IqY45HG6"
-if no_input_files(input_dir='.'):
-    # Загрузка файла full output
-    # https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
-    # !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
-    
-    # Загрузка файла biomet
-    # https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
-    # !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
-    pass
+
+# Загрузка файла full output
+# https://drive.google.com/file/d/1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n/view?usp=sharing
+# !gdown 1CGJmXyFu_pmzTLitG5aU8fwY8gW3CI1n
+
+# Загрузка файла biomet
+# https://drive.google.com/file/d/19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k/view?usp=sharing
+# !gdown 19XsOw5rRJMVMyG1ntRpibfkUpRAP2H4k
+
 # %% [markdown] id="WfWRVITABzrz"
 # # Задаем параметры для загрузки и обработки данных
 
@@ -216,8 +218,8 @@ if no_input_files(input_dir='.'):
 # В зависимости от загруженных файлов cкрипт поддерживает следующие режимы чтения данных:  
 # - один или несколько файлов EddyPro - full output
 # - один или несколько файлов EddyPro - full output и один или несколько файлов EddyPro - biomet
-# - один файл ИАС
-# - один файл CSF и один или несколько файлов EddyPro - biomet
+# - один или несколько файлов ИАС
+# - один или несколько файлов CSF и один или несколько файлов EddyPro - biomet
 #
 # В простых случаях (и если не загружены лишние файлы) тип файлов и их настройки будут определены автоматически. В сложных случаях или при ошибках можно попробовать вручную задать все настройки в этой ячейке.  
 #
@@ -226,12 +228,13 @@ if no_input_files(input_dir='.'):
 # - без файла конфигурации, используются настройки из ячеек тетради  
 # - с файлом конфигурации, при этом настройки из ячеек не применяются  
 #
-# Пример файла конфигурации последнего запуска `config*.yaml` будет добавлен в выходной архив после завершения работы тетради.
+# Файл конфигурации последнего запуска `config*.yaml` будет добавлен в выходной архив после завершения работы тетради.
+# Также после завершения работы несколько примеров файлов конфигурации будет в Colab директории scripts/misc.
 # Его можно отредактировать и в дальнейшем загружать в скрипт вместе с данными. Файл читается в этой ячейке автоматически, если загружен пользователем и назван по шаблону `config*.yaml`. Отключить загрузку или задать фиксированное название можно в параметре `load_path='auto'`.  
 #
 # **Необходимо проверить:**
 #
-# В автоматическом режиме (по умолчанию) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `'EDDYPRO_FO'`, `'EDDYPRO_FO_AND_BIOMET'`, `'IAS'`, `'CSF'`).  Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
+# В автоматическом режиме (по умолчанию) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`).  Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
 #
 # В `config.data_import.input_files` должен быть либо путь до файла (`= ['1.csv']`) при имени файла 1.csv, либо список (list) путей в случае загрузки нескольких файлов (`= ['1.csv', '2.csv']`), либо словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`.  
 # При импорте через !gdown файла с google-диска достаточно указать в одинарной кавычке *имя файла.расширение*. Не забывайте расширение .csv!  
@@ -246,7 +249,10 @@ if no_input_files(input_dir='.'):
 #
 # **Дополнительные опции (без уровня PRO лучше не менять)**:  
 # `config.*.missing_data_codes = ['-9999']` список значений во входных файлах, которые будут заменены на np.nan для адекватной работы алгоритмов;  
-# `config.*.repair_time` если `True`, то проверит колонку с датой-временем на пропуски и монотонность, проведет регенерацию по первой-последней точке с учетом предполагаемой длины шага (вычисляется по паре первых значений ряда).
+# `config.*.repair_time` если `True`, то проверит колонку с датой-временем на пропуски и монотонность, проведет регенерацию по первой-последней точке с учетом предполагаемой длины шага (вычисляется по первым значениям ряда).  
+# `config.data_import.ias.skip_validation` если `True`, то будут отключены пред-проверки корректности ИАС  
+# `config.data_import.csf.empty_co2_strg` если `True` и в csf отсутствует колонка co2_strg, то будет добавлена колонка с пропусками  
+  
 
 # %% id="tVJ_DRBrlpYd"
 
@@ -638,6 +644,9 @@ if not config.calc.has_meteo or 'ta_1_1_1' not in data.columns:
     data['ta_1_1_1'] = data['air_temperature'] - 273.15
     ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
+df_ias_export = data.copy()
+try_compare_stats(data, repo_dir / 'misc/expected_stats.xlsx')
+
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
 
@@ -945,20 +954,18 @@ export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config
 
 # %% [markdown] id="e50f7947"
 # ## Файл для ИАС
-# Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций
+# Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций  
+
+# Опция `config.data_export.ias.split_intervals` позволяет выбрать количество экспортируемых файлов: по месяцам `IasExportIntervals.MONTH`, по годам `IasExportIntervals.YEAR`, все данные в одном файле `IasExportIntervals.ALL`.
 
 # %% id="yaLoIQmtzaYd"
 if not config.from_file:
     config.data_export.ias.split_intervals = IasExportIntervals.YEAR 
 
 if config.calc.has_meteo:
-    ias_df: pd.DataFrame = plot_data.copy()
-    for column, filter in filters_db.items():
-        filter = get_column_filter(ias_df, filters_db, column)
-        ias_df.loc[~filter.astype(bool), column] = np.nan
-    
+    swin_vals = data['swin_1_1_1'] if 'swin_1_1_1' in data.columns else None 
     export_ias(gl.out_dir, config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.data_export.ias.split_intervals,
-               ias_df, time_col=time_col, data_swin_1_1_1=data['swin_1_1_1'])
+               df_ias_export, time_col=time_col, swin_vals=swin_vals)
 
 # %% [markdown] id="Pm8hiMrb_wRW"
 # ## Файл для FAT
