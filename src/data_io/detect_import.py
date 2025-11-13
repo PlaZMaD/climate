@@ -1,5 +1,6 @@
 import pprint
 from pathlib import Path
+from types import SimpleNamespace
 
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.config.config_types import InputFileType, ImportMode
@@ -13,7 +14,6 @@ from src.config.ff_config import FFConfig, FFGlobals
 from src.helpers.io_helpers import ensure_path
 from src.helpers.py_collections import ensure_list, format_dict
 
-
 # DONE 1 _has_meteo vs has_meteo, duplicates in import routines
 
 
@@ -24,9 +24,7 @@ class AutoImportException(Exception):
     pass
 
 
-def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
-    df = load_table_from_file(fpath, nrows=nrows, header_row=None)
-    
+def detect_row(row_cols):
     biomest_cs = set(BIOMET_HEADER_DETECTION_COLS)
     ias_cs = set(IAS_HEADER_DETECTION_COLS) - biomest_cs
     
@@ -46,31 +44,48 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
     ]
     
     def match_ratio(sample: set, target: set):
-        return len(sample & target) / len(sample)
+        in_target = sample & target
+        return len(in_target) / len(sample), in_target
+    
+    best_match = 0.0
+    unknown_cols, matches = row_cols, []
+    for ftype, ftype_cols in detect_col_targets:
+        mr, known_cols = match_ratio(row_cols, ftype_cols)
+        if mr > 0:
+            best_match = max(best_match, mr)
+            unknown_cols -= known_cols
+            matches += [(ftype, mr)]
+    return SimpleNamespace(matches=matches, best_match=best_match, unknown_cols=unknown_cols)
+
+
+def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
+    df = load_table_from_file(fpath, nrows=nrows, header_row=None)
     
     # upper/lower case is yet skipped intentionally
-    header_matches = []
+    row_matches = {}
     for i, row in df.iterrows():
-        fixed_row = row.dropna()
-        if len(fixed_row) == 0:
+        row_cols = row.dropna()
+        if len(row_cols) == 0:
             continue
         
-        for ftype, cols_set in detect_col_targets:
-            mr = match_ratio(set(fixed_row), cols_set)
-            header_matches += [(i, ftype, mr)]
+        row_matches[i] = detect_row(set(row_cols))
     
-    positive_matches = [m for m in header_matches if m[2] > 0.5]
+    # TODO 2 make clear logging on recognised % in header 
+    possible_header_rows = [m for row_idx, m in row_matches.items() if m.best_match > 0.5]
+    if len(possible_header_rows) == 1:
+        positive_matches = [itype for itype, m in possible_header_rows[0].matches if m > 0.5]
+        if len(positive_matches) == 1:
+            itype = positive_matches[0]
+            ff_logger.info(f'Detected file {fpath} as {itype}') # duplicates
+            return itype
     
-    if len(positive_matches) == 1:
-        _, ftype, _ = positive_matches[0]
-        # ff_log.info(f'Detected file {fpath} as {ftype}') # duplicates
-        return ftype
-    else:
-        guesses = '\n'.join([f'row: {i} match: {mr:0.2f} {ftype}' for i, ftype, mr in header_matches])
-        ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
-                          f'{guesses} \n'
-                          f'Consider specifying file types manually according to import cell description.')
-        return InputFileType.UNKNOWN
+    guesses = '\n'.join([f'row: {i} match {mr:0.2f} {ftype.name} \n    unrecognised cols: {m.unknown_cols}'
+                         for i, m in row_matches.items()
+                         for ftype, mr in m.matches])
+    ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
+                      f'{guesses} \n'
+                      f'Consider specifying file types manually according to the import cell description.')
+    return InputFileType.UNKNOWN
 
 
 def get_supported_data_files(in_dir: Path) -> list[Path]:
@@ -90,15 +105,19 @@ def detect_known_files(input_dir=None, from_list: list[Path] = None) -> dict[Pat
     valid_ftype_names = [enum.value for enum in valid_ftypes]
     unknown_input_files = {k: v for k, v in input_file_types.items() if v == InputFileType.UNKNOWN}
     unknown_input_fnames = [str(k) for k in unknown_input_files.keys()]
-    input_files_pprint = pprint.pformat({str(k): v.value for k, v in input_file_types.items()})
-
+    input_files_pprint = pprint.pformat({str(k): v.value for k, v in input_file_types.items()}, indent=0)
+    input_files_pprint = input_files_pprint.replace('{', '{\n').replace('}', '\n}')
+    input_files_line = f"    config.data_import.input_files = {input_files_pprint}".replace('\n', '\n        ')
+    
     if len(unknown_input_files) > 0:
-        raise AutoImportException('\n'
-                                  f'Files {unknown_input_fnames} are not recognised. You can try one of the following solutions: \n'
-                                  f'- Change columns to better match one of the example files in the introduction {valid_ftype_names}. \n'
-                                  '- Download and edit one of the examples, while keeping datetime format and column names. \n'
-                                  '- Specify file type manually by changing UNKNOWN to one of the known format types: \n\n'
-                                  f"config.data_import.input_files = {input_files_pprint}")
+        raise AutoImportException(
+            '\n'
+            f'Files {unknown_input_fnames} are not recognised. Consider one of the following solutions: \n'
+            f'- Change column names to better match one of the example files in the introduction {valid_ftype_names}. \n'
+            '- Download and edit only column values in one of the examples, while keeping datetime format and column names. \n'
+            '- Specify file type manually in the options by changing UNKNOWN to one of the known format types: \n\n'
+            + input_files_line
+        )
     
     return input_file_types
 
@@ -208,15 +227,15 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
                   f'{input_files_info} \n')
         
         cfg_imp.input_files = change_if_auto(cfg_imp.input_files, input_files_auto, ok_msg=ok_msg)
-        
+    
     elif type(cfg_imp.input_files) in [list, str]:
         user_fpaths = ensure_list(cfg_imp.input_files, transform_func=ensure_path)
         
         cfg_imp.input_files = detect_known_files(from_list=user_fpaths)
-        
+    
     elif type(cfg_imp.input_files) is dict:
         cfg_imp.input_files = {Path(fpath): ftype for fpath, ftype in cfg_imp.input_files.items()}
-        
+    
     else:
         raise ValueError(f'{cfg_imp.input_files=}')
     
@@ -230,7 +249,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
                                         ok_msg=f'Auto detected site name: {auto_site_name}')
     cfg_exp.ias.out_fname_ver_suffix = change_if_auto(cfg_exp.ias.out_fname_ver_suffix, auto_ias_ver,
                                                       ok_msg=f'Auto detected ias version: {auto_ias_ver}')
-     
+    
     has_meteo = cfg_imp.import_mode in [IM.CSF_AND_BIOMET, IM.IAS, IM.EDDYPRO_FO_AND_BIOMET]
     return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, has_meteo
 

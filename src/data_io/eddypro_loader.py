@@ -60,6 +60,7 @@ def load_eddypro(config: FFConfig):
 
     if ENV.LOCAL and has_meteo:
         # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
+        # TODO 1 something is off under {"nik_biomet": 'EDDYPRO_BIOMET', 'nik_full_output': 'EDDYPRO_FO'}        
         df_test, has_meteo = merge_time_series_biomet(df_fo, df_bm, time_col)
         assert len(df_test.compare(df)) == 0
         

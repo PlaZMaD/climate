@@ -47,6 +47,9 @@ from src.config.ff_config import FFConfig
 # TODO 1 import must recognise all the files or fail
 
 
+# TODO 2 QOA are any of these supposed to be known as some format? 
+# 'UNNAMED', 'RN_1_1_1', 'LOGGERTEMP', 'SHFSENS3', 'SHF_1_1_1', 'SWIN_1_1_1', 'LOGGERPWR', 'LWOUT_1_1_1', 'SHFSENS2', 'LWIN_1_1_1', 'VIN_1_1_1', 'SHFSENS1', 'SWOUT_1_1_1', 'PPFD_1_1_1'
+
 def import_data(config: FFConfig):    
     if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
         res = load_eddypro(config)
