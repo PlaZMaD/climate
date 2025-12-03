@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 
 from src.config.config_types import InputFileType
-from src.data_io.biomet_loader import load_biomets
+from src.data_io.biomet_loader_todel import load_biomets_todel
 from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS_LOWER
 from src.data_io.utils.time_series_utils import merge_time_series
 from src.data_io.time_series_loader import preload_time_series, repair_time, merge_time_series_biomet
-from src.config.ff_config import FFConfig
+from src.config.ff_config import FFConfig, ImportConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_logger
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
@@ -67,24 +67,24 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
     return df
 
 
-def import_csf(config: FFConfig):
+def import_csf_and_biomet(cfg_import: ImportConfig):
     # TODO 1 finish transfer to abstract loader
 
-    dfs_csf = {fpath.name: preload_time_series(fpath, ftype, config)
-               for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.CSF}
+    dfs_csf = {fpath.name: preload_time_series(fpath, ftype, cfg_import)
+               for fpath, ftype in cfg_import.input_files.items() if ftype == InputFileType.CSF}
 
     for fpath, df in dfs_csf.items():
         df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
         check_csf_col_names(df)        
-        df = import_rename_csf_cols(df, config.data_import.time_col)
-        df = repair_time(df, config.data_import.time_col, fill_gaps=False)
+        df = import_rename_csf_cols(df, cfg_import.time_col)
+        df = repair_time(df, cfg_import.time_col, fill_gaps=False)
         dfs_csf[fpath] = df
        
     if len(dfs_csf) > 1:
         ff_logger.info('Merging data from files...')
-    df_csf = merge_time_series(dfs_csf, config.data_import.time_col, no_duplicate_cols=False)
-    if config.data_import.csf.repair_time:
-        df_csf = repair_time(df_csf, config.data_import.time_col, fill_gaps=True)
+    df_csf = merge_time_series(dfs_csf, cfg_import.time_col, no_duplicate_cols=False)
+    if cfg_import.csf.repair_time:
+        df_csf = repair_time(df_csf, cfg_import.time_col, fill_gaps=True)
 
     print('Диапазон времени csf (START): ', df_csf.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df_csf.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
@@ -93,16 +93,16 @@ def import_csf(config: FFConfig):
                    f'{df_csf.columns.values}')
     # print("Колонки в CSF \n", df_csf.columns.to_list())
       
-    bm_paths = [str(fpath) for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
-    df_bm, has_meteo = load_biomets(bm_paths, config.data_import.time_col, data_freq, config.data_import.eddypro_biomet)
+    bm_paths = [str(fpath) for fpath, ftype in cfg_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
+    df_bm, has_meteo = load_biomets_todel(bm_paths, cfg_import.time_col, data_freq, cfg_import.eddypro_biomet)
                   
     if has_meteo:
-        df, has_meteo = merge_time_series_biomet(df_csf, df_bm, config.data_import.time_col)
+        df, has_meteo = merge_time_series_biomet(df_csf, df_bm, cfg_import.time_col)
     else:
         df = df_csf
             
-    # repair postprocessing
-    if config.data_import.csf.empty_co2_strg and 'co2_strg' not in df.columns:
+    # (csf specific) repair postprocessing
+    if cfg_import.csf.empty_co2_strg and 'co2_strg' not in df.columns:
         df['co2_strg'] = np.nan
         ff_logger.info('co2_strg not found, adding empty column.')
       
@@ -112,9 +112,9 @@ def import_csf(config: FFConfig):
     has_meteo = len(biomet_columns) > 0
 
     # TODO 2 after merge or after load?
-    if df[config.data_import.time_col].isna().sum() > 0:
+    if df[cfg_import.time_col].isna().sum() > 0:
         raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
     
-    return df, config.data_import.time_col, biomet_columns, df.index.freq, has_meteo
+    return df, cfg_import.time_col, biomet_columns, df.index.freq, has_meteo
 
 

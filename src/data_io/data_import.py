@@ -1,8 +1,10 @@
+from src.helpers.env_helpers import ENV
 from src.helpers.py_collections import format_dict
 from src.ff_logger import ff_logger
-from src.data_io.csf_import import import_csf
-from src.config.config_types import ImportMode
-from src.data_io.eddypro_loader import load_eddypro
+from src.data_io.csf_import import import_csf_and_biomet
+from src.config.config_types import ImportMode, DEBUG_NROWS
+from src.data_io.eddypro_import import import_eddypro_and_biomet
+from src.data_io.eddypro_loader_todel import load_eddypro_via_bgl_todel
 from src.data_io.ias_io import import_iases
 from src.config.ff_config import FFConfig
 
@@ -50,13 +52,28 @@ from src.config.ff_config import FFConfig
 # TODO 2 QOA are any of these supposed to be known as some format? 
 # 'UNNAMED', 'RN_1_1_1', 'LOGGERTEMP', 'SHFSENS3', 'SHF_1_1_1', 'SWIN_1_1_1', 'LOGGERPWR', 'LWOUT_1_1_1', 'SHFSENS2', 'LWIN_1_1_1', 'VIN_1_1_1', 'SHFSENS1', 'SWOUT_1_1_1', 'PPFD_1_1_1'
 
-def import_data(config: FFConfig):    
+def import_data(config: FFConfig):
+    if config.debug and DEBUG_NROWS:
+        config.data_import.debug_nrows = DEBUG_NROWS
+    else:
+        config.data_import.debug_nrows = None
+    
     if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
-        res = load_eddypro(config)
+        res = load_eddypro_via_bgl_todel(config.data_import)
+        
+        # TODO 2 switch to abstract loader, ensure this check does not find errors, merge all loaders 
+        if ENV.LOCAL:
+            res_test_check = import_eddypro_and_biomet(config.data_import)
+            res_test_check[0].rename(columns={'date_STR': 'date', 'time_STR': 'time'}, inplace=True)
+            assert (res_test_check[0].columns == res[0].columns).all()
+            
+            check_same = res_test_check[0].compare(res[0])
+            assert len(check_same) == 0    
+    
     elif config.data_import.import_mode == ImportMode.IAS:
-        res = import_iases(config)
+        res = import_iases(config.data_import)
     elif config.data_import.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
-        res = import_csf(config)
+        res = import_csf_and_biomet(config.data_import)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
     

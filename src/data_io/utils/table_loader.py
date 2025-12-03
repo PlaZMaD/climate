@@ -89,6 +89,7 @@ def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=0) -> pd.D
     return df
 
 
+# TODO 2 header_row=None (case of load to auto guess table type)
 def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.DataFrame:  
     # TODO 2 possibly this fixed csv (or other) bugs, merge into table loader routine?
     # TODO 2 Excel 2016 saved files seems were impossible to open without specyfying engine, why ?    

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import field_validator, BaseModel
+from pydantic import field_validator, BaseModel, Field
 from pydantic_core.core_schema import ValidationInfo
 
 
@@ -33,19 +33,19 @@ class MergedDateTimeFileConfig(InputFileConfig):
     try_datetime_formats: str | list[str] = None
 
 
+class SeparateDateTimeFileConfig(InputFileConfig):
+    time_col: str = None
+    try_time_formats: str | list[str] = None
+    date_col: str = None
+    try_date_formats: str | list[str] = None
+
+
 class IASImportConfig(MergedDateTimeFileConfig):
     skip_validation: bool = None
 
 
 class CSFImportConfig(MergedDateTimeFileConfig):
     empty_co2_strg: bool = None
-
-
-class SeparateDateTimeFileConfig(InputFileConfig):
-    time_col: str = None
-    try_time_formats: str | list[str] = None
-    date_col: str = None
-    try_date_formats: str | list[str] = None
 
 
 class RepConfig(FFBaseModel):
@@ -106,6 +106,8 @@ class ExportConfig(BaseConfig):
 
 
 class ImportConfig(BaseConfig):
+    debug_nrows: Annotated[int | None, Field(exclude=True)] = None
+    
     # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
     input_files: str | list[str] | dict[str | Path, InputFileType] = None
     

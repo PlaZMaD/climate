@@ -1,24 +1,17 @@
-import bglabutils.basic as bg
-from src.data_io.biomet_loader import load_biomets
+from bglabutils import basic as bg
+from src.config.config_types import InputFileType
+from src.config.ff_config import ImportConfig
+from src.data_io.biomet_loader_todel import load_biomets_todel
 from src.data_io.time_series_loader import merge_time_series_biomet
 from src.data_io.utils.time_series_utils import date_time_parser
 from src.ff_logger import ff_logger
-from src.config.config_types import InputFileType, DEBUG_NROWS
-from src.config.ff_config import FFConfig
 from src.helpers.env_helpers import ENV
 
 
-# TODO 1 in the ipynb, u_star is not yet renamed at the next line?
-# cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
-# ppfd_in_1_1_1 will be renamed to ppfd_1_1_1, 
-
-
-# TODO 1 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
-# if moved, check ias import-export handling stands (or solve with generalised col names preprocess check?)
-def load_eddypro(config: FFConfig):
-    c_fo = config.data_import.eddypro_fo
+def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
+    c_fo = cfg_import.eddypro_fo
     
-    fo_paths = [str(fpath) for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.EDDYPRO_FO]
+    fo_paths = [str(fpath) for fpath, ftype in cfg_import.input_files.items() if ftype == InputFileType.EDDYPRO_FO]
     
     # load of eddypro = full_output, optionally with biomet
     if not set(c_fo.missing_data_codes) <= {-9999}:
@@ -30,7 +23,7 @@ def load_eddypro(config: FFConfig):
         'debug': False,
         '-9999_to_nan': -9999 in c_fo.missing_data_codes,
         'time': {
-            'column_name': config.data_import.time_col,
+            'column_name': cfg_import.time_col,
             'converter': lambda x: date_time_parser(x, c_fo.time_col, c_fo.try_time_formats,
                                                        c_fo.date_col, c_fo.try_date_formats)
         },
@@ -45,8 +38,8 @@ def load_eddypro(config: FFConfig):
     ff_logger.info('Колонки в FullOutput \n'
                    f'{df_fo.columns.values}')
 
-    bm_paths = [str(fpath) for fpath, ftype in config.data_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
-    df_bm, has_meteo = load_biomets(bm_paths, config.data_import.time_col, data_freq, config.data_import.eddypro_biomet)
+    bm_paths = [str(fpath) for fpath, ftype in cfg_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
+    df_bm, has_meteo = load_biomets_todel(bm_paths, cfg_import.time_col, data_freq, cfg_import.eddypro_biomet)
       
     if has_meteo:
         df = df_fo.join(df_bm, how='outer', rsuffix='_meteo')
@@ -58,16 +51,13 @@ def load_eddypro(config: FFConfig):
     else:
         df = df_fo
 
-    if ENV.LOCAL and has_meteo:
+    if ENV.LOCAL and has_meteo:        
         # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
         # TODO 1 something is off under {"nik_biomet": 'EDDYPRO_BIOMET', 'nik_full_output': 'EDDYPRO_FO'}        
-        df_test, has_meteo = merge_time_series_biomet(df_fo, df_bm, time_col)
-        assert len(df_test.compare(df)) == 0
-        
-    # reddyproc requires 3 months
-    if config.debug and DEBUG_NROWS:
-        df = df[0: min(DEBUG_NROWS, len(df))]
-    
+        df_test_merge_nly, has_meteo_test = merge_time_series_biomet(df_fo, df_bm, time_col)
+        assert has_meteo == has_meteo_test
+        assert len(df_test_merge_nly.compare(df)) == 0
+            
     biomet_columns = []
     if has_meteo:
         biomet_columns = df_bm.columns.str.lower()

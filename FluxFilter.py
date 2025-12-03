@@ -267,7 +267,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
 config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.5_default_ru.yaml',
-                               init_debug=False, init_version='1.0.5')
+                               init_debug=False, init_version='v1.0.5')
 
 if not config.from_file:
     config.data_import.input_files = 'auto'

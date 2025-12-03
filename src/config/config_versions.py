@@ -63,7 +63,7 @@ def update_config_version(config: dict, tgt_ver) -> dict:
         config['version'] = '1.0.4'
     
     if config['version'] == '1.0.4':
-        config['data_import']['mixed_demo_policy'] = str(ColabDemoMixPolicy.AUTO_DELETE_DEMO)
+        config['data_import']['mixed_demo_policy'] = ColabDemoMixPolicy.AUTO_DELETE_DEMO
         config['version'] = 'v1.0.5'
         
     if config['version'] != tgt_ver:

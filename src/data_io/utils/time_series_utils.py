@@ -78,13 +78,15 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
             
     index_rebuild = pd.date_range(start=index_start, end=index_end, freq=pd.to_timedelta(freq))  
     abnormal_values = valid_index.index.difference(index_rebuild)
+    abnormal_count = len(abnormal_values)
     
-    if len(abnormal_values) > 1:
+    if abnormal_count > 1:
         raise Exception(f'Time index contains irregular values not fitting to frequency: {abnormal_values}.')
-    elif len(abnormal_values) == 1:
+    elif abnormal_count == 1:
         ff_logger.warning(f'Time index contains irregular value not matching to frequency: {abnormal_values}. Value excluded.')
 
     if not fill_gaps:
+        # TODO 1 kills freq, need fix
         index_rebuild = index_rebuild.intersection(valid_index)
             
     df_fixed = pd.DataFrame(index=index_rebuild)
@@ -94,6 +96,8 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
     idx = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
     assert idx.all()
     df_fixed[time_col] = df_fixed.index
+    
+    assert df_fixed.index.freq
     
     return df_fixed
 

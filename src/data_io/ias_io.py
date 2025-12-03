@@ -5,16 +5,15 @@ import numpy as np
 import pandas as pd
 from pandas.tseries.offsets import YearBegin, YearEnd, MonthBegin, MonthEnd
 
-from src.config.config_types import DEBUG_NROWS, IasExportIntervals
+from src.config.config_types import IasExportIntervals, InputFileType
 from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_data_check import set_lang, check_ias
-from src.data_io.utils.table_loader import load_table_logged
-from src.data_io.time_series_loader import repair_time, cleanup_df
+from src.data_io.time_series_loader import repair_time, cleanup_df, preload_time_series
 from src.data_io.utils.time_series_utils import merge_time_series, detect_datetime_format, format_year_interval
-from src.config.ff_config import FFConfig, IASImportConfig
+from src.config.ff_config import ImportConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
 from src.ff_logger import ff_logger
@@ -112,61 +111,57 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     return df
 
 
-def import_ias(fpath: Path, out_datetime_col: str, ias: IASImportConfig, skip_validation: bool, debug: bool):
+def import_ias(fpath: Path, cfg_import: ImportConfig):
+    cfg_ias = cfg_import.ias
+    
     ff_logger.info('\n' f'Loading {fpath}')
     
-    if skip_validation:
+    if cfg_ias.skip_validation:
         ff_logger.warning('IAS validation is skipped due to user option.')
-    elif not debug:
+    elif not cfg_import.debug_nrows:
         check_ias(fpath)
-
-    nrows = None if not debug else DEBUG_NROWS
-    df = load_table_logged(fpath, nrows=nrows)
     
-    assert out_datetime_col not in COLS_IAS_TIME
-    assert out_datetime_col not in df.columns
-    dt_fmt = detect_datetime_format(df[ias.datetime_col], ias.try_datetime_formats)
-    df[out_datetime_col] = pd.to_datetime(df[ias.datetime_col], format=dt_fmt)
+    df = preload_time_series(fpath, InputFileType.IAS, cfg_import)
     df = df.drop(COLS_IAS_TIME, axis='columns')
     
     # TODO 2 ias: abstract better: time gaps should be filled after merge of multiple files, but index should be done before? 
-    if ias.repair_time:
-        df = repair_time(df, out_datetime_col, fill_gaps=False)
+    if cfg_ias.repair_time:
+        df = repair_time(df, cfg_import.time_col, fill_gaps=False)
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
     # TODO 2 ias: test no longer required and cleanup
     # df = ias_table_extend_year(df, out_datetime_col, -9999)
     
-    df = cleanup_df(df, ias.missing_data_codes)
+    df = cleanup_df(df, cfg_ias.missing_data_codes)
     
-    df = import_ias_process_cols(df, out_datetime_col)
+    df = import_ias_process_cols(df, cfg_import.time_col)
     return df
 
 
-def import_iases(config: FFConfig):
+def import_iases(cfg_import: ImportConfig):
     # TODO 2 lang move to the script start?
     # will it be translation method for all the tools?
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    dfs = {fpath.name: import_ias(fpath, config.data_import.time_col, config.data_import.ias, config.data_import.ias.skip_validation, config.debug)
-           for fpath, _ in config.data_import.input_files.items()}
+    dfs = {fpath.name: import_ias(fpath, cfg_import)
+           for fpath, _ in cfg_import.input_files.items()}
  
     if len(dfs) > 1:
         ff_logger.info('Merging data from files...')
-    df = merge_time_series(dfs, config.data_import.time_col, no_duplicate_cols=False)
-    if config.data_import.ias.repair_time:
-        df = repair_time(df, config.data_import.time_col, fill_gaps=True)
+    df = merge_time_series(dfs, cfg_import.time_col, no_duplicate_cols=False)
+    if cfg_import.ias.repair_time:
+        df = repair_time(df, cfg_import.time_col, fill_gaps=True)
     
-    assert df[config.data_import.time_col].isna().sum() == 0
+    assert df[cfg_import.time_col].isna().sum() == 0
     
     # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
     expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
     biomet_cols_index = df.columns.intersection(expected_biomet_cols)
     
     has_meteo = True
-    return df, config.data_import.time_col, biomet_cols_index, df.index.freq, has_meteo
+    return df, cfg_import.time_col, biomet_cols_index, df.index.freq, has_meteo
 
 
 def prepare_time_intervals(df: pd.DataFrame, time_col, min_rows, export_intervals: IasExportIntervals):
