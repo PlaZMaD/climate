@@ -1,9 +1,9 @@
 from pathlib import Path
+from types import NoneType
 from typing import Annotated, Any
 
 from pandas import Timedelta
-from pydantic import field_validator, BaseModel, Field, SkipValidation, computed_field, ValidateAs
-from pydantic.json_schema import SkipJsonSchema
+from pydantic import field_validator, BaseModel, Field
 from pydantic_core.core_schema import ValidationInfo
 
 
@@ -117,11 +117,11 @@ class ImportConfig(BaseConfig):
     ias: IASImportConfig = IASImportConfig.model_construct()
     csf: CSFImportConfig = CSFImportConfig.model_construct()
     
-    import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
-    debug_nrows: Annotated[int | None, Field(exclude=True)] = None
+    import_mode: Annotated[ImportMode, gen_enum_info(ImportMode)] = None
+    debug_nrows: Annotated[int | NoneType, Field(exclude=True)] = None
     
     time_col: str = None
-    time_freq: Annotated[Timedelta | None, Field(exclude=True), ValidateAs(Any, lambda v: v)] = None
+    time_freq: Annotated[Timedelta, Field(Timedelta, exclude=True)] = None
 
 
 class CalcConfig(BaseConfig):

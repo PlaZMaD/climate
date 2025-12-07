@@ -105,7 +105,10 @@ class AnnotatedBaseModel(BaseModel):
 
 class FFBaseModel(AnnotatedBaseModel):
     # pydantic basemodel options
-    model_config = ConfigDict(validate_assignment=True, revalidate_instances="always", use_attribute_docstrings=True)
+    model_config = ConfigDict(validate_assignment=True, 
+                              revalidate_instances="always", 
+                              use_attribute_docstrings=True,
+                              arbitrary_types_allowed=True)
 
 
 def preprocess_yaml_text(text: str) -> str:

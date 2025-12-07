@@ -1,7 +1,8 @@
-version: '1.0.4'
+version: 'v1.0.5'
 debug: false
 data_import:
     input_files: 'auto'
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'
     eddypro_fo:
         repair_time: true
         missing_data_codes: [-9999]
@@ -26,12 +27,12 @@ data_import:
         datetime_col: 'TIMESTAMP'
         try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
         empty_co2_strg: true
-    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    import_mode: 'AUTO'  # 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET', 'AUTO'
     time_col: 'datetime'
 data_export:
     ias:
         out_fname_ver_suffix: 'auto'
-        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
+        split_intervals: 'YEAR'  # 'ALL', 'YEAR', 'MONTH'
 metadata:
     site_name: 'auto'
 filters:
@@ -47,7 +48,7 @@ filters:
         day_swin_limit: 10
         night_h_limits: [-50, 20]
         night_le_limits: [-50, 20]
-        winter_nee_limits: [0, 5]
+        winter_nee_limits: [-1, 5]
         winter_ch4_flux_limits: [-1, 1]
         CH4SS_min: 20.0
     min_max:
@@ -95,8 +96,8 @@ filters:
         ppfd_1_1_1: {z: 8.0, hampel_window: 10}
         nee: {z: 5.5, hampel_window: 10}
     winter_date_ranges:
-        - [01.01.2023 00:00, 26.03.2023 00:00]
-        - [13.11.2023 00:00, 31.12.2023 00:00]
+        - [01.01.2023 00:00, 26.03.2023 23:30]
+        - [13.11.2023 00:00, 31.12.2023 23:30]
     man_ranges: []
 calc:
     has_meteo: true
