@@ -8,8 +8,18 @@ from src.ff_logger import ff_logger
 from src.helpers.py_collections import ensure_list, format_dict
 
 # DONE repair time also repairs file gaps
+# DONE rework repair_time with separation of checks, repairs, and standard routines E: ok
+# DONE checks now work in all files, for example, dupe timestamps in biomet are logged
 
 DETECT_DATETIME_CHUNKS = 12
+
+
+# TODO 2 ensure this check does not find errors in all examples and cleanup
+TEMP_DEBUG_IMPORT = True
+def ensure_dfs_same(df1: pd.DataFrame, df2: pd.DataFrame):
+    assert (df1.columns == df2.columns).all()    
+    check_same = df1.compare(df2)
+    assert len(check_same) == 0
 
 
 def format_year_interval(from_year: int, to_year: int):
@@ -47,38 +57,24 @@ def get_freq(df: pd.DataFrame, time_col: str) -> Timedelta:
     raise Exception('Unexpected or unordered time column contents: cannot detect frequency.')
 
 
-def repair_time(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fill_gaps: bool):
-    """ 
-    source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
-    :param df: df.index could be both pd.RangeIndex or pd.DatetimeIndex (if converted previously)
-    :param fill_gaps: new index is strictly corrct freq or just values
-    Goal of this function is to create an index with freq from   
-    """
-    # assert False
-    # TODO 1 this function is moved to parse_timestamp_cols and resample_time_series_df 
-    # TODO 2 test/fix: irregular frequency timestamps (05:00 05:07, 05:30, 05:37, 06:00, ...)
-    # TODO 2 test/fix: duplicate timestamps
-    # TODO 2 test/fix: resample 1m -> 30m, 2h -> 30m ? 
-    # TODO 1 currently 1m -> 30m is done by deleting 29 vals, but should be done by mean 0m..30m -> 30m or? 0m, 30m..59m -> 30m or? 0m 
-    # TODO 3 more transparent rework could be handy:
-    # with support of repair=False and separation of checks, repairs, and standard routines E: ok
-         
-    # TODO 1 better way to notify about freqs from files? 
+def repair_check_todel(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fill_gaps: bool):
+    if not TEMP_DEBUG_IMPORT:
+        return 
+    # TODO 1 test each routine here on all inputs to ensure this funciton can be finally deleted
+    df_check = df.copy()
+    
     if not time_freq:
-        time_freq = get_freq(df, time_col)
-        # freq.astype('timedelta64[h]')
+        time_freq = get_freq(df_check, time_col)
     
-    df = df.set_index(time_col, drop=False)
-    tmp_index = df.index.copy()
-    df = df[~df.index.duplicated(keep='first')]
+    df_check = df_check.set_index(time_col, drop=False)
+    tmp_index = df_check.index.copy()
+    df_check = df_check[~df_check.index.duplicated(keep='first')]
     
-    if not tmp_index.equals(df.index):
+    if not tmp_index.equals(df_check.index):
         ff_logger.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
 
-    # TODO 1 QOA test: shouldn't start/end time errors be not allowed at all?
-    # can be optimised, also what if years are reversed?
     # TODO 1 after merge, can duplicate timestamps occur? will freq be saved?
-    coerced_index: pd.Series = pd.to_datetime(df[time_col], errors='coerce')    
+    coerced_index: pd.Series = pd.to_datetime(df_check[time_col], errors='coerce')    
     valid_index = coerced_index.dropna()
     
     index_start = valid_index.min()
@@ -106,14 +102,93 @@ def repair_time(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fill_gaps
         index_rebuild = index_rebuild.intersection(valid_index)
             
     df_fixed = pd.DataFrame(index=index_rebuild)
-    df_fixed = df_fixed.join(df, how='left')
+    df_fixed = df_fixed.join(df_check, how='left')
     
     assert isinstance(df_fixed.index, pd.DatetimeIndex)
     # na is valid only in case of expanded series, i.e. if original file had deleted time points
     idx = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
     assert idx.all()
-    df_fixed[time_col] = df_fixed.index
     
+    # TODO 1 is this required?
+    # df_fixed[time_col] = df_fixed.index
+    
+    ensure_dfs_same(df, df_fixed)
+
+
+def resample_time_series_df(df: pd.DataFrame, time_col: str, tgt_freq: pd.Timedelta, fill_gaps=True) -> pd.DataFrame:
+    """
+    Ensures that timestamps drop on tgt_freq in each day 
+    :param tgt_freq: if None, frequency will be sort of detected from the first 100 rows
+    :param fill_gaps: if False, rows with missing timestamps will be added
+    """
+    
+    # TODO 2 test/fix: irregular frequency timestamps (05:00 05:07, 05:30, 05:37, 06:00, ...)
+    # TODO 2 test/fix: resample 1m -> 30m, 2h -> 30m ? 
+    # TODO 1 currently 1m -> 30m is done by deleting 29 vals, but should be done by mean 0m..30m -> 30m or? 0m, 30m..59m -> 30m or? 0m
+    
+    df = df.set_index(time_col, drop=False)
+    assert not df.index.duplicated(keep='first').any()
+    
+    # TODO 1 QOA test: shouldn't start/end time errors be not allowed at all?
+    idx_src: pd.Series = pd.to_datetime(df[time_col], errors='coerce')
+    assert idx_src.isna().sum() == 0
+    
+    # TODO 1 test index order failures
+    index_start = idx_src.min()
+    first_index = idx_src.iloc[0]
+    if first_index != index_start:
+        ff_logger.warning(
+            f'First time entry {first_index} is not the earliest {index_start}. Using the earliest. Time order is incorrect.')
+    
+    index_end = idx_src.max()
+    last_index = idx_src.iloc[-1]
+    if last_index != index_end:
+        ff_logger.warning(
+            f'Last time entry {last_index} is not the oldest {index_end}. Using the oldest. Time order is incorrect.')
+    
+    # TODO 1 better way to init freqs from files?
+    src_data_freq = get_freq(df, time_col)
+    if not tgt_freq:
+        tgt_freq = src_data_freq
+        # src_data_freq.astype('timedelta64[h]')
+    
+    # TODO 1 just deleting starting and ending chunks is wrong, resampling may be required like (:37m + :59m) -> :59m    
+    idx_fix = idx_src.sort_values()
+    assert tgt_freq.seconds < 3600
+    fits_half_hour_mask = idx_fix.dt.minute % (tgt_freq.seconds // 60) == 0
+    
+    # TODO 1 do actual correct resampling later
+    # max_crop = min(MAX_NON_HALF_HOUR_TIMESTAMPS_CROP, df.size // 3)
+    # if reversed_mask.any():
+    #     bad_percent = 100 * reversed_mask.sum / reversed_mask.size
+    #     ff_logger.warning()
+    
+    idx_fix = idx_fix[fits_half_hour_mask]
+    half_hour_index_start = idx_fix.min()
+    half_hour_index_end = idx_fix.max()
+    idx_rebuild = pd.date_range(start=half_hour_index_start, end=half_hour_index_end, freq=tgt_freq)
+    if not fill_gaps:
+        idx_rebuild = idx_rebuild.intersection(idx_fix)        
+    
+    # just an additional check of timestamp integrity before resampling    
+    idx_check = pd.date_range(start=half_hour_index_start, end=half_hour_index_end, freq=src_data_freq)
+    abnormal_values = idx_fix.index.difference(idx_src)
+    abnormal_count = len(abnormal_values)
+    if abnormal_count > 1:
+        raise Exception(f'Time index contains irregular values not fitting to frequency: {abnormal_values}.')
+    elif abnormal_count == 1:
+        ff_logger.warning(
+            f'Time index contains irregular value not matching to the original frequency: {abnormal_values}. Value excluded.')
+    
+    df_fixed = pd.DataFrame(index=idx_rebuild).join(df, how='left')
+    assert isinstance(df_fixed.index, pd.DatetimeIndex)
+    # na in time_col is valid only in case of expanded series, i.e. if original file had deleted time points
+    idx_fix = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
+    assert idx_fix.all()
+
+    # TODO 1 is this required?
+    # can be useful not to fill to indicate where data was missing in the source files
+    # df_fixed[time_col] = df_fixed.index    
     return df_fixed
 
 

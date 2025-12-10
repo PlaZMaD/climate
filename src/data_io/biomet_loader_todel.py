@@ -17,7 +17,6 @@ def load_biomet_todel(config_meteo, data_freq):
     ff_logger.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
     if data_freq != meteo_freq:
-        print("Resampling meteo data")
         ff_logger.info(f"Resampling meteo data")
         data_meteo = data_meteo.asfreq(data_freq)
     

@@ -6,13 +6,12 @@ import pandas as pd
 from pandas.tseries.offsets import YearBegin, YearEnd, MonthBegin, MonthEnd
 
 from src.config.config_types import IasExportIntervals, InputFileType
-from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_KNOWN, COLS_IAS_TIME, COLS_IAS_UNUSED_NORENAME_IMPORT, COLS_IAS_CONVERSION_IMPORT, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_data_check import set_lang, check_ias
-from src.data_io.time_series_loader import repair_time, cleanup_df, preload_time_series
-from src.data_io.utils.time_series_utils import merge_time_series, format_year_interval
+from src.data_io.time_series_loader import load_ftypes
+from src.data_io.utils.time_series_utils import format_year_interval
 from src.config.ff_config import ImportConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
@@ -85,9 +84,7 @@ def export_ias_cols_conversions(df: pd.DataFrame) -> (pd.DataFrame, [str]):
     return df, new_cols
 
 
-def import_ias_process_cols(df: pd.DataFrame, time_col):
-    print('Переменные в IAS: \n', df.columns.to_list())
-    
+def import_ias_process_cols(df: pd.DataFrame, time_col):    
     known_ias_cols = COLS_IAS_KNOWN + [time_col]
     df = df_ensure_cols_case(df, known_ias_cols, ignore_missing=True)
     
@@ -103,40 +100,16 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
         print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
     
-    df = import_ias_cols_conversions(df)
-    
-    df = df.rename(columns=COLS_IAS_IMPORT_MAP)
-    print('Переменные после загрузки: \n', df.columns.to_list())
-    
+    df = import_ias_cols_conversions(df)    
+    df = df.rename(columns=COLS_IAS_IMPORT_MAP)    
     return df
 
 
-def import_ias(fpath: Path, cfg_import: ImportConfig):
-    cfg_ias = cfg_import.ias
-    
-    ff_logger.info('\n' f'Loading {fpath}')
-    
-    if cfg_ias.skip_validation:
+def import_ias_check(fpath: Path, cfg_import: ImportConfig):    
+    if cfg_import.ias.skip_validation:
         ff_logger.warning('IAS validation is skipped due to user option.')
     elif not cfg_import.debug_nrows:
         check_ias(fpath)
-    
-    df = preload_time_series(fpath, InputFileType.IAS, cfg_import)
-    df = df.drop(COLS_IAS_TIME, axis='columns')
-    
-    # TODO 2 ias: abstract better: time gaps should be filled after merge of multiple files, but index should be done before? 
-    if cfg_ias.repair_time:
-        df = repair_time(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
-    print('Диапазон времени IAS (START): ', df.index[[0, -1]])
-    ff_logger.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    
-    # TODO 2 ias: test no longer required and cleanup
-    # df = ias_table_extend_year(df, out_datetime_col, -9999)
-    
-    df = cleanup_df(df, cfg_ias.missing_data_codes)
-    
-    df = import_ias_process_cols(df, cfg_import.time_col)
-    return df
 
 
 def import_iases(cfg_import: ImportConfig):
@@ -145,23 +118,15 @@ def import_iases(cfg_import: ImportConfig):
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    dfs = {fpath.name: import_ias(fpath, cfg_import)
-           for fpath, _ in cfg_import.input_files.items()}
- 
-    if len(dfs) > 1:
-        ff_logger.info('Merging data from files...')
-    df = merge_time_series(dfs, cfg_import.time_col, no_duplicate_cols=False)
-    if cfg_import.ias.repair_time:
-        df = repair_time(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
+    # TODO 1 test
+    df = load_ftypes(cfg_import, InputFileType.IAS, import_ias_process_cols, import_ias_check)
     
-    assert df[cfg_import.time_col].isna().sum() == 0
+    # TODO 2 ias: test no longer required and cleanup
+    # df = ias_table_extend_year(df, out_datetime_col, -9999)
     
-    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
-    expected_biomet_cols = np.strings.lower(BIOMET_HEADER_DETECTION_COLS)
-    biomet_cols_index = df.columns.intersection(expected_biomet_cols)
-    
-    has_meteo = True
-    return df, cfg_import.time_col, biomet_cols_index, df.index.freq, has_meteo
+    df = df.drop(COLS_IAS_TIME, axis='columns')
+    print('Переменные после загрузки: \n', df.columns.to_list())
+    return df
 
 
 def prepare_time_intervals(df: pd.DataFrame, time_col, min_rows, export_intervals: IasExportIntervals):
@@ -264,8 +229,7 @@ def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: 
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     
-    # TODO 1 was used to ensure no data was damaged between versions, reminder later to remove
-    # var_cols.sort()
+    # TODO 1 ias: on 2023 export, 1 stamp of 2024 no longer added - is this correct?
 
     df = prepare_time_intervals(df, time_col, IAS_EXPORT_MIN_ROWS, ias_export_intervals)
     df = export_ias_prepare_time_cols(df, time_col)

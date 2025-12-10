@@ -39,7 +39,7 @@ def update_config_version(config: dict, tgt_ver) -> dict:
             'ias': {
                 'out_fname_ver_suffix': config['ias_out_version'], 
                 'split_intervals': 'YEAR'
-        }
+            }
         }
         del config['ias_out_version']
         

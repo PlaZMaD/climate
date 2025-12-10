@@ -30,6 +30,9 @@ def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwar
 
 
 def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
+    """ nan in csv is auto converted to NaN """
+    
+    
     '''
     # does not work reliably even with 10 numeric lines
     import chardet
@@ -121,9 +124,6 @@ def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.Data
         ff_logger.exception(e)
         # raise SystemExit vs
         raise
-    
-    # TODO 1 move to csf
-    ff_logger.info(f'File {fpath} loaded.')
     
     # TODO 3 df.index.freq and df.name: unconventional attrs required for script, probably subclass to solve this    
     

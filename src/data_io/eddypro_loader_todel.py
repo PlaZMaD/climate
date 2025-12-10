@@ -3,7 +3,7 @@ from src.config.config_types import InputFileType
 from src.config.ff_config import ImportConfig
 from src.data_io.biomet_loader_todel import load_biomets_todel
 from src.data_io.time_series_loader import merge_time_series_biomet
-from src.data_io.utils.time_series_utils import date_time_parser
+from src.data_io.utils.time_series_utils import date_time_parser, ensure_dfs_same
 from src.ff_logger import ff_logger
 from src.helpers.env_helpers import ENV
 
@@ -34,9 +34,9 @@ def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
     data_freq = df_fo.index.freq
     
     print('Диапазон времени full_output: ', df_fo.index[[0, -1]])
-    ff_logger.info('Time range for full_output: ' + ' - '.join(df_fo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
-    ff_logger.info('Колонки в FullOutput \n'
-                   f'{df_fo.columns.values}')
+    # ff_logger.info('Time range for full_output: ' + ' - '.join(df_fo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
+    # ff_logger.info('Колонки в FullOutput \n'
+    #                f'{df_fo.columns.values}')
 
     bm_paths = [str(fpath) for fpath, ftype in cfg_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET]
     df_bm, has_meteo = load_biomets_todel(bm_paths, cfg_import.time_col, data_freq, cfg_import.eddypro_biomet)
@@ -46,7 +46,7 @@ def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
         df[time_col] = df.index
         df = bg.repair_time(df, time_col)
         if df[df_bm.columns[-1]].isna().sum() == len(df.index):
-            ff_logger.info('Bad meteo df_fo range, overriding option has_meteo to False')
+            # ff_logger.info('Bad meteo df_fo range, overriding option has_meteo to False')
             has_meteo = False
     else:
         df = df_fo
@@ -54,9 +54,8 @@ def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
     if ENV.LOCAL and has_meteo:        
         # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
         # TODO 1 something is off under {"nik_biomet": 'EDDYPRO_BIOMET', 'nik_full_output': 'EDDYPRO_FO'}        
-        df_test_merge_nly, has_meteo_test = merge_time_series_biomet(df_fo, df_bm, time_col, cfg_import.time_freq)
-        assert has_meteo == has_meteo_test
-        assert len(df_test_merge_nly.compare(df)) == 0
+        df_test_merge_nly = merge_time_series_biomet(df_fo, df_bm, time_col, cfg_import.time_freq)
+        ensure_dfs_same(df_test_merge_nly, df)
             
     biomet_columns = []
     if has_meteo:

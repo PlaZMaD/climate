@@ -48,7 +48,7 @@ def detect_row(row_cols):
         return len(in_target) / len(sample), in_target
     
     best_match = 0.0
-    unknown_cols, matches = row_cols, []
+    unknown_cols, matches = row_cols.copy() , []
     for ftype, ftype_cols in detect_col_targets:
         mr, known_cols = match_ratio(row_cols, ftype_cols)
         if mr > 0:

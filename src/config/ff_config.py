@@ -110,7 +110,7 @@ class ExportConfig(BaseConfig):
 class ImportConfig(BaseConfig):  
     # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
     input_files: str | list[str] | dict[str | Path, InputFileType] = None
-    mixed_demo_policy: ColabDemoMixPolicy = None
+    mixed_demo_policy: Annotated[ColabDemoMixPolicy, gen_enum_info(ColabDemoMixPolicy)] = None
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()

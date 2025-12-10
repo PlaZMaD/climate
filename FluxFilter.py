@@ -492,7 +492,8 @@ if not config.from_file:
 res = try_auto_detect_input_files(config, gl)
 (config.data_import.input_files, config.data_import.import_mode,
  config.metadata.site_name, config.data_export.ias.out_fname_ver_suffix, config.calc.has_meteo) = res
-data, time_col, meteo_cols, data_freq, config.calc.has_meteo = import_data(config)
+data, meteo_cols, config.calc.has_meteo = import_data(config)
+time_col, data_freq = config.data_import.time_col, config.data_import.time_freq
 
 gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 

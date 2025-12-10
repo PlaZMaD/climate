@@ -52,20 +52,24 @@ def try_parse_csf_fname(fname: str):
 
 
 def try_parse_eddypro_fname(fname: str):
-    examples = {'Iga_FO_23.csv': 'Iga', 'eddy_pro SSB 2023.csv': 'SSB'}
+    examples = {'Iga_FO_23.csv': 'Iga', 'eddy_pro SSB 2023.csv': 'SSB', 
+                'eddy_pro_full output_Fy4_2023_demo.csv': 'Fy4'}
     txt_examples = format_dict(examples)
     # [try_parse_eddypro_fname(k) for k,v in examples.items()]
     
     fname = preprocess_fname(fname)
+    # TODO 2 improve pattern logic
+    # FO or full_output without adding to result groups
+    # fo_re = (?:FO|full.?output)
     match1 = re.match(r"(.*)_FO_.*\d{2,4}", fname, flags=re.IGNORECASE)
-    match2 = re.match(r"eddy.?pro_(.*)_\d{2,4}", fname, flags=re.IGNORECASE)
+    match2 = re.match(r".*full.?output_(.*)_\d{2,4}", fname, flags=re.IGNORECASE)
     
     match = match1 if match1 else match2
     if match:
         site_name = match.group(1)
     else:
         msg = (f'Cannot parse eddypro file name {fname} for site id, using default. \n'
-               f"\t Try to rename file to match 'siteid_FO_YYYY.ext' or 'eddy_pro_siteid_YYYY' patterns, \n"
+               f"\t Try to rename file to match 'siteid_FO_YYYY' or 'full_output_siteid_YYYY' patterns, \n"
                f'\t for example, {txt_examples}.')
         ff_logger.info(msg)
         site_name = None
