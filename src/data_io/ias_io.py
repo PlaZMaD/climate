@@ -118,13 +118,14 @@ def import_iases(cfg_import: ImportConfig):
     # afaik это основной метод мультилокальности в питоне, но переделывать под него все потребует усилий.
     set_lang('ru')
     
-    # TODO 1 test
+    # TODO 1 import_ias_check - can return false?
     df = load_ftypes(cfg_import, InputFileType.IAS, import_ias_process_cols, import_ias_check)
     
     # TODO 2 ias: test no longer required and cleanup
     # df = ias_table_extend_year(df, out_datetime_col, -9999)
-    
-    df = df.drop(COLS_IAS_TIME, axis='columns')
+
+    # TODO 1 should anything unused be dropped? 
+    # df = df.drop(COLS_IAS_TIME, axis='columns')
     print('Переменные после загрузки: \n', df.columns.to_list())
     return df
 
@@ -229,8 +230,6 @@ def export_ias(out_dir: Path, site_name, ias_out_version, ias_export_intervals: 
     var_cols = intersect_list(df.columns, COLS_IAS_EXPORT_MAP.values()) + new_cols
     var_cols = sort_fixed(var_cols, fix_underscore=True)
     
-    # TODO 1 ias: on 2023 export, 1 stamp of 2024 no longer added - is this correct?
-
     df = prepare_time_intervals(df, time_col, IAS_EXPORT_MIN_ROWS, ias_export_intervals)
     df = export_ias_prepare_time_cols(df, time_col)
       

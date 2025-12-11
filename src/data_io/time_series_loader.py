@@ -17,15 +17,15 @@ from src.data_io.utils.time_series_utils import repair_check_todel, date_time_pa
 from src.ff_logger import ff_logger
 from src.config.ff_config import ImportConfig, SeparateDateTimeFileConfig, MergedDateTimeFileConfig
 
-PARSED_DATETIME_SUFFIX = '_STR'
-MAX_BAD_TIMESTAMPS_PERCENT = 10
+# PARSED_DATETIME_SUFFIX = '_STR'
+CRITICAL_BAD_TIMESTAMPS_PERCENT = 20
 MAX_NON_HALF_HOUR_TIMESTAMPS_CROP = 1801
 
 
 def parse_datetime_col(df: pd.DataFrame, cfg_dt: MergedDateTimeFileConfig, tgt_time_col, pd_to_datetime_errors_arg):
-    datetime_col_str = cfg_dt.datetime_col + PARSED_DATETIME_SUFFIX
+    datetime_col_str = cfg_dt.datetime_col # + PARSED_DATETIME_SUFFIX    
+    # assert datetime_col_str not in df.columns
     
-    assert datetime_col_str not in df.columns
     if tgt_time_col in df.columns:
         ff_logger.critical(f'Input data already contains column {tgt_time_col}, '
                            f'which will be overridden by data from {datetime_col_str}')
@@ -36,11 +36,11 @@ def parse_datetime_col(df: pd.DataFrame, cfg_dt: MergedDateTimeFileConfig, tgt_t
 
 
 def parse_date_time_cols(df: pd.DataFrame, cfg_dt: SeparateDateTimeFileConfig, tgt_time_col, pd_to_datetime_errors_arg):
-    date_col_str = cfg_dt.date_col + PARSED_DATETIME_SUFFIX
-    time_col_str = cfg_dt.time_col + PARSED_DATETIME_SUFFIX
+    date_col_str = cfg_dt.date_col  # + PARSED_DATETIME_SUFFIX
+    time_col_str = cfg_dt.time_col  # + PARSED_DATETIME_SUFFIX    
+    # assert date_col_str not in df.columns
+    # assert time_col_str not in df.columns
     
-    assert date_col_str not in df.columns
-    assert time_col_str not in df.columns
     if tgt_time_col in df.columns:
         ff_logger.critical(f'Input data already contains column {tgt_time_col}, '
                            f'which will be overridden by data from {date_col_str} and {time_col_str}')
@@ -94,8 +94,9 @@ def parse_timestamp_cols(df, cfg: SeparateDateTimeFileConfig | MergedDateTimeFil
                           f'{df[tgt_time_col][dupe_mask]} \n')
         df = df[~dupe_mask]
     
-    if 100 * (original_size - df.size) / df.size > MAX_BAD_TIMESTAMPS_PERCENT:
-        raise Exception('Too much bad timestamps, file requires manual review.')
+    bad_ts_prc = 100 * (original_size - df.size) // original_size
+    if bad_ts_prc > CRITICAL_BAD_TIMESTAMPS_PERCENT:
+        ff_logger.critical(f'Too much bad timestamps {bad_ts_prc}, file requires manual review.')
     
     # df.loc[5:6, 'datetime'] = df.loc[4:5, 'datetime'][::-1].values
     # TODO 2 test: wrong order
@@ -147,7 +148,7 @@ def load_time_series(fpath: Path, ftype: InputFileType, cfg_import: ImportConfig
     
 def ff_load_time_series(fpath, ftype, cfg_import, file_checker, col_converter):
     if file_checker:
-        assert file_checker(fpath, cfg_import)
+        file_checker(fpath, cfg_import)
     
     df = load_time_series(fpath, ftype, cfg_import)
     
@@ -166,7 +167,7 @@ def ff_load_time_series(fpath, ftype, cfg_import, file_checker, col_converter):
                    f'{df.columns.values}')
     # print("Колонки в CSF \n", df_csf.columns.to_list())
     
-    df = col_converter(df)
+    df = col_converter(df, cfg_import.time_col)
     
     df = resample_time_series_df(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
     repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
@@ -201,7 +202,7 @@ def merge_time_series_biomet(df_orig: pd.DataFrame, df_biomet: pd.DataFrame, tim
     :param time_freq: 
     """
     
-    # TODO 2 move to same function rather than separate biomet?
+    # TODO 1 move to same function rather than separate biomet?
     df = df_orig.copy()
     
     same_cols = {col for col in df.columns if col.lower() in df_biomet.columns.str.lower()}
