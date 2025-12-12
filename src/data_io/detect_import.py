@@ -1,4 +1,5 @@
 import pprint
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +25,16 @@ class AutoImportException(Exception):
     pass
 
 
+@dataclass
+class MatchInfo(Exception):
+    ftype: InputFileType
+    match_ratio: float
+    match_cols: set[str]
+    unknown_cols: set[str]
+    match_count: int
+    cols_count: int
+
+
 def detect_row(row_cols):
     biomest_cs = set(BIOMET_HEADER_DETECTION_COLS)
     ias_cs = set(IAS_HEADER_DETECTION_COLS) - biomest_cs
@@ -43,19 +54,22 @@ def detect_row(row_cols):
         (InputFileType.CSF, csf_cs)
     ]
     
-    def match_ratio(sample: set, target: set):
-        in_target = sample & target
-        return len(in_target) / len(sample), in_target
-    
     best_match = 0.0
-    unknown_cols, matches = row_cols.copy() , []
-    for ftype, ftype_cols in detect_col_targets:
-        mr, known_cols = match_ratio(row_cols, ftype_cols)
+    completely_unknown_cols, matches = row_cols.copy(), []
+    for ftype, ftype_cols in detect_col_targets:        
+        matching_cols = row_cols & ftype_cols
+        not_ftype_cols = row_cols - ftype_cols
+        
+        match_count = len(matching_cols)
+        cols_count = len(row_cols)
+        mr = match_count / cols_count                
+        
         if mr > 0:
             best_match = max(best_match, mr)
-            unknown_cols -= known_cols
-            matches += [(ftype, mr)]
-    return SimpleNamespace(matches=matches, best_match=best_match, unknown_cols=unknown_cols)
+            completely_unknown_cols -= matching_cols
+            
+            matches += [MatchInfo(ftype, mr, matching_cols, not_ftype_cols, match_count, cols_count)]
+    return SimpleNamespace(matches=matches, best_match=best_match, completely_unknown_cols=completely_unknown_cols)
 
 
 def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
@@ -70,22 +84,31 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         
         row_matches[i] = detect_row(set(row_cols))
     
+    detected_type = InputFileType.UNKNOWN
     # TODO 2 make clear logging on recognised % in header 
     possible_header_rows = [m for row_idx, m in row_matches.items() if m.best_match > 0.5]
     if len(possible_header_rows) == 1:
-        positive_matches = [itype for itype, m in possible_header_rows[0].matches if m > 0.5]
+        positive_matches = [m for m in possible_header_rows[0].matches if m.match_ratio > 0.5]
         if len(positive_matches) == 1:
-            itype = positive_matches[0]
-            ff_logger.info(f'Detected file {fpath} as {itype}') # duplicates
-            return itype
+            itype = positive_matches[0].ftype
+            ff_logger.info(f'Detected file {fpath} as {itype}')  # duplicates
+            detected_type = itype
     
-    guesses = '\n'.join([f'row: {i} match {mr:0.2f} {ftype.name} \n    unrecognised cols: {m.unknown_cols}'
-                         for i, m in row_matches.items()
-                         for ftype, mr in m.matches])
-    ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
-                      f'{guesses} \n'
-                      f'Consider specifying file types manually according to the import cell description.')
-    return InputFileType.UNKNOWN
+    row_infos = [f'row {i}: {m.ftype.name} {m.match_count}/{m.cols_count} \n'
+                 f'recognised cols: {m.match_cols} \n'                 
+                 f'unrecognised cols: {m.unknown_cols} \n'
+                 for i, rm in row_matches.items()
+                 for m in rm.matches]
+    guesses = '\n'.join(row_infos)
+    
+    if detected_type == InputFileType.UNKNOWN:
+        ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
+                          f'{guesses} \n'
+                          f'Consider specifying file types manually according to the import cell description.')
+    else:
+        ff_logger.debug(f'File {fpath} guesses are: \n'
+                        f'{guesses} \n')
+    return detected_type
 
 
 def get_supported_data_files(in_dir: Path) -> list[Path]:
