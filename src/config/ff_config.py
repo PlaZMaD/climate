@@ -114,6 +114,7 @@ class ImportConfig(BaseConfig):
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
+    eddypro_biomet_2: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     ias: IASImportConfig = IASImportConfig.model_construct()
     csf: CSFImportConfig = CSFImportConfig.model_construct()
     

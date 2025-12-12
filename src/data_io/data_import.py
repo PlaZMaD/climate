@@ -71,7 +71,7 @@ def import_data(config: FFConfig):
         if ENV.LOCAL and TEMP_DEBUG_IMPORT:
             ff_logger.disabled = True    
             df_check = load_eddypro_via_bgl_todel(config.data_import)[0]
-            df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)            
+            # df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)            
             ensure_dfs_same(df, df_check)
             ff_logger.disabled = False
     

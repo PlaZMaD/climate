@@ -20,7 +20,7 @@ def ensure_list(items, transform_func=None) -> list:
 
 
 def intersect_list(items: list, valid_items: list) -> list:
-    """Same as intersect sets, but keeps order"""
+    """Same as intersect sets, but keeps order; Consider pandas.Index instead of list if you here"""    
     return [el for el in items if el in valid_items]
 
 

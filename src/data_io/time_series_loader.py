@@ -115,6 +115,7 @@ def get_ftype_cfg(ftype: InputFileType, cfg_import: ImportConfig) -> SeparateDat
     cfg_cases = {
         InputFileType.EDDYPRO_FO: cfg_import.eddypro_fo,
         InputFileType.EDDYPRO_BIOMET: cfg_import.eddypro_biomet,
+        InputFileType.EDDYPRO_BIOMET_2: cfg_import.eddypro_biomet_2,
         InputFileType.CSF: cfg_import.csf,
         InputFileType.IAS: cfg_import.ias
     }

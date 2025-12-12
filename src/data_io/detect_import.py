@@ -8,17 +8,18 @@ from pandas import Index
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.config.config_types import InputFileType, ImportMode
 from src.data_io.eddypro_cols import EDDYPRO_HEADER_DETECTION_COLS
-from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS
+from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS, BIOMET_2_HEADER_DETECTION_COLS
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_eddypro_fname, try_parse_ias_fname, try_parse_csf_fname
 from src.data_io.utils.table_loader import load_table_from_file
+from src.data_io.utils.time_series_utils import TEMP_DEBUG_IMPORT
 from src.ff_logger import ff_logger
 from src.config.ff_config import FFConfig, FFGlobals
 from src.helpers.io_helpers import ensure_path
 from src.helpers.py_collections import ensure_list, format_dict
 
 # DONE 1 _has_meteo vs has_meteo, duplicates in import routines
-
+# DONE 2 make clear logging on recognised % in header
 
 SUPPORTED_FILE_EXTS_LOWER = ['.csv', '.xlsx', '.xls']
 
@@ -31,47 +32,72 @@ class AutoImportException(Exception):
 class MatchInfo(Exception):
     ftype: InputFileType
     match_ratio: float
+    
     match_cols: Index
-    unknown_cols: Index
-    match_count: int
-    cols_count: int
+    non_match_cols: Index
 
 
-def detect_row(row_cols):
+@dataclass
+class RowMatchInfo(Exception):
+    matches: list[MatchInfo]
+    best_match: float
+    non_associated_cols: Index | None
+    dubious_cols: Index | None
+
+
+def detect_row(row_cols: Index) -> RowMatchInfo:
+    """ Guesses which file format is used based on column headers in row_cols """
+    
     biomest_cs = Index(BIOMET_HEADER_DETECTION_COLS)
-    ias_cs = Index(IAS_HEADER_DETECTION_COLS).difference(biomest_cs)
-    
-    # not expected to contain
-    # eddypro_cs = Index(EDDYPRO_HEADER_DETECTION_COLS) - biomest_cs
-    # csf_cs = Index(CSF_HEADER_DETECTION_COLS) - biomest_cs
-    
+    biomest_2_cs = Index(BIOMET_2_HEADER_DETECTION_COLS)
+    ias_cs = Index(IAS_HEADER_DETECTION_COLS)
     eddypro_cs = Index(EDDYPRO_HEADER_DETECTION_COLS)
     csf_cs = Index(CSF_HEADER_DETECTION_COLS)
     
-    # may be also consider exact header row place
+    all_cs = biomest_cs.append(biomest_2_cs).append(ias_cs).append(eddypro_cs).append(csf_cs)
+    all_associated_cs = all_cs.unique() 
+    all_dubious_cs = all_cs[all_cs.duplicated()]
+    
+    biomest_cs = biomest_cs.intersection(all_associated_cs)
+    biomest_2_cs = biomest_2_cs.intersection(all_associated_cs)
+    ias_cs = ias_cs.intersection(all_associated_cs)
+    eddypro_cs = eddypro_cs.intersection(all_associated_cs)
+    csf_cs = csf_cs.intersection(all_associated_cs)
+    
+    # may be also consider to guess header row index
     detect_col_targets = [
         (InputFileType.IAS, ias_cs),
         (InputFileType.EDDYPRO_BIOMET, biomest_cs),
+        (InputFileType.EDDYPRO_BIOMET_2, biomest_2_cs),
         (InputFileType.EDDYPRO_FO, eddypro_cs),
-        (InputFileType.CSF, csf_cs)
+        (InputFileType.CSF, csf_cs),
     ]
     
     best_match = 0.0
-    completely_unknown_cols, matches = row_cols.copy(), []
-    for ftype, ftype_cols in detect_col_targets:        
-        matching_cols = row_cols & ftype_cols
-        not_ftype_cols = row_cols - ftype_cols
+    ftype_matches = []
+    non_associated_cs, associated_cs = row_cols.difference(all_associated_cs), row_cols.intersection(
+        all_associated_cs)
+    non_dubious_cols, dubious_cs = associated_cs.difference(all_dubious_cs), associated_cs.intersection(all_dubious_cs)
+    
+    non_dubious_count, dubious_count = len(non_dubious_cols), len(dubious_cs)
+    if non_dubious_count == 0:
+        # if all cols match multiple formats or if row is numberic and no cols are recognised
+        if dubious_count > 0:
+            ff_logger.critical(
+                'Cannot detect column headers: multiple formats match. Set the file type manually in the options.')
+        return RowMatchInfo(matches=[], best_match=0, dubious_cols=None, non_associated_cols=None)
+    
+    for ftype, ftype_cols in detect_col_targets:
+        not_ftype_cols, matching_cols = non_dubious_cols.difference(ftype_cols), non_dubious_cols.intersection(
+            ftype_cols)
         
-        match_count = len(matching_cols)
-        cols_count = len(row_cols)
-        mr = match_count / cols_count                
-        
+        mr = len(matching_cols) / (non_dubious_count + len(non_associated_cs))
         if mr > 0:
             best_match = max(best_match, mr)
-            completely_unknown_cols -= matching_cols
-            
-            matches += [MatchInfo(ftype, mr, matching_cols, not_ftype_cols, match_count, cols_count)]
-    return SimpleNamespace(matches=matches, best_match=best_match, completely_unknown_cols=completely_unknown_cols)
+            ftype_matches += [MatchInfo(ftype=ftype, match_ratio=mr,
+                                        non_match_cols=not_ftype_cols, match_cols=matching_cols)]
+    return RowMatchInfo(matches=ftype_matches, best_match=best_match,
+                        non_associated_cols=non_associated_cs, dubious_cols=dubious_cs)
 
 
 def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
@@ -84,32 +110,50 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         if len(row_cols) == 0:
             continue
         
-        row_matches[i] = detect_row(row_cols)
+        row_matches[i] = detect_row(Index(row_cols.values))
     
-    detected_type = InputFileType.UNKNOWN
-    # TODO 2 make clear logging on recognised % in header 
+    detected_type = InputFileType.UNKNOWN, None
     possible_header_rows = [m for row_idx, m in row_matches.items() if m.best_match > 0.5]
     if len(possible_header_rows) == 1:
         positive_matches = [m for m in possible_header_rows[0].matches if m.match_ratio > 0.5]
         if len(positive_matches) == 1:
-            itype = positive_matches[0].ftype
-            ff_logger.info(f'Detected file {fpath} as {itype}')  # duplicates
-            detected_type = itype
+            match = positive_matches[0]
+            ff_logger.info(f'Detected file {fpath} as {match.match_ratio * 100:.0f}% {match.ftype}')  # duplicates
+            detected_type = match.ftype
     
-    row_infos = [f'row {i}: {m.ftype.name} {m.match_count}/{m.cols_count} \n'
-                 f'recognised cols: {m.match_cols} \n'                 
-                 f'unrecognised cols: {m.unknown_cols} \n'
-                 for i, rm in row_matches.items()
-                 for m in rm.matches]
-    guesses = '\n'.join(row_infos)
+    row_info_msg = []
+    for i, rm in row_matches.items():
+        if len(rm.matches) == 0:
+            continue
+        
+        dc = rm.dubious_cols.to_list()
+        unac = rm.non_associated_cols.to_list()
+        row_info_msg += {f'row {i}: \n'
+                         f'    dubious cols: {dc} \n'
+                         f'    unassociated cols: {unac}'}
+        
+        sorted_matches = sorted(rm.matches, key=lambda m: m.match_ratio, reverse=True)
+        for m in sorted_matches:
+            mc = m.match_cols.to_list()
+            umc = m.non_match_cols.to_list()
+            total_nd = len(mc) + len(umc) + len(unac)
+            row_info_msg += [f'    {m.ftype.name} {m.match_ratio:.2f}    {len(mc)}/{total_nd} (+{len(dc)}) \n'
+                             f'        matching cols: {mc} \n'
+                             f'        unmatching cols: {umc}']
+    
+    guesses = '\n'.join(row_info_msg)
     
     if detected_type == InputFileType.UNKNOWN:
         ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
                           f'{guesses} \n'
                           f'Consider specifying file types manually according to the import cell description.')
     else:
-        ff_logger.debug(f'File {fpath} guesses are: \n'
-                        f'{guesses} \n')
+        msg = f'File {fpath} guesses are: \n' f'{guesses} \n'
+        if not TEMP_DEBUG_IMPORT:
+            ff_logger.debug(msg)
+        else:
+            ff_logger.info(msg)
+
     return detected_type
 
 
@@ -247,11 +291,12 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
         input_files_auto = detect_known_files(input_dir=gl.input_dir)
         
-        input_files_info = format_dict(input_files_auto, separator=': ', item_separator='\n')
-        ok_msg = ('Detected input files: \n'
-                  f'{input_files_info} \n')
+        # summary is printed now while processing each file
+        # input_files_info = format_dict(input_files_auto, separator=': ', item_separator='\n')
+        # ok_msg = ('Detected input files: \n'
+        #          f'{input_files_info} \n')
         
-        cfg_imp.input_files = change_if_auto(cfg_imp.input_files, input_files_auto, ok_msg=ok_msg)
+        cfg_imp.input_files = change_if_auto(cfg_imp.input_files, input_files_auto, ok_msg=None)
     
     elif type(cfg_imp.input_files) in [list, str]:
         user_fpaths = ensure_list(cfg_imp.input_files, transform_func=ensure_path)

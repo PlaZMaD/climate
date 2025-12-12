@@ -16,6 +16,8 @@ class InputFileType(Enum):
     UNKNOWN = 'UNKNOWN'
     EDDYPRO_FO = 'EDDYPRO_FO'
     EDDYPRO_BIOMET = 'EDDYPRO_BIOMET'
+    # TODO 1 search occurences, add 2 supp
+    EDDYPRO_BIOMET_2 = 'EDDYPRO_BIOMET_2'
     CSF = 'CSF'
     IAS = 'IAS'
 

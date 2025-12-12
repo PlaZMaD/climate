@@ -10,7 +10,7 @@ from src.helpers.env_helpers import ENV
 # TODO 1 support biomet ~ with separate time date cols
 
 
-def import_rename_biomet_cols(df):
+def import_rename_biomet_cols(df, time_col):
     # TODO 2 extract biomet specific renames
     # df = regex_fix_col_names(df, COLS_BIOMET_TO_SCRIPT_U_REGEX_RENAMES)
     # check_biomet_col_names(df)    
@@ -18,7 +18,8 @@ def import_rename_biomet_cols(df):
 
 
 def import_biomets(cfg_import: ImportConfig):  
-    df = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET, import_rename_biomet_cols, None)        
+    df = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET, import_rename_biomet_cols, None)
+    df2 = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET_2, import_rename_biomet_cols, None)
     
     if ENV.LOCAL and TEMP_DEBUG_IMPORT:
         ff_logger.disabled = True
