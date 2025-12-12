@@ -1,3 +1,5 @@
+import pandas as pd
+
 from src.helpers.env_helpers import ENV
 from src.helpers.py_collections import format_dict
 from src.ff_logger import ff_logger
@@ -57,6 +59,8 @@ def import_data(config: FFConfig):
         config.data_import.debug_nrows = DEBUG_NROWS
     else:
         config.data_import.debug_nrows = None
+    
+    config.data_import.time_freq = pd.Timedelta(minutes=30)
     
     if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
         res = load_eddypro_via_bgl_todel(config.data_import)

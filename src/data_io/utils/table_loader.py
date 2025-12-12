@@ -75,7 +75,6 @@ def load_xls(fpath, **pd_read_kwargs):
 
 def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=0) -> pd.DataFrame:
     """	nrows: read only first n rows """
-    # probably extract to load table? can all repairs be generalised operations on tables?
     
     pd_read_kwargs = {'nrows': nrows, 'header': header_row, 'skiprows': skiprows}
     

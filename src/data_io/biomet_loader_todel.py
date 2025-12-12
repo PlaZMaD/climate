@@ -35,7 +35,7 @@ def load_biomets_todel(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFi
         '-9999_to_nan': -9999 in c_bm.missing_data_codes,
         'time': {
             'column_name': tgt_time_col,
-            'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
+            'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats, pd_to_datetime_errors_arg='raise')
         },
         'repair_time': c_bm.repair_time,
     }

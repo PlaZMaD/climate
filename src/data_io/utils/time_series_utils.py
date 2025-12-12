@@ -1,18 +1,19 @@
-""" ff unaware pandas level utilities """
+""" pandas level utilities (ff unaware) """
 
 import numpy as np
 import pandas as pd
+from pandas import Timedelta
 
 from src.ff_logger import ff_logger
 from src.helpers.py_collections import ensure_list, format_dict
 
 # DONE repair time also repairs file gaps
 
-MIN_DATETIME_ROWS = 12
+DETECT_DATETIME_CHUNKS = 12
 
 
 def format_year_interval(from_year: int, to_year: int):
-    # 2022, 2022->2022 
+    # 2022, 2022 -> 2022 
     # 2023, 2025 -> 23-25
     if from_year == to_year:
         return f'from_year'
@@ -20,13 +21,20 @@ def format_year_interval(from_year: int, to_year: int):
         return f'{from_year % 100}-{to_year % 100}'
 
 
-def get_freq(df, time_col):
+def get_freq(df: pd.DataFrame, time_col: str) -> Timedelta:
     """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
-    
-    max_search_len = 100
-    window_sz = 5
+    # TODO QE 2 why get_freq (freq guess from file) was even required? why not to directly sample 30min? 
+    #  which freqs were encountered apart from 30m and 1m?
+
     start_offset = 1
-    n_windows = min(max_search_len, len(df) - start_offset) // window_sz
+    window_sz = 5
+    max_search_windows = 20
+   
+    if len(df) < window_sz + start_offset:
+        raise Exception(f'Need at least {window_sz} rows in data to detect table datetime frequency.')
+    
+    n_windows_max = (len(df) - start_offset) // window_sz
+    n_windows = min(n_windows_max, max_search_windows)
     
     deltas = df[time_col] - df[time_col].shift(1)
     for window_idx in range(0, n_windows):
@@ -34,25 +42,31 @@ def get_freq(df, time_col):
         window_deltas = deltas[ws: ws + window_sz].values
         
         freq_guess = window_deltas[0]
-        if freq_guess and np.all(window_deltas == freq_guess):
-            return freq_guess
+        if freq_guess and np.all(window_deltas == freq_guess) and isinstance(freq_guess, np.timedelta64):
+            return Timedelta(freq_guess)
     raise Exception('Unexpected or unordered time column contents: cannot detect frequency.')
 
 
-def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
+def repair_time(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fill_gaps: bool):
     """ 
     source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null
-    df.index could be both pd.RangeIndex or pd.DatetimeIndex (if converted previously) 
+    :param df: df.index could be both pd.RangeIndex or pd.DatetimeIndex (if converted previously)
+    :param fill_gaps: new index is strictly corrct freq or just values
+    Goal of this function is to create an index with freq from   
     """
-    
+    # assert False
+    # TODO 1 this function is moved to parse_timestamp_cols and resample_time_series_df 
+    # TODO 2 test/fix: irregular frequency timestamps (05:00 05:07, 05:30, 05:37, 06:00, ...)
+    # TODO 2 test/fix: duplicate timestamps
+    # TODO 2 test/fix: resample 1m -> 30m, 2h -> 30m ? 
+    # TODO 1 currently 1m -> 30m is done by deleting 29 vals, but should be done by mean 0m..30m -> 30m or? 0m, 30m..59m -> 30m or? 0m 
     # TODO 3 more transparent rework could be handy:
     # with support of repair=False and separation of checks, repairs, and standard routines E: ok
-     
-    if df[time_col].size < MIN_DATETIME_ROWS:
-        raise Exception(f'Need at least {MIN_DATETIME_ROWS} rows in data for time repair.')
-    
-    freq = get_freq(df, time_col)
-    # freq.astype('timedelta64[h]')
+         
+    # TODO 1 better way to notify about freqs from files? 
+    if not time_freq:
+        time_freq = get_freq(df, time_col)
+        # freq.astype('timedelta64[h]')
     
     df = df.set_index(time_col, drop=False)
     tmp_index = df.index.copy()
@@ -63,6 +77,7 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
 
     # TODO 1 QOA test: shouldn't start/end time errors be not allowed at all?
     # can be optimised, also what if years are reversed?
+    # TODO 1 after merge, can duplicate timestamps occur? will freq be saved?
     coerced_index: pd.Series = pd.to_datetime(df[time_col], errors='coerce')    
     valid_index = coerced_index.dropna()
     
@@ -75,8 +90,8 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
     last_index = valid_index.iloc[-1]
     if last_index != index_end:
         ff_logger.warning(f'Last time entry {last_index} is not the oldest {index_end}. Using the oldest. Time order is incorrect.')
-            
-    index_rebuild = pd.date_range(start=index_start, end=index_end, freq=pd.to_timedelta(freq))  
+        
+    index_rebuild = pd.date_range(start=index_start, end=index_end, freq=time_freq)  
     abnormal_values = valid_index.index.difference(index_rebuild)
     abnormal_count = len(abnormal_values)
     
@@ -86,18 +101,18 @@ def repair_time(df: pd.DataFrame, time_col, fill_gaps: bool):
         ff_logger.warning(f'Time index contains irregular value not matching to frequency: {abnormal_values}. Value excluded.')
 
     if not fill_gaps:
-        # TODO 1 kills freq, need fix
+        # drop all points outside freq (1:00, 1:30, 2:00 - ok, 1:31 - drop)
+        # will also drop freq
         index_rebuild = index_rebuild.intersection(valid_index)
             
     df_fixed = pd.DataFrame(index=index_rebuild)
     df_fixed = df_fixed.join(df, how='left')
     
     assert isinstance(df_fixed.index, pd.DatetimeIndex)
+    # na is valid only in case of expanded series, i.e. if original file had deleted time points
     idx = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
     assert idx.all()
     df_fixed[time_col] = df_fixed.index
-    
-    assert df_fixed.index.freq
     
     return df_fixed
 
@@ -134,31 +149,21 @@ def prepare_time_series_df(df: pd.DataFrame, time_col, repair_time, target_freq)
 '''
 
 
-def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
-    """ 
-    Attempts to detect datetime format on df column.
-    Skips detection if only one guess is provided. 
-    Multiple matches are not considered as correct result.
-    Required as separate function for now due because consequently passed to the library.
-    """
+def detect_datetime_format(col: pd.Series, guesses: list[str]) -> str:
+    """ Attempts to detect datetime format in col. Multiple matches are not considered as correct result. """
     
-    guesses = ensure_list(guesses)
-    if len(guesses) == 1:
-        fmt = guesses[0]
-        ff_logger.info(f'Using datetime format {fmt}')
-        return fmt
+    test_chunk_size = min(DETECT_DATETIME_CHUNKS, col.size // 2)
     
-    if col.size < MIN_DATETIME_ROWS:
-        raise Exception(f'Need at least {MIN_DATETIME_ROWS} rows in data for time format detection.')
-    
-    start_chunk = col[: MIN_DATETIME_ROWS]
-    end_chunk = col[-MIN_DATETIME_ROWS:]
+    start_chunk = col[: test_chunk_size]
+    end_chunk = col[-test_chunk_size:]    
     
     ok_formats = []
     for guess in guesses:
         try:
+            # optimisation to throw faster on wrong formats
             pd.to_datetime(start_chunk, format=guess)
             pd.to_datetime(end_chunk, format=guess)
+            
             pd.to_datetime(col, format=guess)
             ok_formats.append(guess)
         except ValueError:
@@ -176,29 +181,45 @@ def detect_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:
         return ok_formats[0]
 
 
-def datetime_parser(df: pd.DataFrame, datetime_col: str, datetime_fmt_guesses: str | list[str]) -> pd.Series:
+def detect_or_use_datetime_format(col: pd.Series, guesses: str | list[str]) -> str:    
+    guesses = ensure_list(guesses)
+    if len(guesses) == 0:
+        raise Exception('No time formats are suggested, cannot import date or time column.')
+    elif len(guesses) == 1:
+        fmt = guesses[0]
+        ff_logger.info(f'Using datetime format {fmt}')
+        return fmt
+    else:
+        return detect_datetime_format(col, guesses)
+    
+
+def datetime_parser(df: pd.DataFrame,
+                    datetime_col: str, datetime_fmt_guesses: str | list[str],
+                    pd_to_datetime_errors_arg) -> pd.Series:
     """ Parses datetime column into pd.datetime column"""
     assert datetime_col is not None
     
-    datetime_format = detect_datetime_format(df[datetime_col], datetime_fmt_guesses)
-    res = pd.to_datetime(df[datetime_col], format=datetime_format)
+    dt_strs = df[datetime_col].astype(str)
+    datetime_format = detect_or_use_datetime_format(dt_strs, datetime_fmt_guesses)
+    res = pd.to_datetime(dt_strs, format=datetime_format, errors=pd_to_datetime_errors_arg)
     
     return res
 
 
 def date_time_parser(df: pd.DataFrame,
                      time_col: str, time_fmt_guesses: str | list[str],
-                     date_col: str, date_fmt_guesses: str | list[str]) -> pd.Series:
+                     date_col: str, date_fmt_guesses: str | list[str],
+                     pd_to_datetime_errors_arg) -> pd.Series:
     """ Parses separate date and time columns into pd.datetime column """
     assert time_col is not None and date_col is not None
     
-    date = df[date_col].astype(str)
-    date_format = detect_datetime_format(date, date_fmt_guesses)
-    time = df[time_col].astype(str)
-    time_format = detect_datetime_format(time, time_fmt_guesses)
+    date_strs = df[date_col].astype(str)
+    date_format = detect_or_use_datetime_format(date_strs, date_fmt_guesses)
+    time_strs = df[time_col].astype(str)
+    time_format = detect_or_use_datetime_format(time_strs, time_fmt_guesses)
     
-    tmp_datetime = date + " " + time
-    res = pd.to_datetime(tmp_datetime, format=f"{date_format} {time_format}")
+    dt_strs = date_strs + " " + time_strs
+    res = pd.to_datetime(dt_strs, format=f"{date_format} {time_format}", errors=pd_to_datetime_errors_arg)
     
     return res
 

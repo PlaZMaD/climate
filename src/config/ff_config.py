@@ -1,7 +1,9 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import field_validator, BaseModel, Field
+from pandas import Timedelta
+from pydantic import field_validator, BaseModel, Field, SkipValidation, computed_field, ValidateAs
+from pydantic.json_schema import SkipJsonSchema
 from pydantic_core.core_schema import ValidationInfo
 
 
@@ -19,7 +21,7 @@ class InputFileConfig(FFBaseModel):
     """ generate new timestamps in case of errors """
     repair_time: bool = None
     """ can replace -9999 to np.nan """
-    # TODO 1 config: some options can be None on load, but better not during run; how to deal with it fluently?
+    # TODO 1 config: some options can be None on load, but must be checked before pass; how to deal with it fluently?
     missing_data_codes: list[str | int] = None
     
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
@@ -105,11 +107,10 @@ class ExportConfig(BaseConfig):
     ias: IASExportConfig = IASExportConfig.model_construct()
 
 
-class ImportConfig(BaseConfig):
-    debug_nrows: Annotated[int | None, Field(exclude=True)] = None
-    
+class ImportConfig(BaseConfig):  
     # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
     input_files: str | list[str] | dict[str | Path, InputFileType] = None
+    mixed_demo_policy: ColabDemoMixPolicy = None
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
@@ -117,8 +118,10 @@ class ImportConfig(BaseConfig):
     csf: CSFImportConfig = CSFImportConfig.model_construct()
     
     import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
+    debug_nrows: Annotated[int | None, Field(exclude=True)] = None
+    
     time_col: str = None
-    mixed_demo_policy: ColabDemoMixPolicy = None
+    time_freq: Annotated[Timedelta | None, Field(exclude=True), ValidateAs(Any, lambda v: v)] = None
 
 
 class CalcConfig(BaseConfig):

@@ -24,8 +24,8 @@ def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
         '-9999_to_nan': -9999 in c_fo.missing_data_codes,
         'time': {
             'column_name': cfg_import.time_col,
-            'converter': lambda x: date_time_parser(x, c_fo.time_col, c_fo.try_time_formats,
-                                                       c_fo.date_col, c_fo.try_date_formats)
+            'converter': lambda x: date_time_parser(x, c_fo.time_col, c_fo.try_time_formats, c_fo.date_col,
+                                                    c_fo.try_date_formats, pd_to_datetime_errors_arg='raise')
         },
         'repair_time': c_fo.repair_time,
     }
@@ -54,7 +54,7 @@ def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
     if ENV.LOCAL and has_meteo:        
         # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
         # TODO 1 something is off under {"nik_biomet": 'EDDYPRO_BIOMET', 'nik_full_output': 'EDDYPRO_FO'}        
-        df_test_merge_nly, has_meteo_test = merge_time_series_biomet(df_fo, df_bm, time_col)
+        df_test_merge_nly, has_meteo_test = merge_time_series_biomet(df_fo, df_bm, time_col, cfg_import.time_freq)
         assert has_meteo == has_meteo_test
         assert len(df_test_merge_nly.compare(df)) == 0
             

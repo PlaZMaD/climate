@@ -12,7 +12,7 @@ from src.data_io.ias_cols import COLS_IAS_EXPORT_MAP, COLS_IAS_IMPORT_MAP, \
     COLS_IAS_CONVERSION_EXPORT
 from src.data_io.ias_data_check import set_lang, check_ias
 from src.data_io.time_series_loader import repair_time, cleanup_df, preload_time_series
-from src.data_io.utils.time_series_utils import merge_time_series, detect_datetime_format, format_year_interval
+from src.data_io.utils.time_series_utils import merge_time_series, format_year_interval
 from src.config.ff_config import ImportConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.helpers.py_collections import sort_fixed, intersect_list
@@ -126,7 +126,7 @@ def import_ias(fpath: Path, cfg_import: ImportConfig):
     
     # TODO 2 ias: abstract better: time gaps should be filled after merge of multiple files, but index should be done before? 
     if cfg_ias.repair_time:
-        df = repair_time(df, cfg_import.time_col, fill_gaps=False)
+        df = repair_time(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
     print('Диапазон времени IAS (START): ', df.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
@@ -152,7 +152,7 @@ def import_iases(cfg_import: ImportConfig):
         ff_logger.info('Merging data from files...')
     df = merge_time_series(dfs, cfg_import.time_col, no_duplicate_cols=False)
     if cfg_import.ias.repair_time:
-        df = repair_time(df, cfg_import.time_col, fill_gaps=True)
+        df = repair_time(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
     
     assert df[cfg_import.time_col].isna().sum() == 0
     

@@ -11,35 +11,29 @@ from src.helpers.env_helpers import ENV
 # TODO 1 support biomet ~ with separate time date cols 
 
 def import_biomets(cfg_import: ImportConfig):  
+    # TODO 1 if cfg_import.eddypro_biomet.repair_time:
     dfs_bm = {fpath.name: preload_time_series(fpath, ftype, cfg_import)
               for fpath, ftype in cfg_import.input_files.items() if ftype == InputFileType.EDDYPRO_BIOMET}
     
-    for fpath, df in dfs_bm.items():
-        # TODO 2 extract FO specific renames
-        # df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
-        # check_csf_col_names(df)
-        # df = import_rename_csf_cols(df, cfg_import.time_col)
-        if cfg_import.eddypro_biomet.repair_time:
-            df = repair_time(df, cfg_import.time_col, fill_gaps=False)
-        dfs_bm[fpath] = df
+    # TODO 2 extract FO specific renames
+    # df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
+    # check_csf_col_names(df)
+    # df = import_rename_csf_cols(df, cfg_import.time_col)
     
     if len(dfs_bm) > 1:
-        ff_logger.info('Merging data from files...')
-    
-        df, has_meteo = merge_time_series(dfs_bm, cfg_import.time_col)
-    else:
-        df, has_meteo = next(iter(dfs_bm.values())), True
+        ff_logger.info('Merging data from files...')    
+    df, has_meteo = merge_time_series(dfs_bm, cfg_import.time_col), True
         
     print('Диапазон времени Biomet (START): ', df.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     ff_logger.info('Колонки в Biomet \n'
                    f'{df.columns.values}')
 
-    if ENV.LOCAL:    
-        data_freq = df.index.freq
+    if ENV.LOCAL:
+        # TODO 1 cleanup, ensure freq
         bm_paths = [str(fpath) for fpath, ftype in cfg_import.input_files.items() if
                     ftype == InputFileType.EDDYPRO_BIOMET]
-        df_check, has_meteo_check = load_biomets_todel(bm_paths, cfg_import.time_col, data_freq, cfg_import.eddypro_biomet)
+        df_check, has_meteo_check = load_biomets_todel(bm_paths, cfg_import.time_col, cfg_import.time_freq, cfg_import.eddypro_biomet)
         assert has_meteo == has_meteo_check
         
         df.rename(columns={'TIMESTAMP_1_STR': 'TIMESTAMP_1'}, inplace=True)

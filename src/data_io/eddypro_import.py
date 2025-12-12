@@ -28,14 +28,14 @@ def import_eddypro_and_biomet(cfg_import: ImportConfig):
         # df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
         # check_csf_col_names(df)
         # df = import_rename_csf_cols(df, cfg_import.time_col)
-        df = repair_time(df, cfg_import.time_col, fill_gaps=False)
+        df = repair_time(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
         dfs_fo[fpath] = df
     
     if len(dfs_fo) > 1:
         ff_logger.info('Merging data from files...')
     df_fo = merge_time_series(dfs_fo, cfg_import.time_col, no_duplicate_cols=False)
     if cfg_import.eddypro_fo.repair_time:
-        df_fo = repair_time(df_fo, cfg_import.time_col, fill_gaps=True)
+        df_fo = repair_time(df_fo, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
     
     print('Диапазон времени FullOutput (START): ', df_fo.index[[0, -1]])
     ff_logger.info('Time range: ' + ' - '.join(df_fo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
@@ -50,7 +50,7 @@ def import_eddypro_and_biomet(cfg_import: ImportConfig):
     
     df_bm, has_meteo = import_biomets(cfg_import)
     if has_meteo:
-        df, has_meteo = merge_time_series_biomet(df_fo, df_bm, cfg_import.time_col)
+        df, has_meteo = merge_time_series_biomet(df_fo, df_bm, cfg_import.time_col, cfg_import.time_freq)
     else:
         df = df_fo
         
