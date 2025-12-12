@@ -138,9 +138,7 @@ def colab_xor_demo_data(input_dir: Path, mixed_demo_policy: ColabDemoMixPolicy):
                    format_dict(fsummary, separator=': ', item_separator='\n') +
                    '\n')
     
-    del_files = set()
     mixed_demo = len(demo_files) < len(fpaths)
     if mixed_demo and mixed_demo_policy == ColabDemoMixPolicy.AUTO_DELETE_DEMO:
         for fp in demo_files:
-            del_files |= {fp}
             fp.unlink(missing_ok=True)

@@ -36,7 +36,7 @@ def df_ensure_cols_case(df: pd.DataFrame, correct_case: list[str], ignore_missin
         renames_str = [f'{s} -> {n}' for s, n in renames]
         print('Unexpected columns case fixed: ' + str(renames_str))
     
-    missing = set(df.columns) - set(correct_case)
+    missing = df.columns.difference(correct_case)
     if len(missing) > 0:
         msg = f'Unknown correct case for columns: {missing}'
         if ignore_missing:
@@ -46,20 +46,21 @@ def df_ensure_cols_case(df: pd.DataFrame, correct_case: list[str], ignore_missin
     
     return df
 
-
-def df_verify_cols(df: pd.DataFrame, must_cols, optional_cols, allow_unknown=True):
+'''
+def df_verify_cols(df: pd.DataFrame, must_cols: pd.Index, optional_cols: pd.Index, allow_unknown=True):
     if must_cols:
-        missing = set(must_cols) - set(df.columns)
+        missing = must_cols.difference(df.columns)
         if len(missing) > 0:
             msg = f'Missing expected columns: {missing}'
             return False, msg
     
     if not allow_unknown:
-        unknown_cols = set(df.columns) - set(must_cols) - set(optional_cols)
+        unknown_cols = df.columns.difference(must_cols).difference(optional_cols)
         if len(unknown_cols) > 0:
             msg = f'Unrecognised columns: {unknown_cols}'
             return False, msg
     return True, ''
+'''
 
 
 def find_changed_el(arr: npt.NDArray, from_end=False):

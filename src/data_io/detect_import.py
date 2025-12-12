@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 
+from pandas import Index
+
 from src.data_io.csf_cols import CSF_HEADER_DETECTION_COLS
 from src.config.config_types import InputFileType, ImportMode
 from src.data_io.eddypro_cols import EDDYPRO_HEADER_DETECTION_COLS
@@ -29,22 +31,22 @@ class AutoImportException(Exception):
 class MatchInfo(Exception):
     ftype: InputFileType
     match_ratio: float
-    match_cols: set[str]
-    unknown_cols: set[str]
+    match_cols: Index
+    unknown_cols: Index
     match_count: int
     cols_count: int
 
 
 def detect_row(row_cols):
-    biomest_cs = set(BIOMET_HEADER_DETECTION_COLS)
-    ias_cs = set(IAS_HEADER_DETECTION_COLS) - biomest_cs
+    biomest_cs = Index(BIOMET_HEADER_DETECTION_COLS)
+    ias_cs = Index(IAS_HEADER_DETECTION_COLS).difference(biomest_cs)
     
     # not expected to contain
-    # eddypro_cs = set(EDDYPRO_HEADER_DETECTION_COLS) - biomest_cs
-    # csf_cs = set(CSF_HEADER_DETECTION_COLS) - biomest_cs
+    # eddypro_cs = Index(EDDYPRO_HEADER_DETECTION_COLS) - biomest_cs
+    # csf_cs = Index(CSF_HEADER_DETECTION_COLS) - biomest_cs
     
-    eddypro_cs = set(EDDYPRO_HEADER_DETECTION_COLS)
-    csf_cs = set(CSF_HEADER_DETECTION_COLS)
+    eddypro_cs = Index(EDDYPRO_HEADER_DETECTION_COLS)
+    csf_cs = Index(CSF_HEADER_DETECTION_COLS)
     
     # may be also consider exact header row place
     detect_col_targets = [
@@ -82,7 +84,7 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
         if len(row_cols) == 0:
             continue
         
-        row_matches[i] = detect_row(set(row_cols))
+        row_matches[i] = detect_row(row_cols)
     
     detected_type = InputFileType.UNKNOWN
     # TODO 2 make clear logging on recognised % in header 
