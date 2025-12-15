@@ -1,8 +1,14 @@
+import pandas as pd
+
+from src.data_io.biomet_cols import BIOMET_USED_COLS_LOWER
+from src.data_io.utils.time_series_utils import ensure_dfs_same, TEMP_DEBUG_IMPORT
+from src.helpers.env_helpers import ENV
 from src.helpers.py_collections import format_dict
 from src.ff_logger import ff_logger
-from src.data_io.csf_import import import_csf
-from src.config.config_types import ImportMode
-from src.data_io.eddypro_loader import load_eddypro
+from src.data_io.csf_import import import_csf_and_biomet
+from src.config.config_types import ImportMode, DEBUG_NROWS
+from src.data_io.eddypro_import import import_eddypro_and_biomet
+from src.data_io.eddypro_loader_todel import load_eddypro_via_bgl_todel
 from src.data_io.ias_io import import_iases
 from src.config.ff_config import FFConfig
 
@@ -42,22 +48,52 @@ from src.config.ff_config import FFConfig
 # E: 'VPD' could be bad ? should 'VPD_PI_1_1_1'  be imported from IAS? (no VPD)
 # DONE OA, V: ias: import VPD_PI and convert (via generalised rename lambda function though)
 
+# DONE logs:  fix log
 
 # TODO 1 config.data_in.input_files = ... will not reset on cell re-run, this damages re-run BADLY, fix
+# TODO 1 import must recognise all the files or fail
 
 
-def import_data(config: FFConfig):    
-    if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
-        res = load_eddypro(config)
+# TODO 2 QOA are any of these supposed to be known as some format? 
+# 'UNNAMED', 'RN_1_1_1', 'LOGGERTEMP', 'SHFSENS3', 'SHF_1_1_1', 'SWIN_1_1_1', 'LOGGERPWR', 'LWOUT_1_1_1', 'SHFSENS2', 'LWIN_1_1_1', 'VIN_1_1_1', 'SHFSENS1', 'SWOUT_1_1_1', 'PPFD_1_1_1'
+
+def import_data(config: FFConfig):
+    if config.debug and DEBUG_NROWS:
+        config.data_import.debug_nrows = DEBUG_NROWS
+    else:
+        config.data_import.debug_nrows = None
+    
+    config.data_import.time_freq = pd.Timedelta(minutes=30)
+    
+    if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:        
+        df = import_eddypro_and_biomet(config.data_import) 
+         
+        if ENV.LOCAL and TEMP_DEBUG_IMPORT:
+            ff_logger.disabled = True    
+            df_check = load_eddypro_via_bgl_todel(config.data_import)[0]
+            df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)            
+            ensure_dfs_same(df, df_check)
+            ff_logger.disabled = False
+    
     elif config.data_import.import_mode == ImportMode.IAS:
-        res = import_iases(config)
+        df = import_iases(config.data_import)
     elif config.data_import.import_mode in [ImportMode.CSF, ImportMode.CSF_AND_BIOMET]:
-        res = import_csf(config)
+        df = import_csf_and_biomet(config.data_import)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
+
+    # print('Переменные после загрузки: \n', df.columns.to_list()) # duplicate
+
+    # TODO 1 this ckeck is supposed to never be used, move to subroutine
+    if df[config.data_import.time_col].isna().sum() > 0:
+        raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
+
+    # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
+    # TODO 1 test: if psn csf + biomet recognised correctly
+    biomet_columns = [col for col in df.columns.str.lower() if col in BIOMET_USED_COLS_LOWER]
+    has_meteo = len(biomet_columns) > 0
     
     paths = format_dict(config.data_import.input_files, separator=': ')
-    # DONE logs:  fix log
-    ff_logger.info(f'Data imported from files: {paths} \n')
+    ff_logger.info(f'Data imported from files: {paths}' '\n')
        
-    return res
+    return df, biomet_columns, has_meteo

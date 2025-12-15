@@ -67,6 +67,6 @@ def dict_replace(inplace: dict, replace: dict, skip_keys: list[str]):
 '''
 
 
-def format_dict(items: dict, separator: str = ' -> ') -> str:
+def format_dict(items: dict, separator: str = ' -> ', item_separator: str = ', ') -> str:
     str_items = [f'{k}{separator}{v}' for k, v in items.items()]
-    return ', '.join(str_items)
+    return item_separator.join(str_items)

@@ -34,7 +34,7 @@ def test_auto_detect_input_files(tmp_path):
     config.data_import.input_files = 'auto'
     config.calc.has_meteo = True
     config.metadata.site_name = 'auto'
-    config.data_import.ias_out_fname_ver_suffix = 'auto'
+    config.data_export.ias.out_fname_ver_suffix = 'auto'
     
     with pytest.raises(AutoImportException, match='No import modes possible'):
         try_auto_detect_input_files(config, gl)
@@ -44,7 +44,7 @@ def test_auto_detect_input_files(tmp_path):
     config.data_import.input_files = 'auto'
     config.calc.has_meteo = True
     config.metadata.site_name = 'auto'
-    config.data_import.ias_out_fname_ver_suffix = 'auto'
+    config.data_export.ias.out_fname_ver_suffix = 'auto'
     
     prepare_import_test_data(tmp_path, ['CSF_tv_fy4_2024.xlsx', 'Biomet_tv_fy4_2023.csv'])
     
@@ -69,7 +69,7 @@ def test_fo_import(tmp_path):
     config.calc.has_meteo = True
     
     config.metadata.site_name = 'auto'
-    config.data_import.ias_out_fname_ver_suffix = 'auto'
+    config.data_export.ias.out_fname_ver_suffix = 'auto'
     
     config.data_import.eddypro_fo.missing_data_codes = [-9999]
     config.data_import.eddypro_fo.date_col = 'date'
@@ -120,7 +120,7 @@ def test_ias_import(tmp_path):
     config.calc.has_meteo = True
     
     config.metadata.site_name = 'auto'
-    config.data_import.ias_out_fname_ver_suffix = 'auto'
+    config.data_export.ias.out_fname_ver_suffix = 'auto'
     
     config.data_import.ias.skip_validation = True
     config.data_import.ias.missing_data_codes = [-9999]
@@ -156,7 +156,7 @@ def test_csf_input(tmp_path):
     config.calc.has_meteo = True
     
     config.metadata.site_name = 'auto'
-    config.data_import.ias_out_fname_ver_suffix = 'auto'
+    config.data_export.ias.out_fname_ver_suffix = 'auto'
     
     config.data_import.csf.missing_data_codes = [-9999, 'NAN']
     config.data_import.csf.datetime_col = 'TIMESTAMP'

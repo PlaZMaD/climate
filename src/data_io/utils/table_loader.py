@@ -12,6 +12,10 @@ from src.helpers.pd_helpers import find_changed_el
 from src.ff_logger import ff_logger
 
 
+# TODO 2 csv: non-comma and other separators: strategy?
+# TODO 1 csv: file recognised as single column - must fail
+
+
 def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwargs):
     """ a workaround for some (incorrect) csv with multiple header columns with different width """
     
@@ -26,6 +30,9 @@ def guess_inconsistent_csv_table_start(fpath: Path, lookup_rows=10, **pd_io_kwar
 
 
 def load_csv(fpath: Path, max_header_rows=4, **pd_read_kwargs):
+    """ nan in csv is auto converted to NaN """
+    
+    
     '''
     # does not work reliably even with 10 numeric lines
     import chardet
@@ -71,7 +78,6 @@ def load_xls(fpath, **pd_read_kwargs):
 
 def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=0) -> pd.DataFrame:
     """	nrows: read only first n rows """
-    # probably extract to load table? can all repairs be generalised operations on tables?
     
     pd_read_kwargs = {'nrows': nrows, 'header': header_row, 'skiprows': skiprows}
     
@@ -85,6 +91,7 @@ def load_table_from_file(fpath, skiprows=None, nrows=None, header_row=0) -> pd.D
     return df
 
 
+# TODO 2 header_row=None (case of load to auto guess table type)
 def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.DataFrame:  
     # TODO 2 possibly this fixed csv (or other) bugs, merge into table loader routine?
     # TODO 2 Excel 2016 saved files seems were impossible to open without specyfying engine, why ?    
@@ -117,9 +124,6 @@ def load_table_logged(fpath, skiprows=None, nrows=None, header_row=0) -> pd.Data
         ff_logger.exception(e)
         # raise SystemExit vs
         raise
-    
-    # TODO 1 move to csf
-    ff_logger.info(f'File {fpath} loaded.')
     
     # TODO 3 df.index.freq and df.name: unconventional attrs required for script, probably subclass to solve this    
     

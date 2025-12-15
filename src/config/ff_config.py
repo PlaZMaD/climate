@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Annotated
+from types import NoneType
+from typing import Annotated, Any
 
-from pydantic import field_validator, BaseModel
+from pandas import Timedelta
+from pydantic import field_validator, BaseModel, Field
 from pydantic_core.core_schema import ValidationInfo
 
-from src.config.config_types import ImportMode, InputFileType, IasExportIntervals
+
+from src.config.config_types import ImportMode, InputFileType, IasExportIntervals, ColabDemoMixPolicy
 from src.config.config_io import FFBaseModel, BaseConfig
 from src.helpers.py_helpers import gen_enum_info
 
@@ -18,7 +21,7 @@ class InputFileConfig(FFBaseModel):
     """ generate new timestamps in case of errors """
     repair_time: bool = None
     """ can replace -9999 to np.nan """
-    # TODO 1 config: some options can be None on load, but better not during run; how to deal with it fluently?
+    # TODO 1 config: some options can be None on load, but must be checked before pass; how to deal with it fluently?
     missing_data_codes: list[str | int] = None
     
     # full auto mode may be difficult due to human date and time col names in all the cases (but heuristic?)
@@ -32,19 +35,19 @@ class MergedDateTimeFileConfig(InputFileConfig):
     try_datetime_formats: str | list[str] = None
 
 
+class SeparateDateTimeFileConfig(InputFileConfig):
+    time_col: str = None
+    try_time_formats: str | list[str] = None
+    date_col: str = None
+    try_date_formats: str | list[str] = None
+
+
 class IASImportConfig(MergedDateTimeFileConfig):
     skip_validation: bool = None
 
 
 class CSFImportConfig(MergedDateTimeFileConfig):
     empty_co2_strg: bool = None
-
-
-class SeparateDateTimeFileConfig(InputFileConfig):
-    time_col: str = None
-    try_time_formats: str | list[str] = None
-    date_col: str = None
-    try_date_formats: str | list[str] = None
 
 
 class RepConfig(FFBaseModel):
@@ -104,17 +107,21 @@ class ExportConfig(BaseConfig):
     ias: IASExportConfig = IASExportConfig.model_construct()
 
 
-class ImportConfig(BaseConfig):
+class ImportConfig(BaseConfig):  
     # TODO 3 all auto should be in default as non-auto (not to trigger auto on save) and None must be allowed type, not clean
     input_files: str | list[str] | dict[str | Path, InputFileType] = None
+    mixed_demo_policy: Annotated[ColabDemoMixPolicy, gen_enum_info(ColabDemoMixPolicy)] = None
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
     ias: IASImportConfig = IASImportConfig.model_construct()
     csf: CSFImportConfig = CSFImportConfig.model_construct()
     
-    import_mode: Annotated[ImportMode | None, gen_enum_info(ImportMode)] = None
+    import_mode: Annotated[ImportMode, gen_enum_info(ImportMode)] = None
+    debug_nrows: Annotated[int | NoneType, Field(exclude=True)] = None
+    
     time_col: str = None
+    time_freq: Annotated[Timedelta, Field(Timedelta, exclude=True)] = None
 
 
 class CalcConfig(BaseConfig):

@@ -10,12 +10,12 @@ repo_dir <- '.'
 repo_path_test <- function(src_path) {file.path(repo_dir, src_path)}
 
 # uninstall REddyProc package and enable this for the full debug
-# devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
+devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
 
 debugSource('test/reddyproc/helpers/io.r' %>% repo_path_test)
+debugSource('src/reddyproc/reddyproc_wrapper.r' %>% repo_path_test)
 debugSource('src/reddyproc/postprocess_calc_means.r' %>% repo_path_test)
 debugSource('src/reddyproc/web_tool_sources_adapted.r' %>% repo_path_test)
-debugSource('src/reddyproc/reddyproc_wrapper.r' %>% repo_path_test)
 debugSource('src/reddyproc/reddyproc_extensions.r' %>% repo_path_test)
 debugSource('src/reddyproc/r_helpers.r' %>% repo_path_test)
 
@@ -32,7 +32,7 @@ rep_user_options <- list(
     # REP ustar requires Rg to detect nights; when real data is missing, 3 workarounds are possible
     # 'Rg_th_Py', 'Rg_th_REP' - estimate by theoretical algs,
     # 'Rg' - by real data, '' - ignore Rg and filter both days and nights
-    ustar_rg_source = 'Rg_th_REP',
+    ustar_rg_source = 'Rg',
 
 
     # TODO 2 User and col season = [1, 1, ...], ensure outputs are same as if Continuous or WithinYear expect 1-2 cols

@@ -4,7 +4,7 @@ from src.data_io.utils.time_series_utils import datetime_parser
 from src.ff_logger import ff_logger
 
 
-def load_biomet(config_meteo, data_freq):
+def load_biomet_todel(config_meteo, data_freq):
     print("Проверяем корректность временных меток. Убираем повторы, дополняем пропуски. "
           "На случай загрузки нескольких файлов. При загрузке одного делается автоматически.")
     
@@ -17,14 +17,13 @@ def load_biomet(config_meteo, data_freq):
     ff_logger.info("Time range for meteo: " + " - ".join(data_meteo.index[[0, -1]].strftime('%Y-%m-%d %H:%M')))
     
     if data_freq != meteo_freq:
-        print("Resampling meteo data")
         ff_logger.info(f"Resampling meteo data")
         data_meteo = data_meteo.asfreq(data_freq)
     
     return data_meteo
 
 
-def load_biomets(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFileConfig):
+def load_biomets_todel(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFileConfig):
     if len(bm_paths) == 0:
         return None, False
     
@@ -35,13 +34,12 @@ def load_biomets(bm_paths, tgt_time_col, data_freq, c_bm: MergedDateTimeFileConf
         '-9999_to_nan': -9999 in c_bm.missing_data_codes,
         'time': {
             'column_name': tgt_time_col,
-            'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats)
+            'converter': lambda x: datetime_parser(x, c_bm.datetime_col, c_bm.try_datetime_formats, pd_to_datetime_errors_arg='raise')
         },
         'repair_time': c_bm.repair_time,
     }
-    dfs = load_biomet(bg_bm_config, data_freq)
+    dfs = load_biomet_todel(bg_bm_config, data_freq)
     ff_logger.info('Колонки в метео \n'
                    f'{dfs.columns.values}')
             
     return dfs, True
-
