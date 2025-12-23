@@ -26,6 +26,6 @@ def import_eddypro_and_biomet(cfg_import: ImportConfig):
     
     if cfg_import.import_mode == ImportMode.EDDYPRO_FO_AND_BIOMET:
         df_bm = import_biomets(cfg_import)
-        df = merge_time_series_biomet(df, df_bm, cfg_import.time_col, cfg_import.time_freq)
+        df = merge_time_series_biomet(df, df_bm, cfg_import)
     
     return df

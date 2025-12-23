@@ -71,7 +71,7 @@ def import_csf_and_biomet(cfg_import: ImportConfig):
     
     if cfg_import.import_mode == ImportMode.CSF_AND_BIOMET :
         df_bm = import_biomets(cfg_import)
-        df = merge_time_series_biomet(df, df_bm, cfg_import.time_col, cfg_import.time_freq)
+        df = merge_time_series_biomet(df, df_bm, cfg_import)
             
     # (csf specific) repair postprocessing
     if cfg_import.csf.empty_co2_strg and 'co2_strg' not in df.columns:

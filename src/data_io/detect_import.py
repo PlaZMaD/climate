@@ -12,9 +12,9 @@ from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS, BIOMET_2_HEADE
 from src.data_io.ias_cols import IAS_HEADER_DETECTION_COLS
 from src.data_io.parse_fnames import try_parse_eddypro_fname, try_parse_ias_fname, try_parse_csf_fname
 from src.data_io.utils.table_loader import load_table_from_file
-from src.data_io.utils.time_series_utils import TEMP_DEBUG_IMPORT
 from src.ff_logger import ff_logger
 from src.config.ff_config import FFConfig, FFGlobals
+from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import ensure_path
 from src.helpers.py_collections import ensure_list, format_dict
 
@@ -55,7 +55,7 @@ def detect_row(row_cols: Index) -> RowMatchInfo:
     csf_cs = Index(CSF_HEADER_DETECTION_COLS)
     
     all_cs = biomest_cs.append(biomest_2_cs).append(ias_cs).append(eddypro_cs).append(csf_cs)
-    all_associated_cs = all_cs.unique() 
+    all_associated_cs = all_cs.unique()
     all_dubious_cs = all_cs[all_cs.duplicated()]
     
     biomest_cs = biomest_cs.intersection(all_associated_cs)
@@ -100,7 +100,7 @@ def detect_row(row_cols: Index) -> RowMatchInfo:
                         non_associated_cols=non_associated_cs, dubious_cols=dubious_cs)
 
 
-def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
+def detect_file_type(fpath: Path, nrows=4, debug=False) -> InputFileType:
     df = load_table_from_file(fpath, nrows=nrows, header_row=None)
     
     # upper/lower case is yet skipped intentionally
@@ -149,11 +149,11 @@ def detect_file_type(fpath: Path, nrows=4) -> InputFileType:
                           f'Consider specifying file types manually according to the import cell description.')
     else:
         msg = f'File {fpath} guesses are: \n' f'{guesses} \n'
-        if not TEMP_DEBUG_IMPORT:
-            ff_logger.debug(msg)
-        else:
+        if debug:
             ff_logger.info(msg)
-
+        else:
+            ff_logger.debug(msg)
+    
     return detected_type
 
 
@@ -163,12 +163,12 @@ def get_supported_data_files(in_dir: Path) -> list[Path]:
     return [f for f in root_files if f.suffix.lower() in SUPPORTED_FILE_EXTS_LOWER]
 
 
-def detect_known_files(input_dir=None, from_list: list[Path] = None) -> dict[Path, InputFileType]:
+def detect_known_files(input_dir=None, from_list: list[Path] = None, debug=False) -> dict[Path, InputFileType]:
     if not from_list:
         input_files = get_supported_data_files(input_dir)
     else:
         input_files = from_list
-    input_file_types = {f: detect_file_type(f) for f in input_files}
+    input_file_types = {f: detect_file_type(f, debug=debug) for f in input_files}
     
     valid_ftypes = set(InputFileType) - {InputFileType.UNKNOWN}
     valid_ftype_names = [enum.value for enum in valid_ftypes]
@@ -280,6 +280,12 @@ def detect_fname_options(input_file_types: dict[Path, InputFileType], import_mod
 
 
 def detect_input_files(config: FFConfig, gl: FFGlobals):
+    if ENV.COLAB:
+        config.data_import.debug = config.debug
+    elif ENV.LOCAL:
+        # TODO 3 env of config later
+        config.data_import.debug = True
+    
     # noinspection PyPep8Naming
     IM = ImportMode
     # TODO 2 do not change config here, consider moving all auto options to gl ?
@@ -289,7 +295,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     
     if cfg_imp.input_files == 'auto':
         # ff_log.info("Detecting input files due to config['path'] = 'auto' ")
-        input_files_auto = detect_known_files(input_dir=gl.input_dir)
+        input_files_auto = detect_known_files(input_dir=gl.input_dir, debug=cfg_imp.debug)
         
         # summary is printed now while processing each file
         # input_files_info = format_dict(input_files_auto, separator=': ', item_separator='\n')

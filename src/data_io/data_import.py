@@ -1,8 +1,7 @@
 import pandas as pd
 
 from src.data_io.biomet_cols import BIOMET_USED_COLS_LOWER
-from src.data_io.utils.time_series_utils import ensure_dfs_same, TEMP_DEBUG_IMPORT
-from src.helpers.env_helpers import ENV
+from src.data_io.utils.time_series_utils import ensure_dfs_same
 from src.helpers.py_collections import format_dict
 from src.ff_logger import ff_logger
 from src.data_io.csf_import import import_csf_and_biomet
@@ -62,13 +61,13 @@ def import_data(config: FFConfig):
         config.data_import.debug_nrows = DEBUG_NROWS
     else:
         config.data_import.debug_nrows = None
-    
+            
     config.data_import.time_freq = pd.Timedelta(minutes=30)
     
     if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:        
         df = import_eddypro_and_biomet(config.data_import) 
          
-        if ENV.LOCAL and TEMP_DEBUG_IMPORT:
+        if config.data_import.debug:
             ff_logger.disabled = True    
             df_check = load_eddypro_via_bgl_todel(config.data_import)[0]
             # df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)            

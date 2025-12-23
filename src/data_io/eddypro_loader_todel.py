@@ -54,7 +54,7 @@ def load_eddypro_via_bgl_todel(cfg_import: ImportConfig):
     if ENV.LOCAL and has_meteo:        
         # TODO 2 finish the safe switch to merge_time_series_biomet and then to just abstract merge
         # TODO 1 something is off under {"nik_biomet": 'EDDYPRO_BIOMET', 'nik_full_output': 'EDDYPRO_FO'}        
-        df_test_merge_nly = merge_time_series_biomet(df_fo, df_bm, time_col, cfg_import.time_freq)
+        df_test_merge_nly = merge_time_series_biomet(df_fo, df_bm, cfg_import)
         ensure_dfs_same(df_test_merge_nly, df)
             
     biomet_columns = []

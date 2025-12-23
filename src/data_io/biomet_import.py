@@ -3,7 +3,7 @@ from src.config.config_types import InputFileType
 from src.config.ff_config import ImportConfig
 from src.data_io.biomet_loader_todel import load_biomets_todel
 from src.data_io.time_series_loader import load_ftypes
-from src.data_io.utils.time_series_utils import ensure_dfs_same, TEMP_DEBUG_IMPORT
+from src.data_io.utils.time_series_utils import ensure_dfs_same
 from src.ff_logger import ff_logger
 from src.helpers.env_helpers import ENV
 
@@ -21,7 +21,7 @@ def import_biomets(cfg_import: ImportConfig):
     df = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET, import_rename_biomet_cols, None)
     df2 = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET_2, import_rename_biomet_cols, None)
     
-    if ENV.LOCAL and TEMP_DEBUG_IMPORT:
+    if cfg_import.debug:
         ff_logger.disabled = True
         # TODO 1 cleanup, ensure freq
         bm_paths = [str(fpath) for fpath, ftype in cfg_import.input_files.items() if

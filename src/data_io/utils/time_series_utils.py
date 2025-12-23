@@ -15,7 +15,6 @@ DETECT_DATETIME_CHUNKS = 12
 
 
 # TODO 2 ensure this check does not find errors in all examples and cleanup
-TEMP_DEBUG_IMPORT = True
 def ensure_dfs_same(df1: pd.DataFrame, df2: pd.DataFrame):
     assert (df1.columns == df2.columns).all()    
     check_same = df1.compare(df2)
@@ -58,8 +57,6 @@ def get_freq(df: pd.DataFrame, time_col: str) -> Timedelta:
 
 
 def repair_check_todel(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fill_gaps: bool):
-    if not TEMP_DEBUG_IMPORT:
-        return 
     # TODO 1 test each routine here on all inputs to ensure this funciton can be finally deleted
     df_check = df.copy()
     

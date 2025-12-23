@@ -120,6 +120,7 @@ class ImportConfig(BaseConfig):
     
     import_mode: Annotated[ImportMode, gen_enum_info(ImportMode)] = None
     debug_nrows: Annotated[int | NoneType, Field(exclude=True)] = None
+    debug: Annotated[bool | NoneType, Field(exclude=True)] = None
     
     time_col: str = None
     time_freq: Annotated[Timedelta, Field(Timedelta, exclude=True)] = None

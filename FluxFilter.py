@@ -177,6 +177,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line
 # ipython_edit_function(meteorological_night_filter)
 
+# Чистка при каждом запуске: удаление файлов с прошлых запусков (нельзя использовать вместе с mount)
+# # !rm *.*
 
 # %% [markdown] id="wVF1vDm4EauW"
 # # Загружаем данные
@@ -1102,7 +1104,7 @@ ff_logger.info(f"New basic file saved to {summary_fpath}")
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
 # %% [markdown] id="a8aa54de"
 # ## Технический блок
-# Подготавливает R окружение, если детектируется окружение Google Colab.  
+# Подготавливает R окружение, если детектируется Google Colab.  
 # %% id="06859169"
 
 ipython_enable_word_wrap()
@@ -1223,7 +1225,6 @@ config_reddyproc = RepConfig(
 
 if not config.from_file:
     config.reddyproc = config_reddyproc
-
 config.reddyproc.input_file = config_reddyproc.input_file
 config.reddyproc.output_dir = config_reddyproc.output_dir
 config.reddyproc.site_id = config_reddyproc.site_id
