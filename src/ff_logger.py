@@ -63,5 +63,6 @@ def init_logging(level=logging.INFO, fpath: Path = None, to_stdout=True):
     # logging.getLogger('rpy2').setLevel(logging.WARNING)
     # logging.getLogger('rpy2').addFilter(lambda r: 'PATH' not in r.getMessage())
        
-    logging.getLogger('bglabutils').setLevel(level=level)    
+    logging.getLogger('bglabutils').setLevel(level=level)
     ff_logger.setLevel(level=level)
+            

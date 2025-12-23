@@ -473,7 +473,7 @@ def quantile_filter(data_in, filters_db_in, config):
         up_limit = data.loc[data[f'{col}_quantilefilter'] == 1, col].quantile(limit_up)
         down_limit = data.loc[data[f'{col}_quantilefilter'] == 1, col].quantile(limit_down)
         f_inds = data.query(f"{col}_quantilefilter==1").index
-        print("Quantile filter cut values: ", down_limit, up_limit)
+        print(f"Quantile filter cut values: {down_limit:0.2f} {up_limit:0.2f}")
         # data.loc[f_inds, f'{col}_quantilefilter'] = ((data.loc[f_inds, col] <= up_limit) & (data.loc[f_inds, col] >= down_limit)).astype(int)
         data.loc[data[col] > up_limit, f'{col}_quantilefilter'] = 0
         data.loc[data[col] < down_limit, f'{col}_quantilefilter'] = 0
