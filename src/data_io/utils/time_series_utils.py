@@ -67,6 +67,8 @@ def repair_check_todel(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fi
     tmp_index = df_check.index.copy()
     df_check = df_check[~df_check.index.duplicated(keep='first')]
     
+    # TODO 1 this was triggered on NaN and missing lines, test that no info is lost in new 1.0.5
+    # TODO 1 make sure proper message is logged when biomet / other file? starts not from :30
     if not tmp_index.equals(df_check.index):
         ff_logger.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
 

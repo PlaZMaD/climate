@@ -349,6 +349,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     return cfg_imp.input_files, cfg_imp.import_mode, cfg_meta.site_name, cfg_exp.ias.out_fname_ver_suffix, has_meteo
 
 
+# TODO 1 currently does not support re-running with auto settings, since it gets replaced. use user vs dynamic settings somehow
 def try_auto_detect_input_files(*args, **kwargs):
     try:
         return detect_input_files(*args, **kwargs)
