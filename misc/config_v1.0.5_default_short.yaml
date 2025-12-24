@@ -15,6 +15,13 @@ data_import:
         missing_data_codes: [-9999]
         datetime_col: 'TIMESTAMP_1'
         try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    eddypro_biomet_2:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     ias:
         repair_time: true
         missing_data_codes: [-9999]
@@ -106,7 +113,7 @@ calc:
 reddyproc:
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01
-    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ""
+    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ''
     is_bootstrap_u_star: false
     u_star_seasoning: 'Continuous'  # WithinYear, Continuous, User
     is_to_apply_partitioning: true

@@ -1,3 +1,4 @@
+from pandas import DataFrame
 
 from src.config.config_types import InputFileType
 from src.config.ff_config import ImportConfig
@@ -6,9 +7,15 @@ from src.data_io.time_series_loader import load_ftypes
 from src.data_io.utils.time_series_utils import ensure_dfs_same, merge_time_series, resample_time_series_df, \
     repair_check_todel
 from src.ff_logger import ff_logger
-from src.helpers.env_helpers import ENV
+
 
 # TODO 1 support biomet ~ with separate time date cols
+def preprocess_biomet_2(df: DataFrame) -> DataFrame:
+    # TODO 2 should this preprocessing be better organised? check ta_1_1_1 in the FluxFilter.py before changes
+    if 'TA_1_1_1' in df.columns:
+        ff_logger.info('Biomet 2 temperature units are fixed. Expected input unts in biomet_2 TA_1_1_1 are [K].')
+        df['TA_1_1_1'] -= 273.15
+    return df
 
 
 def import_rename_biomet_cols(df, time_col):
@@ -21,6 +28,9 @@ def import_rename_biomet_cols(df, time_col):
 def import_biomets(cfg_import: ImportConfig):  
     df = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET, import_rename_biomet_cols, None)
     df2 = load_ftypes(cfg_import, InputFileType.EDDYPRO_BIOMET_2, import_rename_biomet_cols, None)
+    
+    if df2 is not None:
+        df2 = preprocess_biomet_2(df2)
     
     if df2 is not None and df is None:
         df, df2 = df2, None
