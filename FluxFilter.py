@@ -290,7 +290,14 @@ if not config.from_file:
     config.data_import.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
     config.data_import.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
     config.data_import.eddypro_biomet.repair_time = True
-    
+
+    config.data_import.eddypro_biomet_2.missing_data_codes = [-9999]
+    config.data_import.eddypro_biomet_2.date_col = 'date'
+    config.data_import.eddypro_biomet_2.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    config.data_import.eddypro_biomet_2.time_col = 'time'
+    config.data_import.eddypro_biomet_2.try_time_formats = ['%H:%M', '%H:%M:%S']
+    config.data_import.eddypro_biomet_2.repair_time = True
+
     config.data_import.csf.missing_data_codes = [-9999, 'NAN']
     config.data_import.csf.datetime_col = 'TIMESTAMP'
     config.data_import.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM

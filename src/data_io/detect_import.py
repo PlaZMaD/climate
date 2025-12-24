@@ -29,7 +29,7 @@ class AutoImportException(Exception):
 
 
 @dataclass
-class MatchInfo(Exception):
+class MatchInfo:
     ftype: InputFileType
     match_ratio: float
     
@@ -38,7 +38,7 @@ class MatchInfo(Exception):
 
 
 @dataclass
-class RowMatchInfo(Exception):
+class RowMatchInfo:
     matches: list[MatchInfo]
     best_match: float
     non_associated_cols: Index | None
@@ -100,27 +100,14 @@ def detect_row(row_cols: Index) -> RowMatchInfo:
                         non_associated_cols=non_associated_cs, dubious_cols=dubious_cs)
 
 
-def detect_file_type(fpath: Path, nrows=4, debug=False) -> InputFileType:
-    df = load_table_from_file(fpath, nrows=nrows, header_row=None)
-    
-    # upper/lower case is yet skipped intentionally
-    row_matches = {}
-    for i, row in df.iterrows():
-        row_cols = row.dropna()
-        if len(row_cols) == 0:
-            continue
-        
-        row_matches[i] = detect_row(Index(row_cols.values))
-    
-    detected_type = InputFileType.UNKNOWN, None
-    possible_header_rows = [m for row_idx, m in row_matches.items() if m.best_match > 0.5]
-    if len(possible_header_rows) == 1:
-        positive_matches = [m for m in possible_header_rows[0].matches if m.match_ratio > 0.5]
-        if len(positive_matches) == 1:
-            match = positive_matches[0]
-            ff_logger.info(f'Detected file {fpath} as {match.match_ratio * 100:.0f}% {match.ftype}')  # duplicates
-            detected_type = match.ftype
-    
+@dataclass
+class DetectInfo:
+    fpath: Path
+    ftype: InputFileType
+    match_ratio: float | None
+
+
+def detect_file_type_log_summary(di: DetectInfo, row_matches, debug=False):
     row_info_msg = []
     for i, rm in row_matches.items():
         if len(rm.matches) == 0:
@@ -129,7 +116,7 @@ def detect_file_type(fpath: Path, nrows=4, debug=False) -> InputFileType:
         dc = rm.dubious_cols.to_list()
         unac = rm.non_associated_cols.to_list()
         row_info_msg += {f'row {i}: \n'
-                         f'    dubious cols: {dc} \n'
+                         f'    ambiguous cols:    {dc} \n'
                          f'    unassociated cols: {unac}'}
         
         sorted_matches = sorted(rm.matches, key=lambda m: m.match_ratio, reverse=True)
@@ -143,18 +130,42 @@ def detect_file_type(fpath: Path, nrows=4, debug=False) -> InputFileType:
     
     guesses = '\n'.join(row_info_msg)
     
-    if detected_type == InputFileType.UNKNOWN:
-        ff_logger.warning(f'Cannot detect file type {fpath}, row guesses are: \n'
+    if di.ftype == InputFileType.UNKNOWN:
+        ff_logger.warning(f'Cannot detect file type {di.fpath}, row guesses are: \n'
                           f'{guesses} \n'
                           f'Consider specifying file types manually according to the import cell description.')
     else:
-        msg = f'File {fpath} guesses are: \n' f'{guesses} \n'
+        msg = f'File {di.fpath} guesses are: \n' f'{guesses} \n'
         if debug:
             ff_logger.info(msg)
         else:
             ff_logger.debug(msg)
+            
+
+def detect_file_type(fpath: Path, nrows=4, debug=False) -> DetectInfo:
+    """ Checks first rows for known column headers; Case-sensitive, it's only difference between some formats """
+    df = load_table_from_file(fpath, nrows=nrows, header_row=None)
     
-    return detected_type
+    row_matches = {}
+    for i, row in df.iterrows():
+        row_cols = row.dropna()
+        if len(row_cols) == 0:
+            continue
+        
+        row_matches[i] = detect_row(Index(row_cols.values))
+    
+    res = DetectInfo(fpath=fpath, ftype=InputFileType.UNKNOWN, match_ratio=None)
+    possible_header_rows = [m for row_idx, m in row_matches.items() if m.best_match > 0.5]
+    if len(possible_header_rows) == 1:
+        positive_matches = [m for m in possible_header_rows[0].matches if m.match_ratio > 0.5]
+        if len(positive_matches) == 1:
+            match = positive_matches[0]
+            ff_logger.debug(f'File {fpath} is {match.match_ratio:.2f} {match.ftype}')
+            res = DetectInfo(fpath=fpath, ftype=match.ftype, match_ratio=match.match_ratio)
+    
+    detect_file_type_log_summary(res, row_matches, debug)
+    
+    return res
 
 
 def get_supported_data_files(in_dir: Path) -> list[Path]:
@@ -168,27 +179,32 @@ def detect_known_files(input_dir=None, from_list: list[Path] = None, debug=False
         input_files = get_supported_data_files(input_dir)
     else:
         input_files = from_list
-    input_file_types = {f: detect_file_type(f, debug=debug) for f in input_files}
+    detect_results = [detect_file_type(f, debug=debug) for f in input_files]
+
+    def fmt_match(match_ratio):
+        return f'({match_ratio:.2f})' if match_ratio else '(-)'
+    input_files_msg = '\n'.join([f'{di.fpath}: {di.ftype.value}    {fmt_match(di.match_ratio)}' for di in detect_results])
     
-    valid_ftypes = set(InputFileType) - {InputFileType.UNKNOWN}
-    valid_ftype_names = [enum.value for enum in valid_ftypes]
-    unknown_input_files = {k: v for k, v in input_file_types.items() if v == InputFileType.UNKNOWN}
-    unknown_input_fnames = [str(k) for k in unknown_input_files.keys()]
-    input_files_pprint = pprint.pformat({str(k): v.value for k, v in input_file_types.items()}, indent=0)
-    input_files_pprint = input_files_pprint.replace('{', '{\n').replace('}', '\n}')
-    input_files_line = f"    config.data_import.input_files = {input_files_pprint}".replace('\n', '\n        ')
-    
-    if len(unknown_input_files) > 0:
+    input_files_code = '{\n' + '\n'.join([f"'{di.fpath}': '{di.ftype.value}'," for di in detect_results]) + '\n}'        
+    input_files_code_example = f"    config.data_import.input_files = {input_files_code}".replace('\n', '\n        ')
+
+    unknown_input_fnames = [str(di.fpath) for di in detect_results if di.ftype == InputFileType.UNKNOWN]
+    if len(unknown_input_fnames) > 0:
+        valid_ftypes = set(InputFileType) - {InputFileType.UNKNOWN}
+        valid_ftype_names = [enum.value for enum in valid_ftypes]
+        
         raise AutoImportException(
             '\n'
             f'Files {unknown_input_fnames} are not recognised. Consider one of the following solutions: \n'
-            f'- Change column names to better match one of the example files in the introduction {valid_ftype_names}. \n'
+            f'- Change column names to better match one of the example files in the introduction: {valid_ftype_names}. \n'
             '- Download and edit only column values in one of the examples, while keeping datetime format and column names. \n'
             '- Specify file type manually in the options by changing UNKNOWN to one of the known format types: \n\n'
-            + input_files_line
+            + input_files_code_example
         )
+    else:
+        ff_logger.info('Detected files: \n' + input_files_msg)
     
-    return input_file_types
+    return {di.fpath: di.ftype for di in detect_results}
 
 
 def change_if_auto(option, new_option=None, new_option_call=None,
@@ -213,24 +229,26 @@ def change_if_auto(option, new_option=None, new_option_call=None,
 
 def detect_input_mode(input_file_types: dict[Path, InputFileType]) -> ImportMode:
     input_ftypes = list(input_file_types.values())
+     
+    has_biomets = InputFileType.EDDYPRO_BIOMET in input_ftypes or InputFileType.EDDYPRO_BIOMET_2 in input_ftypes 
     possible_input_modes = []
     
     if InputFileType.EDDYPRO_FO in input_ftypes:
-        if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
-            possible_input_modes += [ImportMode.EDDYPRO_FO]
-        else:
+        if has_biomets:
             # TODO 2 QOA test if multiple biomets are still supported
             possible_input_modes += [ImportMode.EDDYPRO_FO_AND_BIOMET]
+        else:
+            possible_input_modes += [ImportMode.EDDYPRO_FO]
     
     if InputFileType.IAS in input_ftypes:
         possible_input_modes += [ImportMode.IAS]
     
     if InputFileType.CSF in input_ftypes:
-        if InputFileType.EDDYPRO_BIOMET not in input_ftypes:
+        if has_biomets:
+            possible_input_modes += [ImportMode.CSF_AND_BIOMET]
+        else:
             possible_input_modes += [ImportMode.CSF]
             ff_logger.critical('CSF without biomet is yet experimental mode.')
-        else:
-            possible_input_modes += [ImportMode.CSF_AND_BIOMET]
     
     if len(possible_input_modes) == 0:
         raise AutoImportException(
@@ -285,6 +303,7 @@ def detect_input_files(config: FFConfig, gl: FFGlobals):
     elif ENV.LOCAL:
         # TODO 3 env of config later
         config.data_import.debug = True
+        pass
     
     # noinspection PyPep8Naming
     IM = ImportMode

@@ -310,7 +310,7 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     elif len(named_dfs) == 1:
         return list(named_dfs.values())[0]
         
-        # each df must have two new attributes: .name and .index.freq
+    # each df must have two new attributes: .name and .index.freq
     named_freqs = {name: df.index.freq for name, df in named_dfs.items()}
     freqs = np.array(list(named_freqs.values()))
     if not np.all(freqs == freqs[0]):

@@ -137,6 +137,7 @@ def load_time_series(fpath: Path, ftype: InputFileType, cfg_import: ImportConfig
     load_arg_cases = {
         InputFileType.EDDYPRO_FO: SimpleNamespace(header_row=0, skiprows=[0, 2]),
         InputFileType.EDDYPRO_BIOMET: SimpleNamespace(header_row=0, skiprows=[1]),
+        InputFileType.EDDYPRO_BIOMET_2: SimpleNamespace(header_row=0, skiprows=[1]),
         InputFileType.CSF: SimpleNamespace(header_row=1, skiprows=[2, 3]),
         InputFileType.IAS: SimpleNamespace(header_row=0, skiprows=None)
     }
@@ -159,6 +160,7 @@ def ff_load_time_series(fpath, ftype, cfg_import, file_checker, col_converter):
     ftype_name_cases = {
         InputFileType.EDDYPRO_FO: 'Full Output',
         InputFileType.EDDYPRO_BIOMET: 'Biomet',
+        InputFileType.EDDYPRO_BIOMET_2: 'Biomet_2',
         InputFileType.CSF: 'CSF',
         InputFileType.IAS: 'IAS'
     }
@@ -195,7 +197,7 @@ def load_ftypes(cfg_import: ImportConfig, ff_type: InputFileType, col_converter,
     df = merge_time_series(dfs, cfg_import.time_col, no_duplicate_cols=False)
     
     cfg = get_ftype_cfg(ff_type, cfg_import)
-    if cfg.repair_time:
+    if cfg.repair_time and df is not None:
         df = resample_time_series_df(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
         if cfg_import.debug:
             repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)

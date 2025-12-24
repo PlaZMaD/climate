@@ -5,7 +5,7 @@ from src.data_io.utils.time_series_utils import ensure_dfs_same
 from src.helpers.py_collections import format_dict
 from src.ff_logger import ff_logger
 from src.data_io.csf_import import import_csf_and_biomet
-from src.config.config_types import ImportMode, DEBUG_NROWS
+from src.config.config_types import ImportMode, DEBUG_NROWS, InputFileType
 from src.data_io.eddypro_import import import_eddypro_and_biomet
 from src.data_io.eddypro_loader_todel import load_eddypro_via_bgl_todel
 from src.data_io.ias_io import import_iases
@@ -67,8 +67,9 @@ def import_data(config: FFConfig):
     if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:        
         df = import_eddypro_and_biomet(config.data_import) 
          
-        if config.data_import.debug:
-            ff_logger.disabled = True    
+         # TODO 1 test: fix EDDYPRO_BIOMET_2 and still test
+        if config.data_import.debug and InputFileType.EDDYPRO_BIOMET_2 not in config.data_import.input_files.values():
+            ff_logger.disabled = True
             df_check = load_eddypro_via_bgl_todel(config.data_import)[0]
             # df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)            
             ensure_dfs_same(df, df_check)
