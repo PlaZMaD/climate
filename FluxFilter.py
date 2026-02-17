@@ -158,6 +158,9 @@ from src.data_io.data_import import import_data
 from src.data_io.detect_import import try_auto_detect_input_files
 from src.data_io.ias_io import export_ias
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function  # noqa: F401
+from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
+from src.reddyproc.preprocess_rg import prepare_rg
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
@@ -1109,37 +1112,6 @@ ff_logger.info(f"New basic file saved to {summary_fpath}")
 # %% [markdown] id="775a473e"
 # # Обработка инструментом REddyProc
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
-# %% [markdown] id="a8aa54de"
-# ## Технический блок
-# Подготавливает R окружение, если детектируется Google Colab.  
-# %% id="06859169"
-
-ipython_enable_word_wrap()
-
-# 1.3.2 vs 1.3.3 have slightly different last columns
-# alternative for windows
-# install.packages('https://cran.r-project.org/bin/windows/contrib/4.1/REddyProc_1.3.2.zip', repos = NULL, type = "binary")
-
-setup_colab_r_code = """
-install_if_missing <- function(package, version, repos) {
-    if (!require(package, character.only = TRUE)) {
-        remotes::install_version(package, version = version, upgrade = "never", repos = repos)
-        library(package, character.only = TRUE)
-    }
-}
-# sink redirect is required to improve ipynb output
-sink(stdout(), type = "message")
-install_if_missing("REddyProc", "1.3.3", repos = 'https://cran.rstudio.com/')
-sink()
-"""
-setup_r_env()
-from rpy2 import robjects
-
-robjects.r(setup_colab_r_code)
-
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
-from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
-from src.reddyproc.preprocess_rg import prepare_rg
 
 # %% [markdown] id="034b04a5"
 # ## Фильтрация и заполнение пропусков
@@ -1235,6 +1207,9 @@ if not config.from_file:
 config.reddyproc.input_file = config_reddyproc.input_file
 config.reddyproc.output_dir = config_reddyproc.output_dir
 config.reddyproc.site_id = config_reddyproc.site_id
+
+ipython_enable_word_wrap()
+setup_r_env(repo_dir)
 
 prepare_rg(config.reddyproc)
 ensure_empty_dir(config.reddyproc.output_dir)

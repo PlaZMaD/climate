@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from IPython import get_ipython
+from rpy2 import robjects
 
 
 # DONE log remove if logger worked
@@ -43,7 +46,7 @@ def colab_only(func):
     return wrapper
 
 
-def setup_r_env():
+def setup_r_env(repo_dir: Path):
     if ENV.LOCAL:
         # only for conda rpy2: (bundled with embedded R which should go without default R_HOME):
         # env_dir = Path(sys.executable).parent
@@ -60,3 +63,6 @@ def setup_r_env():
         # something different, but it works
         # print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")
         pass
+    
+    install_reddyproc_path = repo_dir / 'src/reddyproc/install_reddyproc.r'
+    robjects.r.source(str(install_reddyproc_path))
