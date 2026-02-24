@@ -4,6 +4,12 @@
 # alternative for windows
 # install.packages('https://cran.r-project.org/bin/windows/contrib/4.1/REddyProc_1.3.2.zip', repos = NULL, type = "binary")
 
+# sink redirect is required to improve ipynb output
+sink(stdout(), type = "message")
+
+if (!requireNamespace("remotes", quietly = TRUE)) {
+	install.packages("remotes", repos = "https://cran.rstudio.com/")
+}
 
 install_if_missing <- function(package, version, repos) {
     if (!require(package, character.only = TRUE)) {
@@ -11,7 +17,6 @@ install_if_missing <- function(package, version, repos) {
         library(package, character.only = TRUE)
     }
 }
-# sink redirect is required to improve ipynb output
-sink(stdout(), type = "message")
 install_if_missing("REddyProc", "1.3.3", repos = 'https://cran.rstudio.com/')
+
 sink()
