@@ -129,6 +129,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
+# #!pip install ipython==8.1.0
 # #%load_ext autoreload
 # #%autoreload 2
 
@@ -165,6 +166,7 @@ from src.filters import min_max_filter, qc_filter, std_window_filter, meteorolog
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
 from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo
+from src.plots import plot_cols  # noqa: F401
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'

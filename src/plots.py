@@ -109,6 +109,7 @@ def basic_plot(data,
     fig_name = f"_{int(np.median(pl_data.index.year))}"
     if "ias_output_prefix " in locals() or "ias_output_prefix" in globals():
         fig_name = fig_name + "_" + ias_output_prefix
+        
     fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
     fig.show(config=fig_config)
 
@@ -218,4 +219,41 @@ def plot_albedo(plot_data, filters_db):
     fig.add_trace(go.Scattergl(x=pl_data.loc[pl_ind].index, y=pl_data.loc[pl_ind, 'albedo'], name="Albedo"))
     fig.update_layout(title='Albedo')
     fig_config = {'toImageButtonOptions': {'filename': 'albedo', }}
+    fig.show(config=fig_config)
+
+
+def plot_cols(df: pd.DataFrame, cols: list[str], title=None):
+    # TODO 3 add full screen button
+    # simple combined plot for debug/experimental purposes
+    
+    layout = go.Layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    fig = go.Figure(layout=layout)
+
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black',
+                     gridcolor='Grey', minor_ticks='inside', minor_tickcolor='Grey')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black',
+                     gridcolor='Grey')
+
+    colors = px.colors.qualitative.Dark24
+
+    for i, col in enumerate(cols):
+        fig.add_trace(go.Scattergl(
+            x=df.index,
+            y=df[col],
+            mode='lines+markers',
+            name=col,
+            marker=dict(size=4, color=colors[i % len(colors)]),
+            line=dict(color=colors[i % len(colors)])
+        ))
+
+    fig.update_layout(
+        title=title if title else ', '.join(cols),
+        xaxis_tickformat='%H:%M %d %B <br>%Y'
+    )
+
+    fig_name = f"{title}_{int(np.median(df.index.year))}"
+    fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
     fig.show(config=fig_config)
