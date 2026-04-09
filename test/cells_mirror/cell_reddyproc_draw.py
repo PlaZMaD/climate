@@ -1,7 +1,7 @@
 """ Reminder: this is dev-only duplicate of specific ipynb cell, it is out of sync frequently """
 from pathlib import Path
 
-from src.ipynb_globals import *
+from test.ipynb_globals import *
 from src.colab_routines import colab_add_download_button
 from src.helpers.io_helpers import create_archive
 from src.reddyproc.postprocess_graphs import RepImgTagHandler, RepOutputGen, RepOutputHandler
@@ -34,7 +34,7 @@ rep_arc_path = rep_out_dir / (gl.rep_out_info.fnames_prefix + '.zip')
 create_archive(arc_path=rep_arc_path, dirs=rep_out_dir, top_dir=rep_out_dir,
                include_fmasks=['*.png', '*.csv', '*.txt'], exclude_files=roh.img_proc.raw_img_duplicates)
 
-colab_add_download_button(rep_arc_path, 'Download eddyproc outputs')
+colab_add_download_button(rep_arc_path, 'Download reddyproc outputs')
 
 roh.display_images_safe()
 

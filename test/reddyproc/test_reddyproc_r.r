@@ -2,15 +2,15 @@
 # which enables RStudio interactive debug
 library(dplyr)
 
-debugSource('test/reddyproc/helpers/init_test_env.r')
-
 setwd(rstudioapi::getSourceEditorContext()$path %>% dirname %>% dirname %>% dirname)
+
+debugSource('test/reddyproc/helpers/init_test_env.r')
 
 repo_dir <- '.'
 repo_path_test <- function(src_path) {file.path(repo_dir, src_path)}
 
 # uninstall REddyProc package and enable this for the full debug
-devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
+# devtools::load_all(file.path(Sys.getenv('DEV'), '/R/REddyProc-1.3.3'), reset = TRUE)
 
 debugSource('test/reddyproc/helpers/io.r' %>% repo_path_test)
 debugSource('src/reddyproc/reddyproc_wrapper.r' %>% repo_path_test)
@@ -22,7 +22,7 @@ debugSource('src/reddyproc/r_helpers.r' %>% repo_path_test)
 # duplicates cell code to run from pure R
 # avoiding R dupe here can be too complicated
 rep_user_options <- list(
-    site_id = 'tv_fy4',
+    site_id = 'Pet',
 
     is_to_apply_u_star_filtering = TRUE,
     # NA to disable or double
@@ -45,12 +45,12 @@ rep_user_options <- list(
     is_bootstrap_u_star = FALSE,
 
     is_to_apply_gap_filling = TRUE,
-    is_to_apply_partitioning = FALSE,
+    is_to_apply_partitioning = TRUE,
 
     partitioning_methods = c("Reichstein05", "Lasslop10"),
-    latitude = 64.2,
-    longitude = 100,
-    timezone = +7,
+    latitude = 59.9,
+    longitude = 29.8,
+    timezone = +3,
 
     # TSoil
     temperature_data_variable = "Tair",
