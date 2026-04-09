@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from IPython import get_ipython
@@ -53,7 +54,8 @@ def setup_r_env(repo_dir: Path):
         # r_dir = env_dir / 'Lib/R'
         # assert r_dir.exists()
         # os.environ['R_HOME'] = str(r_dir)
-        
+        os.environ['RPY2_CFFI_MODE'] = "ABI"
+                
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
         

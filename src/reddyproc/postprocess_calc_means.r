@@ -173,10 +173,10 @@ calc_averages <- function(df_full){
 
 save_averages <- function(dfs, output_dir, output_unmask, ext){
     prename = file.path(output_dir, output_unmask)
-    h_name <- paste0(prename, '_hourly', ext)
-    d_name <- paste0(prename, '_daily', ext)
-    m_name <- paste0(prename, '_monthly', ext)
-    y_name <- paste0(prename, '_yearly', ext)
+    h_name <- paste0(prename, '_hourly.', ext)
+    d_name <- paste0(prename, '_daily.', ext)
+    m_name <- paste0(prename, '_monthly.', ext)
+    y_name <- paste0(prename, '_yearly.', ext)
 
     bkp_attr <- attr(dfs$hourly$Hour, 'units')
     dfs$hourly$Hour <- fmt_hm(dfs$hourly$Hour)
