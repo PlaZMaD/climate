@@ -70,6 +70,12 @@ def copy_comments(from_el, to_el):
         
     if isinstance(to_el, CommentedMap):
         to_el.ca.items.update(from_el.ca.items)
+        
+        # fix: ruamel.yaml attaches comments not to the el below, but to the el on top of the comment
+        # without this, on cases with 1 dict element and comment formatting will be broken
+        # this is intended to revert formatting .set_flow_style() from config_to_yaml()
+        if len(to_el.ca.items):
+            to_el.fa.set_block_style()
 
         v_types = {type(v) for v in to_el.values()}
         if v_types <= {str, int, float}:

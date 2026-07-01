@@ -54,8 +54,16 @@ def test_config_io(tmp_path):
     config.calc.calc_with_strg = True
     config.filters.qc['h'] = 2
     config.filters.qc['le'] = 3
-    FFConfig.save(config, tmp_path / 'test2.yaml', add_comments=True)
-    test_config = FFConfig.load_or_init(tmp_path / 'test2.yaml', default_fpath=default_fpath,
+    config.filters.meteo = {'CO2SS_min': 80.0}
+    
+    round_test_path = tmp_path / 'test2.yaml'
+    FFConfig.save(config, round_test_path, add_comments=True)
+    
+    raw_text = round_test_path.read_text()
+    unclosed_braces_lines = [line for line in raw_text.splitlines() if line.count('{') != line.count('}')]
+    assert len(unclosed_braces_lines) == 0
+    
+    test_config = FFConfig.load_or_init(round_test_path, default_fpath=default_fpath,
                                         init_debug=False, init_version=last_ver)
     assert test_config.data_import.import_mode == ImportMode.AUTO
     assert test_config.filters.qc['le'] == 3
