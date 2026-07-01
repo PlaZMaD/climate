@@ -161,7 +161,8 @@ from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_e
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
-from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo
+from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo, \
+    debug_plot_changes
 from src.plots import plot_cols  # noqa: F401
 
 # rpy2 hotfix: path must be set properly before the first rpy2 import
