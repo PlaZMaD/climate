@@ -160,7 +160,8 @@ from src.data_io.ias_io import export_ias
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function  # noqa: F401
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
-    meteorological_rain_filter, quantile_filter, quantile_iqr_filter, mad_hampel_filter, manual_filter, winter_filter
+    meteorological_rain_filter, quantile_filter, quantile_iqr_filter, mad_hampel_filter, manual_filter, winter_filter, \
+    basic_filter
 from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo, \
     debug_plot_changes
 from src.plots import plot_cols  # noqa: F401
@@ -786,6 +787,21 @@ plot_data = data.copy()
 filters_db = {col: [] for col in plot_data.columns.to_list()}
 print(plot_data.columns.to_list())
 
+# %% [markdown] id="soyyX-MCbиXt"
+# ## по футпринту
+
+# %% id="mAdYXJ4dSRbJ"
+
+# renames from IAS: 'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
+config_footprint = ['h', 'le', 'sh_1_1_1', 'ch4_flux']
+
+if not config.from_file:
+    config.filters.footprint = config_footprint
+    
+# with debug_plot_changes(config.debug, data, cols, None, 'fetch_filter'):
+data = basic_filter(data, src_col='FETCH_FILTER', src_bad_value=0, tgt_cols=config.filters.footprint)
+
+
 # %% [markdown] id="BL_6XxGGsCBK"
 # ## по флагам качества
 
@@ -844,12 +860,6 @@ if config.calc.has_meteo:
     # date_ranges.append(['25.8.2014 00:00', '26.8.2014 00:00'])
     plot_data, filters_db = winter_filter(plot_data, filters_db, config.filters.meteo,
                                           config.filters.winter_date_ranges)
-
-# %% [markdown] id="iipFLxf6fu5Y"
-# Фильтрация по футпринту
-# будет в следующей версии скрипта
-#
-# `fetch = 1 #или 0. 1 – остаются, 0 – убираются `
 
 # %% [markdown] id="UAdRtCPGq6_y"
 # # Фильтрация данных статистическая

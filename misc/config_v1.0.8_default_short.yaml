@@ -43,6 +43,7 @@ data_export:
 metadata:
     site_name: 'auto'
 filters:
+    footprint: []
     qc: {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
     meteo:
         CO2SS_min: 80.0
@@ -92,6 +93,12 @@ filters:
             ch4_flux: [0.01, 0.99]
             co2_strg: [0.01, 0.99]
             nee: [0.01, 0.99]
+    quantile_iqr:
+        enabled: false
+        window_size_days: 7
+        tgt_cols:
+            co2_flux: 1.5
+            nee: 1.5
     madhampel:
         co2_flux: {z: 5.5, hampel_window: 10}
         ch4_flux: {z: 5.5, hampel_window: 10}

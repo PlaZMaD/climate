@@ -100,6 +100,7 @@ class QuantileIQRFilterConfig(FFBaseModel):
 
 class FiltersConfig(FFBaseModel):
     # TODO 1 auto = initial; changed or not? make this config-wide approach
+    footprint: list = []
     qc: dict = {}
     meteo: dict = {}
     min_max: dict = {}

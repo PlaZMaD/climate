@@ -702,3 +702,15 @@ def winter_filter(data_in, filters_db_in, cfg_meteo, date_ranges):
     
     ff_logger.info(f"winter_filter applied with the next config: \n {cfg_meteo}  \n Date range: {date_ranges} \n")
     return data, filters_db
+
+
+def basic_filter(df: pd.DataFrame, src_col: str, src_bad_value, tgt_cols: list):
+    if src_col not in df.columns:
+        ff_logger.info(f'Fetch filter not applied, column {src_col} missing')
+        return df
+
+    tgt_cols_valid = df.columns.intersection(tgt_cols)
+    tgt_cols_missing = df.columns.difference(tgt_cols)
+    df.loc[df[src_col] == src_bad_value, tgt_cols_valid] = np.nan    
+    ff_logger.info(f'Fetch filter applied to the next columns: {tgt_cols_valid}, columns not in the data: {tgt_cols_missing}')
+    return df
