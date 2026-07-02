@@ -17,11 +17,7 @@ def min_max_filter(data_in, filters_db_in, config):
         if col not in data.columns:
             print(f"No column with name {col}, skipping...")
             continue
-        filter = get_column_filter(data, filters_db, col)
-        
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-        
+        filter = get_column_filter(data, filters_db, col, auto_create=True)        
         data[f"{col}_minmaxfilter"] = filter
         
         if col not in ['rh_1_1_1', 'swin_1_1_1', 'ppfd_1_1_1', 'swin_1_1_1']:
@@ -56,11 +52,9 @@ def qc_filter(data_in, filters_db_in, cfg_qc):
             print(f"No column with name {col}, skipping...")
             continue
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-        
+        filter = get_column_filter(data, filters_db, col, auto_create=True)        
         data[f"{col}_qcfilter"] = filter
+        
         if f"qc_{col}" not in data.columns and col != 'nee':
             print(f"No qc_{col} in data")
             continue
@@ -90,11 +84,9 @@ def std_window_filter(data_in, filters_db_in, config):
         if col not in data.columns:
             print(f"No column with name {col}, skipping...")
             continue
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
-        
+        filter = get_column_filter(data, filters_db, col, auto_create=True)        
         data[f"{col}_stdwindowfilter"] = filter
+        
         data['tmp_col'] = data[col]
         data.loc[~filter.astype(bool), 'tmp_col'] = np.nan
         rolling_mean = bg.calc_rolling(data['tmp_col'], rolling_window=window_size, step=points_per_day,
@@ -133,9 +125,7 @@ def meteorological_filter(
     
     for col in ["co2_flux", 'h', 'le', 'ch4_flux']:
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_physFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_physFilter")
@@ -190,9 +180,7 @@ def meteorological_rh_filter(
             print(f"no {col}")
             continue
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_rhFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_rhFilter")
@@ -234,9 +222,7 @@ def meteorological_night_filter(
         if col not in data.columns:
             print(f"no {col} column")
             continue
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_nightFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_nightFilter")
@@ -290,9 +276,7 @@ def meteorological_day_filter(data_in, filters_db_in, cfg_meteo):  # , file_freq
         if col not in data.columns:
             print(f"no {col} column")
             continue
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_dayFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_dayFilter")
@@ -326,9 +310,7 @@ def meteorological_co2ss_filter(
             print(f"no {col} column")
             continue
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_co2ssFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_co2ssFilter")
@@ -365,9 +347,7 @@ def meteorological_ch4ss_filter(
             print(f"no {col} column")
             continue
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_ch4ssFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_ch4ssFilter")
@@ -399,9 +379,7 @@ def meteorological_rain_filter(
             print(f"no {col}")
             continue
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)        
         
         if f"{col}_rainFilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_rainFilter")
@@ -460,9 +438,7 @@ def quantile_filter(data_in, filters_db_in, config):
             print(f"No column with name {col}, skipping...")
             continue
         
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_quantilefilter" not in filters_db[col]:
             filters_db[col].append(f"{col}_quantilefilter")
@@ -499,9 +475,7 @@ def mad_hampel_filter(data_in, filters_db_in, config):
         
         hampel_window = lconfig['hampel_window']
         z = lconfig['z']
-        filter = get_column_filter(data, filters_db, col)
-        if len(filter) == 0:
-            filter = [1] * len(data.index)
+        filter = get_column_filter(data, filters_db, col, auto_create=True)
         
         if f"{col}_madhampel" not in filters_db[col]:
             filters_db[col].append(f"{col}_madhampel")
@@ -526,9 +500,7 @@ def manual_filter(data_in, filters_db_in, col_name, man_range, value, manual_con
     
     data = data_in.copy()
     filters_db = filters_db_in.copy()
-    filter = get_column_filter(data, filters_db, col_name)
-    if len(filter) == 0:
-        filter = [1] * len(data.index)
+    filter = get_column_filter(data, filters_db, col_name, auto_create=True)
     data[f"{col_name}_manualFilter"] = filter
     # if range not in data.index:
     #   print('WARNING date range is not in index! Nothing is changed!')
@@ -578,9 +550,7 @@ def winter_filter(data_in, filters_db_in, cfg_meteo, date_ranges):
                 print(f"No column with name {col}, skipping...")
                 continue
             
-            filter = get_column_filter(data, filters_db, col)
-            if len(filter) == 0:
-                filter = [1] * len(data.index)
+            filter = get_column_filter(data, filters_db, col, auto_create=True)
             data[f"{col}_winterFilter"] = filter
             try:
                 for start, stop in date_ranges:
@@ -627,9 +597,7 @@ def winter_filter(data_in, filters_db_in, cfg_meteo, date_ranges):
                 print(f"No column with name {col}, skipping...")
                 continue
             
-            filter = get_column_filter(data, filters_db, col)
-            if len(filter) == 0:
-                filter = [1] * len(data.index)
+            filter = get_column_filter(data, filters_db, col, auto_create=True)
             data[f"{col}_winterFilter"] = filter
             try:
                 for start, stop in date_ranges:

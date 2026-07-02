@@ -7,6 +7,7 @@ from plotly import graph_objects as go, express as px
 from plotly.subplots import make_subplots
 
 from bglabutils import basic as bg
+from src.ff_logger import ff_logger
 
 
 def colapse_filters(data, filters_db_in):
@@ -18,13 +19,19 @@ def colapse_filters(data, filters_db_in):
     return out_filter
 
 
-def get_column_filter(data, filters_db_in, column_name):
+def get_column_filter(data, filters_db_in, column_name, auto_create=False) -> np.array:
     if column_name not in filters_db_in.keys():
-        return np.array([1] * len(data.index))
-    if len(filters_db_in[column_name]) > 0:
-        return colapse_filters(data, filters_db_in)[column_name]
+        filter_mask = np.array([1] * len(data.index))
+    elif len(filters_db_in[column_name]) > 0:
+        filter_mask = colapse_filters(data, filters_db_in)[column_name]
     else:
-        return np.array([1] * len(data.index))
+        filter_mask = np.array([1] * len(data.index))
+    
+    if auto_create and len(filter_mask) == 0:
+        ff_logger.debug('Filter was actually created')
+        filter_mask = [1] * len(data.index)
+        
+    return filter_mask
 
 
 def basic_plot(data,
