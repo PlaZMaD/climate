@@ -15,6 +15,7 @@ from src.helpers.py_helpers import gen_enum_info
 # DEFAULT_CONFIG = 'misc/default_config.yaml'
 # TODO 1 strings in arrays as strings, not values: missing_data_codes: [-9999, NAN]
 # TODO 2 config file link in the introduction - how to deal with updates?
+# TODO 2 https://github.com/pydantic/pydantic/issues/7436 try to migrate to pydantic dataclasses?
 
 
 class InputFileConfig(FFBaseModel):
@@ -86,6 +87,17 @@ class QuantileFilterConfig(FFBaseModel):
         return v if v is not None else {}
     
 
+class QuantileIQRFilterConfig(FFBaseModel):
+    enabled: bool = True
+    window_size_days: int | None = 7
+    tgt_cols: dict[str, float] = {}
+    
+    @field_validator('tgt_cols', mode='before')
+    @classmethod
+    def none_to_dict(cls, v: any, info: ValidationInfo) -> dict:
+        return v if v is not None else {}
+
+
 class FiltersConfig(FFBaseModel):
     # TODO 1 auto = initial; changed or not? make this config-wide approach
     qc: dict = {}
@@ -93,6 +105,7 @@ class FiltersConfig(FFBaseModel):
     min_max: dict = {}
     window: dict = {}
     quantile: QuantileFilterConfig = QuantileFilterConfig.model_construct()
+    quantile_iqr: QuantileIQRFilterConfig = QuantileIQRFilterConfig.model_construct()
     madhampel: dict = {}
     winter_date_ranges: list[list[str]] = []
     man_ranges: list[list[str]] = []

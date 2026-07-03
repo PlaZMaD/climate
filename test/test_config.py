@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.config.config_types import ImportMode, InputFileType, ColabDemoMixPolicy
-from src.config.ff_config import FFConfig, QuantileFilterConfig
+from src.config.ff_config import FFConfig, QuantileIQRFilterConfig, QuantileFilterConfig
 from src.ff_logger import init_logging
 
 
@@ -47,6 +47,7 @@ def test_config_io(tmp_path):
                                    init_debug=False, init_version=last_ver)
     config.data_import.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     config.filters.quantile = QuantileFilterConfig(enabled=False, tgt_cols={'ok': [0.1, 0.9]})
+    config.filters.quantile_iqr = QuantileIQRFilterConfig(enabled=True, window_size_days=7, tgt_cols={'ok': 1.6})
     config.filters.man_ranges = [('test1', 'test2')]
     config.reddyproc.partitioning_methods = ['Lasslop10']
     config.data_import.input_files = ['ya_ckd_FO_2015_test.csv', 'ya_ckd_biomet_2015.csv']

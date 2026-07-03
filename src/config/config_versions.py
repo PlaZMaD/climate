@@ -74,10 +74,15 @@ def update_config_version(config: dict, tgt_ver) -> dict:
             'repair_time': True
         }
         
+        config['filters']['quantile_iqr'] = {
+            'enabled': False,
+            'tgt_cols': config['filters']['quantile']
+        }
         config['filters']['quantile'] = {
             'enabled': True,
             'tgt_cols': config['filters']['quantile']
         }
+
         config['version'] = 'v1.0.8'
     
     if config['version'] != tgt_ver:

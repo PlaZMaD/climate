@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 
 from bglabutils import basic as bg, filters as bf
-from src.config.ff_config import QuantileFilterConfig
+from src.config.ff_config import QuantileIQRFilterConfig, QuantileFilterConfig
 from src.ff_logger import ff_logger
-from src.plots import get_column_filter
+from src.plots import get_column_filter, plot_cols
 
 
 def min_max_filter(data_in, filters_db_in, config):
@@ -459,6 +459,66 @@ def quantile_filter(data_in, filters_db_in, cfg_quantile: QuantileFilterConfig):
         # print(filter.sum(), data[f'{col}_quantilefilter'].sum(), filter.sum() - data[f'{col}_quantilefilter'].sum())
     ff_logger.info(f"quantile_filter applied with the next config: \n {cfg_quantile}  \n")
     return data, filters_db
+
+
+def quantile_iqr_filter(df_in: pd.DataFrame, filters_db_in: dict, debug: bool, cfg_quantile: QuantileIQRFilterConfig):
+    # TODO 2 why [0, 1] quantile produces 0 and 1 row? nan? or just combined with previous values?
+    # #@unroll_filters_db
+    
+    if not cfg_quantile.enabled or len(cfg_quantile.tgt_cols) == 0:
+        return df_in, filters_db_in
+    
+    df: pd.DataFrame = df_in.copy()
+    filters_db = filters_db_in.copy()
+    
+    for col, multiplier in cfg_quantile.tgt_cols.items():
+        quantile_down, quantile_up = 0.25, 0.75
+        if col not in df.columns:
+            print(f"No column with name {col}, skipping...")
+            continue
+        
+        prev_filter = get_column_filter(df, filters_db, col, auto_create=True)        
+        cn = f'{col}_quantile_iqr_filter'
+        
+        if cn not in filters_db[col]:
+            filters_db[col].append(cn)
+        else:
+            print('filter already exist but will be overwritten')
+        
+        df[cn] = prev_filter
+        
+        if cfg_quantile.window_size_days:
+            t_delta = pd.Timedelta(cfg_quantile.window_size_days, 'days')
+            up_limit = df[col].rolling(window=t_delta, center=True).quantile(quantile_up)
+            down_limit = df[col].rolling(window=t_delta, center=True).quantile(quantile_down)
+            iqr = up_limit - down_limit
+            up_limit += iqr * multiplier 
+            down_limit -= iqr * multiplier
+            
+            if debug:
+                cn_up = f'{col}_quantile_iqr_filter_up_limit'
+                cn_down = f'{col}_quantile_iqr_filter_down_limit'
+                df[cn_up] = up_limit
+                df[cn_down] = down_limit
+                plot_cols(df, [col, cn_up, cn_down])
+            
+        else:
+            up_limit = df.loc[df[cn] == 1, col].quantile(quantile_up)
+            down_limit = df.loc[df[cn] == 1, col].quantile(quantile_down)
+            iqr = up_limit - down_limit
+            up_limit += iqr * multiplier 
+            down_limit -= iqr * multiplier
+            print(f"Quantile IQR filter cut values: {down_limit:0.2f} {up_limit:0.2f}")
+        
+        # f_inds = df.query(f"{col}_quantilefilter==1").index
+        # df.loc[f_inds, cn] = ((df.loc[f_inds, col] <= up_limit) & (df.loc[f_inds, col] >= down_limit)).astype(int)
+        df.loc[df[col] > up_limit, cn] = 0
+        df.loc[df[col] < down_limit, cn] = 0
+        
+        # print(col, (df.loc[f_inds, col] < down_limit).sum(), (df.loc[f_inds, col] > up_limit).sum(), len(df.loc[f_inds, col].index), ((df.loc[f_inds, col] < up_limit) & (df.loc[f_inds, col] > down_limit)).astype(int).sum())
+        # print(prev_filter.sum(), df[cn].sum(), prev_filter.sum() - df[cn].sum())
+    ff_logger.info(f"quantile_iqr_filter applied with the next config: \n {cfg_quantile}  \n")
+    return df, filters_db
 
 
 def mad_hampel_filter(data_in, filters_db_in, config):
