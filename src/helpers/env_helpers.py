@@ -1,8 +1,9 @@
 import os
+import shutil
+import sys
 from pathlib import Path
 
 from IPython import get_ipython
-from rpy2 import robjects
 
 
 # DONE log remove if logger worked
@@ -54,7 +55,21 @@ def setup_r_env(repo_dir: Path):
         # r_dir = env_dir / 'Lib/R'
         # assert r_dir.exists()
         # os.environ['R_HOME'] = str(r_dir)
-        os.environ['RPY2_CFFI_MODE'] = "ABI"
+        # os.environ['RPY2_CFFI_MODE'] = "ABI"
+        
+        # rpy2 malfunctions with R4.6.0
+        if not shutil.which("R.dll"):
+            print(f"rpy2 did not place R.dll in the path, adding it manually")
+            r_home = Path(os.environ['R_HOME']) 
+            r_bin = r_home / 'bin' / 'x64'
+            os.environ["PATH"] = str(r_bin) + os.pathsep + os.environ["PATH"]
+            assert shutil.which("R.dll")
+            
+            # os.add_dll_directory(str(r_bin))
+        
+        # "make not found" means Rtools not installed, RTools45:
+        # https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html
+        # https://cran.r-project.org/bin/windows/Rtools/rtools45/files/rtools45-6768-6492.exe
                 
         # only if system R used on W10 (not conda bundled)
         # remove from Rcmd_environ to user PATH to remove rpy2 import warning
@@ -64,7 +79,12 @@ def setup_r_env(repo_dir: Path):
     else:
         # something different, but it works
         # print(f"Google colab auto sets R_HOME to: {os.environ['R_HOME']}")
-        pass
     
-    install_reddyproc_path = repo_dir / 'src/reddyproc/install_reddyproc.r'
-    robjects.r.source(str(install_reddyproc_path))
+        # load rpy2 specifically after adding R.dll to the path, or error will happen:
+        # package ‘stats’ in options("defaultPackages") was not found 
+        from rpy2 import robjects
+        
+        install_reddyproc_path = repo_dir / 'src/reddyproc/install_reddyproc.r'
+        robjects.r.source(str(install_reddyproc_path))
+        
+        pass

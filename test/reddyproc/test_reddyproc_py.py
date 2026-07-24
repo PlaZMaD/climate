@@ -1,3 +1,6 @@
+# to run test directly from cmd:
+# py -m pytest -s test/reddyproc/test_reddyproc_py.py::test_process
+
 from pathlib import Path
 import logging  # noqa: F401
 import pytest
@@ -40,6 +43,7 @@ def test_process(use_r_from_python_env):
     
     import test.cells_mirror.cell_reddyproc_process  # noqa: F401
     # import src.cells_mirror.cell_reddyproc_draw  # noqa: F401
+    pass
 
 
 def test_draw():

@@ -152,21 +152,24 @@ from src.config.config_types import IasExportIntervals, InputFileType, ColabDemo
 from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
-from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
 from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import import_data
 from src.data_io.detect_import import try_auto_detect_input_files
 from src.data_io.ias_io import export_ias
 from src.ipynb_routines import setup_plotly, ipython_enable_word_wrap, ipython_edit_function  # noqa: F401
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
-from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
-from src.reddyproc.preprocess_rg import prepare_rg
 from src.filters import min_max_filter, qc_filter, std_window_filter, meteorological_rh_filter, \
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
 from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo
 from src.plots import plot_cols  # noqa: F401
+
+# rpy2 hotfix: path must be set properly before the first rpy2 import
+from src.helpers.env_helpers import setup_r_env
+setup_r_env(repo_dir)
+from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
+from src.reddyproc.preprocess_rg import prepare_rg
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
@@ -1211,7 +1214,6 @@ config.reddyproc.output_dir = config_reddyproc.output_dir
 config.reddyproc.site_id = config_reddyproc.site_id
 
 ipython_enable_word_wrap()
-setup_r_env(repo_dir)
 
 prepare_rg(config.reddyproc)
 ensure_empty_dir(config.reddyproc.output_dir)
