@@ -4,8 +4,14 @@
 #
 #    pip-compile
 #
-# Env install one-liner:
+# Env install one-liners:
+#    https://www.python.org/downloads/release/pymanager-263/
+#    cd <this repo folder>
+#    py -3.12 -m venv py_312
+#    py_312\Scripts\activate.bat
 #    pip install -r misc/env_requirements.txt
+
+warning___conflicts-on-python-3_13-and-later___fluent-on-python-3_12
 
 alembic==1.17.2
     # via optuna
