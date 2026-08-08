@@ -10,7 +10,7 @@ from src.config.ff_config import ImportConfig
 # ppfd_in_1_1_1 will be renamed to ppfd_1_1_1, 
 
 
-def import_rename_fo_cols(df):
+def import_rename_fo_cols(df, time_col):
     # TODO 1 some renames in the main script are specific to eddypro/biomet files and should not be part of main script anymore?
     # if moved, check ias import-export handling stands (or solve with generalised col names preprocess check?)
     # TODO 2 extract FO specific renames
@@ -26,6 +26,6 @@ def import_eddypro_and_biomet(cfg_import: ImportConfig):
     
     if cfg_import.import_mode == ImportMode.EDDYPRO_FO_AND_BIOMET:
         df_bm = import_biomets(cfg_import)
-        df = merge_time_series_biomet(df, df_bm, cfg_import.time_col, cfg_import.time_freq)
+        df = merge_time_series_biomet(df, df_bm, cfg_import)
     
     return df

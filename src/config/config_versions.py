@@ -6,7 +6,7 @@ def update_config_version(config: dict, tgt_ver) -> dict:
     if 'version' not in config:
         raise Exception('Unexpected config contents.')
     else:
-        src_ver = config['version'] 
+        src_ver = config['version']
     
     if src_ver == tgt_ver:
         return config
@@ -21,7 +21,7 @@ def update_config_version(config: dict, tgt_ver) -> dict:
             'csf': config['csf'],
             'import_mode': config['import_mode'],
             'time_col': config['time_col']
-        }        
+        }
         del config['input_files']
         del config['eddypro_fo']
         del config['eddypro_biomet']
@@ -37,7 +37,7 @@ def update_config_version(config: dict, tgt_ver) -> dict:
         
         config['data_export'] = {
             'ias': {
-                'out_fname_ver_suffix': config['ias_out_version'], 
+                'out_fname_ver_suffix': config['ias_out_version'],
                 'split_intervals': 'YEAR'
             }
         }
@@ -50,7 +50,7 @@ def update_config_version(config: dict, tgt_ver) -> dict:
         
         config['filters']['qc'] = config['qc']
         del config['qc']
-
+        
         config['calc'] = {
             'has_meteo': config['has_meteo'],
             'calc_nee': config['calc_nee'],
@@ -64,8 +64,22 @@ def update_config_version(config: dict, tgt_ver) -> dict:
     
     if config['version'] == '1.0.4':
         config['data_import']['mixed_demo_policy'] = ColabDemoMixPolicy.AUTO_DELETE_DEMO
-        config['version'] = 'v1.0.5'
         
+        config['data_import']['eddypro_biomet_2'] = {
+            'missing_data_codes': [-9999],
+            'date_col': 'date',
+            'try_date_formats': ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d'],
+            'time_col': 'time',
+            'try_time_formats': ['%H:%M', '%H:%M:%S'],
+            'repair_time': True
+        }
+        
+        config['filters']['quantile'] = {
+            'enabled': True,
+            'tgt_cols': config['filters']['quantile']
+        }
+        config['version'] = 'v1.0.8'
+    
     if config['version'] != tgt_ver:
         raise NotImplementedError(
             f'Current config version: {tgt_ver} does not match loaded version: {src_ver}. \n'

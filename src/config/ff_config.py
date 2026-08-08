@@ -76,13 +76,23 @@ class RepConfig(FFBaseModel):
     log_fname_end: str = '_log.txt'
 
 
+class QuantileFilterConfig(FFBaseModel):
+    enabled: bool = True
+    tgt_cols: dict[str, Annotated[list[float], Field(min_length=2, max_length=2)]] = {}
+
+    @field_validator('tgt_cols', mode='before')
+    @classmethod
+    def none_to_dict(cls, v: any, info: ValidationInfo) -> dict:
+        return v if v is not None else {}
+    
+
 class FiltersConfig(FFBaseModel):
     # TODO 1 auto = initial; changed or not? make this config-wide approach
     qc: dict = {}
     meteo: dict = {}
     min_max: dict = {}
     window: dict = {}
-    quantile: dict = {}
+    quantile: QuantileFilterConfig = QuantileFilterConfig.model_construct()
     madhampel: dict = {}
     winter_date_ranges: list[list[str]] = []
     man_ranges: list[list[str]] = []
@@ -114,11 +124,13 @@ class ImportConfig(BaseConfig):
     
     eddypro_fo: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     eddypro_biomet: MergedDateTimeFileConfig = MergedDateTimeFileConfig.model_construct()
+    eddypro_biomet_2: SeparateDateTimeFileConfig = SeparateDateTimeFileConfig.model_construct()
     ias: IASImportConfig = IASImportConfig.model_construct()
     csf: CSFImportConfig = CSFImportConfig.model_construct()
     
     import_mode: Annotated[ImportMode, gen_enum_info(ImportMode)] = None
     debug_nrows: Annotated[int | NoneType, Field(exclude=True)] = None
+    debug: Annotated[bool | NoneType, Field(exclude=True)] = None
     
     time_col: str = None
     time_freq: Annotated[Timedelta, Field(Timedelta, exclude=True)] = None

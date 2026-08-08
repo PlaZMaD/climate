@@ -129,17 +129,24 @@ def ipython_edit_function(func):
 
 def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
     if ENV.IPYNB:
-        svg_text = self.to_image(format='svg')
-        display(SVG(svg_text))
-    if ENV.LOCAL:
-        print('Reminder: local screen resolution for plotly render can be adjusted.')
+        # svg_text = self.to_image(format='svg')
+        # display(SVG(svg_text))
         
+        # not tested
+        display(HTML(self.to_html()))        
+    if ENV.LOCAL:        
         dpath = local_out_dir
-        dpath.mkdir(parents=True, exist_ok=True)
+        local_out_dir.mkdir(parents=True, exist_ok=True)
         
         fname = args['config']['toImageButtonOptions']['filename']
-        fpath = dpath / (fname + '.png')
-        self.write_image(format='png', width=1920, file=fpath)
+        
+        # seems does not support vector
+        # print('Reminder: local screen resolution for plotly render can be adjusted.')
+        # fpath = dpath / (fname + '.svg')
+        # self.write_image(file=fpath)
+        
+        fpath = dpath / (fname + '.html')
+        self.write_html(fpath, auto_open=False)        
 
 
 def setup_plotly(out_dir):

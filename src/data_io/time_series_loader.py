@@ -23,7 +23,7 @@ MAX_NON_HALF_HOUR_TIMESTAMPS_CROP = 1801
 
 
 def parse_datetime_col(df: pd.DataFrame, cfg_dt: MergedDateTimeFileConfig, tgt_time_col, pd_to_datetime_errors_arg):
-    datetime_col_str = cfg_dt.datetime_col # + PARSED_DATETIME_SUFFIX    
+    datetime_col_str = cfg_dt.datetime_col  # + PARSED_DATETIME_SUFFIX    
     # assert datetime_col_str not in df.columns
     
     if tgt_time_col in df.columns:
@@ -78,9 +78,10 @@ def parse_timestamp_cols(df, cfg: SeparateDateTimeFileConfig | MergedDateTimeFil
     def mask_info(mask):
         bad_count = mask.sum()
         bad_percent = 100 * bad_count / mask.size
-        return f'{bad_count} ({bad_percent:.1f}%) ' 
+        return f'{bad_count} ({bad_percent:.1f}%) '
+        
+        # TODO 2 test: bad or missing timestamps
     
-    # TODO 2 test: bad or missing timestamps
     bad_mask = df[tgt_time_col].isna()
     if bad_mask.any():
         ff_logger.warning(f'{mask_info(bad_mask)} of timestamps are bad and will be removed: \n'
@@ -96,7 +97,7 @@ def parse_timestamp_cols(df, cfg: SeparateDateTimeFileConfig | MergedDateTimeFil
     
     bad_ts_prc = 100 * (original_size - df.size) // original_size
     if bad_ts_prc > CRITICAL_BAD_TIMESTAMPS_PERCENT:
-        ff_logger.critical(f'Too much bad timestamps {bad_ts_prc}, file requires manual review.')
+        ff_logger.critical(f'Too much bad timestamps ({bad_ts_prc}%), file requires manual review.')
     
     # df.loc[5:6, 'datetime'] = df.loc[4:5, 'datetime'][::-1].values
     # TODO 2 test: wrong order
@@ -106,15 +107,17 @@ def parse_timestamp_cols(df, cfg: SeparateDateTimeFileConfig | MergedDateTimeFil
         ff_logger.warning(f'{mask_info(reversed_mask)} of timestamps are reversed. Data order will be rearranged: \n'
                           f'{df[tgt_time_col][reversed_mask]} \n')
         df = df.sort_values(tgt_time_col).reset_index()
-        
+    
     return df
 
 
-def get_ftype_cfg(ftype: InputFileType, cfg_import: ImportConfig) -> SeparateDateTimeFileConfig | MergedDateTimeFileConfig:
+def get_ftype_cfg(ftype: InputFileType,
+                  cfg_import: ImportConfig) -> SeparateDateTimeFileConfig | MergedDateTimeFileConfig:
     # TODO 1 header_row=1, skiprows=[2, 3]
     cfg_cases = {
         InputFileType.EDDYPRO_FO: cfg_import.eddypro_fo,
         InputFileType.EDDYPRO_BIOMET: cfg_import.eddypro_biomet,
+        InputFileType.EDDYPRO_BIOMET_2: cfg_import.eddypro_biomet_2,
         InputFileType.CSF: cfg_import.csf,
         InputFileType.IAS: cfg_import.ias
     }
@@ -129,36 +132,39 @@ def load_time_series(fpath: Path, ftype: InputFileType, cfg_import: ImportConfig
     """
     
     ff_logger.info('\n' f'Reading {fpath} ...')
-        
+    
     # TODO 1 test biomet and ias - final checks before all load happens here   
     load_arg_cases = {
         InputFileType.EDDYPRO_FO: SimpleNamespace(header_row=0, skiprows=[0, 2]),
         InputFileType.EDDYPRO_BIOMET: SimpleNamespace(header_row=0, skiprows=[1]),
+        InputFileType.EDDYPRO_BIOMET_2: SimpleNamespace(header_row=0, skiprows=[1]),
         InputFileType.CSF: SimpleNamespace(header_row=1, skiprows=[2, 3]),
         InputFileType.IAS: SimpleNamespace(header_row=0, skiprows=None)
     }
     load_args = load_arg_cases[ftype]
     
-    df = load_table_logged(fpath, nrows=cfg_import.debug_nrows, header_row=load_args.header_row, skiprows=load_args.skiprows)
+    df = load_table_logged(fpath, nrows=cfg_import.debug_nrows, header_row=load_args.header_row,
+                           skiprows=load_args.skiprows)
     cfg = get_ftype_cfg(ftype, cfg_import)
     df = parse_timestamp_cols(df, cfg, cfg_import.time_col)
     df = cleanup_df(df, cfg.missing_data_codes)
     return df
 
-    
+
 def ff_load_time_series(fpath, ftype, cfg_import, file_checker, col_converter):
     if file_checker:
         file_checker(fpath, cfg_import)
     
     df = load_time_series(fpath, ftype, cfg_import)
     
-    ftype_name_cases = {        
+    ftype_name_cases = {
         InputFileType.EDDYPRO_FO: 'Full Output',
         InputFileType.EDDYPRO_BIOMET: 'Biomet',
+        InputFileType.EDDYPRO_BIOMET_2: 'Biomet_2',
         InputFileType.CSF: 'CSF',
         InputFileType.IAS: 'IAS'
     }
-    ftype_name = ftype_name_cases[ftype]    
+    ftype_name = ftype_name_cases[ftype]
     
     # Диапазон времени и колонки до resample
     first_and_last = df[cfg_import.time_col].iloc[[0, -1]].dt.strftime('%Y-%m-%d %H:%M')
@@ -170,7 +176,8 @@ def ff_load_time_series(fpath, ftype, cfg_import, file_checker, col_converter):
     df = col_converter(df, cfg_import.time_col)
     
     df = resample_time_series_df(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
-    repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
+    if cfg_import.debug:
+        repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=False)
     return df
 
 
@@ -190,32 +197,32 @@ def load_ftypes(cfg_import: ImportConfig, ff_type: InputFileType, col_converter,
     df = merge_time_series(dfs, cfg_import.time_col, no_duplicate_cols=False)
     
     cfg = get_ftype_cfg(ff_type, cfg_import)
-    if cfg.repair_time:
+    if cfg.repair_time and df is not None:
         df = resample_time_series_df(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
-        repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
+        if cfg_import.debug:
+            repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
     
     return df
-    
 
-def merge_time_series_biomet(df_orig: pd.DataFrame, df_biomet: pd.DataFrame, time_col: str, time_freq: Timedelta) -> pd.DataFrame:
-    """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null 
-    :param time_freq: 
-    """
+
+def merge_time_series_biomet(df_orig: pd.DataFrame, df_biomet: pd.DataFrame, cfg_import: ImportConfig) -> pd.DataFrame:
+    """ source: https://public:{key}@gitlab.com/api/v4/projects/55331319/packages/pypi/simple --no-deps bglabutils==0.0.21 >> /dev/null """
     
     # TODO 1 move to same function rather than separate biomet?
     df = df_orig.copy()
     
     same_cols = {col for col in df.columns if col.lower() in df_biomet.columns.str.lower()}
-    same_cols = same_cols - {time_col}
+    same_cols = same_cols - {cfg_import.time_col}
     if len(same_cols) > 0:
         ff_logger.warning(f'Duplicate columns {same_cols} on merge with meteo data, using columns from biomet \n')
         df = df.drop(list(same_cols), axis=1)
     
     df = df.join(df_biomet, how='outer', rsuffix='_meteo')
-    df[time_col] = df.index
+    df[cfg_import.time_col] = df.index
     
-    df = resample_time_series_df(df, time_col, time_freq, fill_gaps=True)
-    repair_check_todel(df, time_col, time_freq, fill_gaps=True)
+    df = resample_time_series_df(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
+    if cfg_import.debug:
+        repair_check_todel(df, cfg_import.time_col, cfg_import.time_freq, fill_gaps=True)
     
     # TODO 1 should be done before merge?
     if df[df_biomet.columns[-1]].isna().sum() == len(df.index):

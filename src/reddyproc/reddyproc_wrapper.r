@@ -11,9 +11,9 @@ source('src/reddyproc/postprocess_calc_means.r' %>% repo_path)
 source('src/reddyproc/r_helpers.r' %>% repo_path)
 
 
-EDDY_IMAGES_EXT <- '.png'
-STATS_FNAME_EXT <- '.csv'
-DATA_FNAME_END <- 'filled.txt'
+EDDY_IMAGES_MASK <- '*.png'
+STATS_FNAME_MASK <- '*.csv'
+DATA_FNAME_MASK <- '*filled.txt'
 
 # REddyProc library may rely on these global vars
 INPUT_FILE <- NULL
@@ -40,7 +40,7 @@ OUTPUT_DIR <- NULL
     longitude = 32.6,
     timezone = +3,
 
-    t_temperatureDataVariable = "Tair"
+    t_temperatureDataVariable = 'Column name'
 ), class)
 
 
@@ -109,16 +109,17 @@ OUTPUT_DIR <- NULL
 
     dir.create(OUTPUT_DIR, showWarnings = FALSE, recursive = TRUE)
 
-    clean_out_files <- function(fname_end)
-        unlink(file.path(OUTPUT_DIR, paste0('*', fname_end)))
-    clean_out_files(EDDY_IMAGES_EXT)
-    clean_out_files(STATS_FNAME_EXT)
-    clean_out_files(DATA_FNAME_END)
+    clean_out_files <- function(fmask)
+        unlink(file.path(OUTPUT_DIR, fmask))
+    clean_out_files(EDDY_IMAGES_MASK)
+    clean_out_files(STATS_FNAME_MASK)
+    clean_out_files(DATA_FNAME_MASK)
 
-    output_file <- file.path(OUTPUT_DIR, DATA_FNAME_END)
+    data_fname_end <- strsplit(DATA_FNAME_MASK, '*', fixed = TRUE)[[1]][2]
+    output_file <- file.path(OUTPUT_DIR, data_fname_end)
     res <- processEddyData(eddyproc_config, dataFileName = INPUT_FILE,
                            outputFileName = output_file,
-                           figureFormat = tools::file_ext(EDDY_IMAGES_EXT))
+                           figureFormat = tools::file_ext(EDDY_IMAGES_MASK))
 
     res$out_prefix <- paste0(eddyproc_config$siteId, '_' , res$EProc$sINFO$Y.NAME)
     file.rename(output_file, add_file_prefix(output_file, res$out_prefix))
@@ -180,7 +181,7 @@ reddyproc_and_postprocess <- function(user_options){
 
     # processEddyData guaranteed to output equi-time-distant series
     dfs = calc_averages(wr_res$df_output)
-    save_averages(dfs, OUTPUT_DIR, wr_res$out_prefix, STATS_FNAME_EXT)
+    save_averages(dfs, OUTPUT_DIR, wr_res$out_prefix, tools::file_ext(STATS_FNAME_MASK))
 
     # wr_res$df_output better not be returned to python, since it's extra large df
     return(list(info = wr_res$EProc$sINFO, out_prefix = wr_res$out_prefix,

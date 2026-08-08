@@ -5,7 +5,7 @@ import numpy.typing as npt
 from src.helpers.py_helpers import fix_strs_case
 
 
-def equal_series(s1: pd.Series, s2: pd.Series, compare_na=True):
+def eq_series(s1: pd.Series, s2: pd.Series, compare_na=True):
     return (s1 == s2) | (s1.isna() & s2.isna() & compare_na)
 
 
@@ -13,7 +13,7 @@ def df_intersect_cols(df1: pd.DataFrame, df2: pd.DataFrame, compare_na=True):
     # returns exacly same cols in both dfs, na == na
     
     same_name_cols = df1.columns.intersection(df2.columns)
-    equal_cols = [col for col in same_name_cols if equal_series(df1[col], df2[col], compare_na).all()]
+    equal_cols = [col for col in same_name_cols if eq_series(df1[col], df2[col], compare_na).all()]
     return df1[equal_cols]
 
 

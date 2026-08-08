@@ -5,10 +5,8 @@ import pandas as pd
 
 from src.config.config_types import InputFileType, ImportMode
 from src.data_io.biomet_import import import_biomets
-from src.data_io.biomet_loader_todel import load_biomets_todel
-from src.data_io.biomet_cols import BIOMET_HEADER_DETECTION_COLS_LOWER
 from src.data_io.time_series_loader import merge_time_series_biomet, load_ftypes
-from src.config.ff_config import FFConfig, ImportConfig
+from src.config.ff_config import ImportConfig
 from src.helpers.pd_helpers import df_ensure_cols_case
 from src.ff_logger import ff_logger
 from src.data_io.csf_cols import COLS_CSF_IMPORT_MAP, \
@@ -61,7 +59,7 @@ def regex_fix_col_names(df: pd.DataFrame, regex_map: dict[str, str]):
     return df
 
 
-def import_rename_csf_cols(df: pd.DataFrame):
+def import_rename_csf_cols(df: pd.DataFrame, time_col):
     df = regex_fix_col_names(df, COLS_CSF_TO_SCRIPT_U_REGEX_RENAMES)
     check_csf_col_names(df)
     df.rename(columns=COLS_CSF_IMPORT_MAP, inplace=True)
@@ -73,7 +71,7 @@ def import_csf_and_biomet(cfg_import: ImportConfig):
     
     if cfg_import.import_mode == ImportMode.CSF_AND_BIOMET :
         df_bm = import_biomets(cfg_import)
-        df = merge_time_series_biomet(df, df_bm, cfg_import.time_col, cfg_import.time_freq)
+        df = merge_time_series_biomet(df, df_bm, cfg_import)
             
     # (csf specific) repair postprocessing
     if cfg_import.csf.empty_co2_strg and 'co2_strg' not in df.columns:

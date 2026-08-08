@@ -7,6 +7,7 @@ from plotly import graph_objects as go, express as px
 from plotly.subplots import make_subplots
 
 from bglabutils import basic as bg
+from src.ff_logger import ff_logger
 
 
 def colapse_filters(data, filters_db_in):
@@ -18,13 +19,19 @@ def colapse_filters(data, filters_db_in):
     return out_filter
 
 
-def get_column_filter(data, filters_db_in, column_name):
+def get_column_filter(data, filters_db_in, column_name, auto_create=False) -> np.array:
     if column_name not in filters_db_in.keys():
-        return np.array([1] * len(data.index))
-    if len(filters_db_in[column_name]) > 0:
-        return colapse_filters(data, filters_db_in)[column_name]
+        filter_mask = np.array([1] * len(data.index))
+    elif len(filters_db_in[column_name]) > 0:
+        filter_mask = colapse_filters(data, filters_db_in)[column_name]
     else:
-        return np.array([1] * len(data.index))
+        filter_mask = np.array([1] * len(data.index))
+    
+    if auto_create and len(filter_mask) == 0:
+        ff_logger.debug('Filter was actually created')
+        filter_mask = [1] * len(data.index)
+        
+    return filter_mask
 
 
 def basic_plot(data,
@@ -109,6 +116,7 @@ def basic_plot(data,
     fig_name = f"_{int(np.median(pl_data.index.year))}"
     if "ias_output_prefix " in locals() or "ias_output_prefix" in globals():
         fig_name = fig_name + "_" + ias_output_prefix
+        
     fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
     fig.show(config=fig_config)
 
@@ -218,4 +226,41 @@ def plot_albedo(plot_data, filters_db):
     fig.add_trace(go.Scattergl(x=pl_data.loc[pl_ind].index, y=pl_data.loc[pl_ind, 'albedo'], name="Albedo"))
     fig.update_layout(title='Albedo')
     fig_config = {'toImageButtonOptions': {'filename': 'albedo', }}
+    fig.show(config=fig_config)
+
+
+def plot_cols(df: pd.DataFrame, cols: list[str], title=None):
+    # TODO 3 add full screen button
+    # simple combined plot for debug/experimental purposes
+    
+    layout = go.Layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    fig = go.Figure(layout=layout)
+
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black',
+                     gridcolor='Grey', minor_ticks='inside', minor_tickcolor='Grey')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black',
+                     gridcolor='Grey')
+
+    colors = px.colors.qualitative.Dark24
+
+    for i, col in enumerate(cols):
+        fig.add_trace(go.Scattergl(
+            x=df.index,
+            y=df[col],
+            mode='lines+markers',
+            name=col,
+            marker=dict(size=4, color=colors[i % len(colors)]),
+            line=dict(color=colors[i % len(colors)])
+        ))
+
+    fig.update_layout(
+        title=title if title else ', '.join(cols),
+        xaxis_tickformat='%H:%M %d %B <br>%Y'
+    )
+
+    fig_name = f"{title}_{int(np.median(df.index.year))}"
+    fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
     fig.show(config=fig_config)

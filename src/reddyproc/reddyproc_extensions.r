@@ -39,6 +39,12 @@ with_patched_func <- function(s4, closure_name, patched_closure, extra_args, cod
 		stop('with_patched_func code arg must be code block, not a bare function.',
 			 'Correct example: with_patched_func(... , code = {function_to_call(...)}, ...)')
 
+	# s4[['sEstimateUstarScenarios']] = NULL
+	# s4$sEstimateUstarScenarios
+	# s4[['sEstimateUstarScenarios']] != NULL
+	# to fix, do one dummy call before patching: s4$closure_name
+	stopifnot(!is.null(s4[[closure_name]]))
+
     original_closure <- s4[[closure_name]]
     tryCatch(
         expr = {

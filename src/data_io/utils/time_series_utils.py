@@ -15,7 +15,6 @@ DETECT_DATETIME_CHUNKS = 12
 
 
 # TODO 2 ensure this check does not find errors in all examples and cleanup
-TEMP_DEBUG_IMPORT = True
 def ensure_dfs_same(df1: pd.DataFrame, df2: pd.DataFrame):
     assert (df1.columns == df2.columns).all()    
     check_same = df1.compare(df2)
@@ -58,8 +57,6 @@ def get_freq(df: pd.DataFrame, time_col: str) -> Timedelta:
 
 
 def repair_check_todel(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fill_gaps: bool):
-    if not TEMP_DEBUG_IMPORT:
-        return 
     # TODO 1 test each routine here on all inputs to ensure this funciton can be finally deleted
     df_check = df.copy()
     
@@ -70,6 +67,8 @@ def repair_check_todel(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fi
     tmp_index = df_check.index.copy()
     df_check = df_check[~df_check.index.duplicated(keep='first')]
     
+    # TODO 1 this was triggered on NaN and missing lines, test that no info is lost in new 1.0.5
+    # TODO 1 make sure proper message is logged when biomet / other file? starts not from :30
     if not tmp_index.equals(df_check.index):
         ff_logger.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
 
@@ -313,7 +312,7 @@ def merge_time_series(named_dfs: dict[str: pd.DataFrame], time_col: str, no_dupl
     elif len(named_dfs) == 1:
         return list(named_dfs.values())[0]
         
-        # each df must have two new attributes: .name and .index.freq
+    # each df must have two new attributes: .name and .index.freq
     named_freqs = {name: df.index.freq for name, df in named_dfs.items()}
     freqs = np.array(list(named_freqs.values()))
     if not np.all(freqs == freqs[0]):

@@ -1,5 +1,5 @@
 # технические настройки (только для опытных пользователей)
-version: 'v1.0.5'
+version: 'v1.0.8'
 # отладочный режим (загружается только несколько месяцев данных)
 debug: false
 #
@@ -34,6 +34,13 @@ data_import:
         datetime_col: 'TIMESTAMP_1'
         # предполагаемые составные форматы даты и времени
         try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    eddypro_biomet_2:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     ias:
         repair_time: true
         missing_data_codes: [-9999]
@@ -49,7 +56,7 @@ data_import:
         # генерация пустой колонки co2_strg, в случае ее отсутствия в CSF
         empty_co2_strg: true
     # автоматический или фиксированный режим импорта
-    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    import_mode: 'AUTO'  # 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET', 'AUTO'
     # имя столбца даты-времени, используемое после импорта
     time_col: 'datetime'
 #
@@ -59,7 +66,7 @@ data_export:
         # версия в названиях выходных ИАС, 'auto' для попытки его чтения из имени входного файла ИАС
         out_fname_ver_suffix: 'auto'
         # экспорт ИАС в единый файл, либо по файлу на каждый год, либо по файлу на каждый месяц
-        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
+        split_intervals: 'YEAR'  # 'ALL', 'YEAR', 'MONTH'
 metadata:
     # название станции, которое используется в названиях выходных файлов
     # при 'auto' поддерживается определение из названий входных файлов (к примеру, шаблон для ИАС 'sitename_YYYY_vNN.ext')
@@ -133,10 +140,12 @@ filters:
     #
     # фильтрация по квантилям
     quantile:
-        co2_flux: [0.01, 0.99]
-        ch4_flux: [0.01, 0.99]
-        co2_strg: [0.01, 0.99]
-        nee: [0.01, 0.99]
+        enabled: true
+        tgt_cols:
+            co2_flux: [0.01, 0.99]
+            ch4_flux: [0.01, 0.99]
+            co2_strg: [0.01, 0.99]
+            nee: [0.01, 0.99]
     #
     # фильтрация выбросов MAD и Hampel
     madhampel:

@@ -129,6 +129,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
+# #!pip install ipython==8.1.0
 # #%load_ext autoreload
 # #%autoreload 2
 
@@ -146,12 +147,11 @@ import bglabutils.basic as bg
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, \
     colab_xor_demo_data
-from src.config.ff_config import FFConfig, RepConfig, FFGlobals
+from src.config.ff_config import FFConfig, RepConfig, FFGlobals, QuantileFilterConfig
 from src.config.config_types import IasExportIntervals, InputFileType, ColabDemoMixPolicy  # noqa: F401
 from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
-from src.helpers.env_helpers import setup_r_env
 from src.data_io.fat_export import export_fat
 from src.data_io.rep_level3_export import export_rep_level3
 from src.data_io.data_import import import_data
@@ -162,6 +162,14 @@ from src.filters import min_max_filter, qc_filter, std_window_filter, meteorolog
     meteorological_night_filter, meteorological_day_filter, meteorological_co2ss_filter, meteorological_ch4ss_filter, \
     meteorological_rain_filter, quantile_filter, mad_hampel_filter, manual_filter, winter_filter
 from src.plots import get_column_filter, basic_plot, plot_nice_year_hist_plotly, make_filtered_plot, plot_albedo
+from src.plots import plot_cols  # noqa: F401
+
+# rpy2 hotfix: path must be set properly before the first rpy2 import
+from src.helpers.env_helpers import setup_r_env
+setup_r_env(repo_dir)
+from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
+from src.reddyproc.preprocess_rg import prepare_rg
 
 # cur_dir = %pwd
 # assert cur_dir == '/content'
@@ -177,6 +185,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line
 # ipython_edit_function(meteorological_night_filter)
 
+# Чистка при каждом запуске: удаление файлов с прошлых запусков (нельзя использовать вместе с mount)
+# # !rm *.*
 
 # %% [markdown] id="wVF1vDm4EauW"
 # # Загружаем данные
@@ -266,8 +276,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.5_default_ru.yaml',
-                               init_debug=False, init_version='v1.0.5')
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.8_default_ru.yaml',
+                               init_debug=False, init_version='v1.0.8')
 
 if not config.from_file:
     config.data_import.input_files = 'auto'
@@ -288,6 +298,13 @@ if not config.from_file:
     config.data_import.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
     config.data_import.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
     config.data_import.eddypro_biomet.repair_time = True
+    
+    config.data_import.eddypro_biomet_2.missing_data_codes = [-9999]
+    config.data_import.eddypro_biomet_2.date_col = 'date'
+    config.data_import.eddypro_biomet_2.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
+    config.data_import.eddypro_biomet_2.time_col = 'time'
+    config.data_import.eddypro_biomet_2.try_time_formats = ['%H:%M', '%H:%M:%S']
+    config.data_import.eddypro_biomet_2.repair_time = True
     
     config.data_import.csf.missing_data_codes = [-9999, 'NAN']
     config.data_import.csf.datetime_col = 'TIMESTAMP'
@@ -456,12 +473,15 @@ if not config.from_file:
 # Параметры фильтрации выше-ниже порога по квантилям (выпадающие строки отфильтровываются)
 
 # %% id="asO_t2tZmiD0"
-filters_quantile = {}
-filters_quantile['co2_flux'] = [0.01, 0.99]
-filters_quantile['ch4_flux'] = [0.01, 0.99]
-filters_quantile['co2_strg'] = [0.01, 0.99]
+filters_quantile = QuantileFilterConfig()
+
+filters_quantile.enabled = True
+filters_quantile.tgt_cols['co2_flux'] = [0.01, 0.99]
+filters_quantile.tgt_cols['ch4_flux'] = [0.01, 0.99]
+filters_quantile.tgt_cols['co2_strg'] = [0.01, 0.99]
 
 if not config.from_file:
+    QuantileFilterConfig.model_validate(filters_quantile)
     config.filters.quantile = filters_quantile
 
 # %% [markdown] id="cPiTN288UaP3"
@@ -674,10 +694,11 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
     tmp_filter_db = {'co2_strg_tmp': []}
-    if 'co2_strg' in config.filters.quantile.keys():
-        tmp_q_config = {'co2_strg_tmp': config.filters.quantile['co2_strg']}
+    if config.filters.quantile.enabled and 'co2_strg' in config.filters.quantile.tgt_cols.keys():
+        tmp_q_config = QuantileFilterConfig(enabled=True,
+                                            tgt_cols={'co2_strg_tmp': config.filters.quantile.tgt_cols['co2_strg']})
     else:
-        tmp_q_config = {}
+        tmp_q_config = QuantileFilterConfig(enabled=False)
     tmp_filter_db = {'co2_strg_tmp': []}
     tmp_data, tmp_filter_db = quantile_filter(tmp_data, tmp_filter_db, tmp_q_config)
     tmp_data.loc[~get_column_filter(tmp_data, tmp_filter_db, 'co2_strg_tmp').astype(bool), 'co2_strg_tmp'] = np.nan
@@ -706,7 +727,9 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
     
     if not config.from_file:
         for filter_config in [config.filters.qc, config.filters.meteo, config.filters.min_max,
-                              config.filters.window, config.filters.quantile, config.filters.madhampel]:
+                              config.filters.window,
+                              config.filters.quantile.tgt_cols,
+                              config.filters.madhampel]:
             if 'co2_flux' in filter_config:
                 filter_config['nee'] = filter_config['co2_flux']
 
@@ -1100,37 +1123,6 @@ ff_logger.info(f"New basic file saved to {summary_fpath}")
 # %% [markdown] id="775a473e"
 # # Обработка инструментом REddyProc
 # В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
-# %% [markdown] id="a8aa54de"
-# ## Технический блок
-# Подготавливает R окружение, если детектируется окружение Google Colab.  
-# %% id="06859169"
-
-ipython_enable_word_wrap()
-
-# 1.3.2 vs 1.3.3 have slightly different last columns
-# alternative for windows
-# install.packages('https://cran.r-project.org/bin/windows/contrib/4.1/REddyProc_1.3.2.zip', repos = NULL, type = "binary")
-
-setup_colab_r_code = """
-install_if_missing <- function(package, version, repos) {
-    if (!require(package, character.only = TRUE)) {
-        remotes::install_version(package, version = version, upgrade = "never", repos = repos)
-        library(package, character.only = TRUE)
-    }
-}
-# sink redirect is required to improve ipynb output
-sink(stdout(), type = "message")
-install_if_missing("REddyProc", "1.3.3", repos = 'https://cran.rstudio.com/')
-sink()
-"""
-setup_r_env()
-from rpy2 import robjects
-
-robjects.r(setup_colab_r_code)
-
-from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess
-from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen
-from src.reddyproc.preprocess_rg import prepare_rg
 
 # %% [markdown] id="034b04a5"
 # ## Фильтрация и заполнение пропусков
@@ -1223,10 +1215,11 @@ config_reddyproc = RepConfig(
 
 if not config.from_file:
     config.reddyproc = config_reddyproc
-
 config.reddyproc.input_file = config_reddyproc.input_file
 config.reddyproc.output_dir = config_reddyproc.output_dir
 config.reddyproc.site_id = config_reddyproc.site_id
+
+ipython_enable_word_wrap()
 
 prepare_rg(config.reddyproc)
 ensure_empty_dir(config.reddyproc.output_dir)

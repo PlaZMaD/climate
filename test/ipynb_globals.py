@@ -13,8 +13,10 @@ do not declare variables here, only describe
 """
 from src.config.ff_config import FFConfig, FFGlobals, RepConfig  # noqa: F401
 from src.helpers.io_helpers import ensure_empty_dir  # noqa: F401
-from src.reddyproc.preprocess_rg import prepare_rg  # noqa: F401
+
 from src.reddyproc.reddyproc_bridge import reddyproc_and_postprocess  # noqa: F401
+from src.reddyproc.postprocess_graphs import RepOutputHandler, RepImgTagHandler, RepOutputGen  # noqa: F401
+from src.reddyproc.preprocess_rg import prepare_rg  # noqa: F401
 
 # only site name like 'tv_fy4_22.14'
 # ias_output_prefix: str = 'tv_fy4_22-14'
