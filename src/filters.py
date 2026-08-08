@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from bglabutils import basic as bg, filters as bf
+from src.config.ff_config import QuantileFilterConfig
 from src.ff_logger import ff_logger
 from src.plots import get_column_filter
 
@@ -422,17 +423,17 @@ def meteorological_rain_filter(
     return data, filters_db
 
 
-def quantile_filter(data_in, filters_db_in, config):
+def quantile_filter(data_in, filters_db_in, cfg_quantile: QuantileFilterConfig):
     # TODO 2 why [0, 1] quantile produces 0 and 1 row? nan?
     # #@unroll_filters_db
     
-    if len(config) == 0:
+    if not cfg_quantile.enabled or len(cfg_quantile.tgt_cols) == 0:
         return data_in, filters_db_in
     
     data = data_in.copy()
     filters_db = filters_db_in.copy()
     
-    for col, limits in config.items():
+    for col, limits in cfg_quantile.tgt_cols.items():
         limit_down, limit_up = limits
         if col not in data.columns:
             print(f"No column with name {col}, skipping...")
@@ -456,7 +457,7 @@ def quantile_filter(data_in, filters_db_in, config):
         
         # print(col, (data.loc[f_inds, col] < down_limit).sum(), (data.loc[f_inds, col] > up_limit).sum(), len(data.loc[f_inds, col].index), ((data.loc[f_inds, col] < up_limit) & (data.loc[f_inds, col] > down_limit)).astype(int).sum())
         # print(filter.sum(), data[f'{col}_quantilefilter'].sum(), filter.sum() - data[f'{col}_quantilefilter'].sum())
-    ff_logger.info(f"quantile_filter applied with the next config: \n {config}  \n")
+    ff_logger.info(f"quantile_filter applied with the next config: \n {cfg_quantile}  \n")
     return data, filters_db
 
 

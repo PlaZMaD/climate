@@ -1,4 +1,4 @@
-version: 'v1.0.5'
+version: 'v1.0.8'
 debug: false
 data_import:
     input_files: 'auto'
@@ -86,10 +86,12 @@ filters:
         ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
         nee: {sigmas: 2, window: 10, min_periods: 4}
     quantile:
-        co2_flux: [0.01, 0.99]
-        ch4_flux: [0.01, 0.99]
-        co2_strg: [0.01, 0.99]
-        nee: [0.01, 0.99]
+        enabled: true
+        tgt_cols:
+            co2_flux: [0.01, 0.99]
+            ch4_flux: [0.01, 0.99]
+            co2_strg: [0.01, 0.99]
+            nee: [0.01, 0.99]
     madhampel:
         co2_flux: {z: 5.5, hampel_window: 10}
         ch4_flux: {z: 5.5, hampel_window: 10}

@@ -147,7 +147,7 @@ import bglabutils.basic as bg
 
 from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manager, colab_add_download_button, \
     colab_xor_demo_data
-from src.config.ff_config import FFConfig, RepConfig, FFGlobals
+from src.config.ff_config import FFConfig, RepConfig, FFGlobals, QuantileFilterConfig
 from src.config.config_types import IasExportIntervals, InputFileType, ColabDemoMixPolicy  # noqa: F401
 from src.data_quality import try_compare_stats
 from src.ff_logger import init_logging, ff_logger
@@ -276,8 +276,8 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 
 # init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
-config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.5_default_ru.yaml',
-                               init_debug=False, init_version='v1.0.5')
+config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.8_default_ru.yaml',
+                               init_debug=False, init_version='v1.0.8')
 
 if not config.from_file:
     config.data_import.input_files = 'auto'
@@ -298,14 +298,14 @@ if not config.from_file:
     config.data_import.eddypro_biomet.datetime_col = 'TIMESTAMP_1'
     config.data_import.eddypro_biomet.try_datetime_formats = ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
     config.data_import.eddypro_biomet.repair_time = True
-
+    
     config.data_import.eddypro_biomet_2.missing_data_codes = [-9999]
     config.data_import.eddypro_biomet_2.date_col = 'date'
     config.data_import.eddypro_biomet_2.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     config.data_import.eddypro_biomet_2.time_col = 'time'
     config.data_import.eddypro_biomet_2.try_time_formats = ['%H:%M', '%H:%M:%S']
     config.data_import.eddypro_biomet_2.repair_time = True
-
+    
     config.data_import.csf.missing_data_codes = [-9999, 'NAN']
     config.data_import.csf.datetime_col = 'TIMESTAMP'
     config.data_import.csf.try_datetime_formats = ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']  # yyyy-mm-dd HHMM
@@ -473,12 +473,15 @@ if not config.from_file:
 # Параметры фильтрации выше-ниже порога по квантилям (выпадающие строки отфильтровываются)
 
 # %% id="asO_t2tZmiD0"
-filters_quantile = {}
-filters_quantile['co2_flux'] = [0.01, 0.99]
-filters_quantile['ch4_flux'] = [0.01, 0.99]
-filters_quantile['co2_strg'] = [0.01, 0.99]
+filters_quantile = QuantileFilterConfig()
+
+filters_quantile.enabled = True
+filters_quantile.tgt_cols['co2_flux'] = [0.01, 0.99]
+filters_quantile.tgt_cols['ch4_flux'] = [0.01, 0.99]
+filters_quantile.tgt_cols['co2_strg'] = [0.01, 0.99]
 
 if not config.from_file:
+    QuantileFilterConfig.model_validate(filters_quantile)
     config.filters.quantile = filters_quantile
 
 # %% [markdown] id="cPiTN288UaP3"
@@ -691,10 +694,11 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
     tmp_filter_db = {'co2_strg_tmp': []}
-    if 'co2_strg' in config.filters.quantile.keys():
-        tmp_q_config = {'co2_strg_tmp': config.filters.quantile['co2_strg']}
+    if config.filters.quantile.enabled and 'co2_strg' in config.filters.quantile.tgt_cols.keys():
+        tmp_q_config = QuantileFilterConfig(enabled=True,
+                                            tgt_cols={'co2_strg_tmp': config.filters.quantile.tgt_cols['co2_strg']})
     else:
-        tmp_q_config = {}
+        tmp_q_config = QuantileFilterConfig(enabled=False)
     tmp_filter_db = {'co2_strg_tmp': []}
     tmp_data, tmp_filter_db = quantile_filter(tmp_data, tmp_filter_db, tmp_q_config)
     tmp_data.loc[~get_column_filter(tmp_data, tmp_filter_db, 'co2_strg_tmp').astype(bool), 'co2_strg_tmp'] = np.nan
@@ -723,7 +727,9 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
     
     if not config.from_file:
         for filter_config in [config.filters.qc, config.filters.meteo, config.filters.min_max,
-                              config.filters.window, config.filters.quantile, config.filters.madhampel]:
+                              config.filters.window,
+                              config.filters.quantile.tgt_cols,
+                              config.filters.madhampel]:
             if 'co2_flux' in filter_config:
                 filter_config['nee'] = filter_config['co2_flux']
 
