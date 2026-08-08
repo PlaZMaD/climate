@@ -47,7 +47,8 @@ def basic_plot(data,
                use_resample=False):
     multiplot = isinstance(col2plot, list)
     
-    window_days = window_days  # дней в окне
+    # days in a moving window
+    window_days = window_days
     min_days = window_days // 2 - 1
     pl_data = data.copy()
     
