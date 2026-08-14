@@ -15,91 +15,92 @@
 # # **FluxFilter**
 
 # %% [markdown] id="oE87fcFbwlIu"
-# ## **Введение**
-# Этот скрипт разработан для постобработки - визуализации, фильтрации и заполнения - 30-минутных данных эколого-климатических станций, полученных методом турбулентных пульсаций (eddy covariance). Скрипт может использоваться в качестве инструмента для получения достоверных кумулятивных сумм экосистемных потоков тепла и СО2. Входными параметрами являются: данные об экосистемных потоках с шагом по времени 30 минут, рассчитанные из высокочастотных данных, с диагностическими показателями, а также метеопараметры с разрешением по времени 30 минут. Основное назначение скрипта: дообработка данных эколого-климатических станций 1-го уровня обработки с целью получения данных уровней обработки 2, 3 и 4.
-# * Под уровнем 1 подразумеваются потоки, рассчитанные в специализированном программном обеспечении с использованием общепринятых процедур фильтрации и коррекции (например, выходной файл full output программы EddyPro, LI-COR Inc., США) и метеорологические данные с шагом осреднения в 30 минут.
-# * Под уровнем 2 подразумеваются незаполненные 30-минутные данные, ответственный за станцию исключает периоды заведомо плохой работы приборов (т.е. данные за эти периоды заполнены кодом пропуска -9999). Такие данные собираются для Информационно-Аналитической системы (ИАС "Углерод-Э", разработчик Институт Космических Исследований РАН).
-# * Под уровнем 3 подразумеваются данные уровня 2, также незаполненные, но прошедшие тщательную фильтрацию на основе физических, статистических критериев.
-# * Под уровнем 4 подразумеваются заполненные данные.
+# ## **Introduction**
+# This open-sourced script is designed for the post-processing - visualization, filtering, filling, and partitioning - of 30-minute data from the eddy covariance stations. The script can be used for obtaining reliable cumulative sums of ecosystem heat, water vapour and NEE fluxes. A user-specified post-processing pipeline is available by means of a set of instruments for data filtering. The input parameters are: data on ecosystem fluxes with a time step of 30 minutes, calculated from the high-frequency data, with diagnostic flags, as well as meteorological parameters with a time resolution of 30 minutes. The main purpose of the script: postprocessing of the eddy covariance data of the 1-st processing level to obtain the data of the levels 2, 3 and 4.
+# * Level 1 means fluxes calculated using the special software with the widely used filtering and correction procedures (example is Full Output file of EddyPro software, LI-COR Inc., USA) and meteorological data averaged for each 30 minutes.
+# * Level 2 means unfilled 30-minute data, the PI of the station excludes periods of the obvious malfunction of the instruments (i.e. data for these periods are filled with the missing values code -9999). Such data are equivalent of the Level 2 data of the European fluxes database cluster.
+# * Level 3 refers to level 2 data, also unfilled, but carefully filtered based on physical and statistical criteria.
+# * Level 4 refers to the gapfilled data.
 #
-# *Для запуска достаточно нажать в Google Colab "Среда выполнения - Выполнить все"*  
-# *Самая новая версия скрипта находится в репозитории https://github.com/PlaZMaD/climate/releases*  
+# *To run the demo-version of the script, just click in the Google Colab "Runtime - Run All"*  
+# *The newest version of the script is in the repository https://github.com/PlaZMaD/climate/releases*  
 #
-# ## **Входные файлы**
-# Для работы скрипта требуются ряды фильтруемых и заполняемых турбулентных потоков, а также метеорологических переменных, которые позволяют отфильтровать и заполнить потоки. Ряды могут быть загружены из одного или нескольких файлов.
-# Скрипт поддерживает следующие варианты входных файлов:
-# 1) выходной файл EddyPro - full output (см. [мануал EddyPro](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) для потоков
-# 2) выходной файл CSF программы EasyFlux DL, Campbell Scientific Ink., для потоков. Файлы full output и CSF взаимно заменяемы
-# 3) biomet-файл в формате, описанном в руководстве EddyPro (см. [его же](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) для метеорологических переменных. Если потоки загружены из файлов full output или CSF, файл biomet желателен для надежных фильтраций и заполнений потоков. Однако при отсутствии метеорологических переменных возможен запуск скрипта только с файлами full output либо CSF
-# 4) или только файл в формате ИАС, содержащий и потоки, и метеорологические переменные
-# 5) Опционально можно загрузить файл конфигурации (настройки всех параметров FluxFilter).
-# В случае запуска full output+biomet или CSF+biomet турбулентные потоки и u* берутся из файла full output/CSF, а все метеорологические переменные (температура и относительная влажность воздуха и т.д.) берутся из файла biomet. Основные требования ко входным файлам:
-# *   Файлы должны быть в формате .csv (текстовый файл, разделенный запятыми).
-# *   Заголовки столбцов в файлах full output и biomet должны быть строго по руководству EddyPro, в скрипте переменные идентифицируются по названиям колонок (co2_flux для потока CO2 в full output, Ta_1_1_1 для температуры воздуха в biomet и т.д.).
-# *   Код пропуска во входных файлах должен быть -9999
-# *   Единицы для переменных файла biomet должны быть как основные единицы для файла biomet по руководству EddyPro. Исключение: температура воздуха/почвы должна быть в градусах Цельсия
-# *   Файл-пример full output можно скачать [здесь](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
-# *   Файл-пример biomet можно скачать [здесь](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing)
-# *   Файл-пример CSF можно скачать *[здесь]*
-# *   Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default_ru.yaml) (открыть ссылку, нажать правой кнопкой - Сохранить как)
-# *   В файле full output должны быть 3 строки заголовка и названия переменных должны быть записаны во 2-й строке
-# *   В файле biomet должны быть 2 строки заголовка и названия переменных должны быть записаны в 1-й строке. По умолчанию без проблем читаются файлы, у которых дата и время записаны в колонке TIMESTAMP_1 в формате yyyy-mm-dd HHMM
+# ## **Input files**
+# Script imports and processes time series of turbulent fluxes and also requires meteorological variables to filter and gap-fill turbulent fluxes. The time series can be imported from one file or combined from multiple files.
+# This script supports the following input file formats:
+# 1) EddyPro **full output** file (see [EddyPro manual](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) - for fluxes.
+# 2) **CSF** output file from EasyFlux DL, Campbell Scientific Ink. software - for fluxes. EddyPro full output and CSF are mutually interchangeable.
+# 3) EddyPro **biomet** file ([again](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) - for meteorology. When using full output or CSF for fluxes, biomet is also recommended for reliable flux filtering and gap-filling. However, if meteorological variables are unavailable, the script still will try to run using only Full Output or CSF files.
+# 4) Or only file for Information and Analytical System used in the RuFlux network (**IAS**) - contains both fluxes and meteorology.
+# 5) Optionally, a **configuration** file which allows to reapply this script parameters from the previous runs without editing cells.  
+# 
+# When using full output+biomet or CSF+biomet input modes, full output/CSF is the source of turbulent fluxes and u*, while all meteorological variables (air temperature and relative humidity, etc.) are sourced from the Biomet file. The main requirements for the input files are:
+# * Files must be in .csv (comma separated value) format.
+# * Column headers in full output and biomet must strictly follow the EddyPro manual and this script identifies variables by their column names (co2_flux for CO2 flux in Full Output, Ta_1_1_1 for air temperature in Biomet, etc.).
+# * The missing value indicator in the input files must be -9999
+# * Units for biomet file variables should be the same as the base units for biomet file as per EddyPro manual. Exception: Air/Soil Temperature should be in degrees Celsius.
+# * Full Output file example can be downloaded [here](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
+# * Biomet example can be downloaded [here](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing)
+# * CSF can be downloaded *[here]*
+# * Configuration (En) [here](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default.yaml) (open link, right click - Save As), or check the `misc` repository folder
+# * The full output file should contain 3 header rows with the variable names in the second row.
+# * The biomet file must have 2 header rows with the variable names in the 1st row. Default and supported approach is to place date and time in the TIMESTAMP_1 column in the yyyy-mm-dd HHMM format, but also other import modes are avaliable (check the import cell).
 #
-# ## **Выходные файлы**
-# Форматы выходных файлов (собраны в архиве FluxFilter_output.zip и в директории output в разделе Файлы):
-# 1.   Один или несколько файлов базы данных ИАС уровня 2;
-# 2.   Входной файл для инструмента фильтрации по u*, заполнения пропусков и разделения потоков [REddyProcWeb](https://www.bgc-jena.mpg.de/5624918/Input-Format) (Институт Макса Планка, Германия). Этот же файл используется как входной для раздела "Обработка утилитами REddyProc" данного скрипта.
-# 3. Входной файл для инструмента заполнения пропусков [Flux Analysis Tool](https://atmenv.envi.osakafu-u.ac.jp/staff/ueyama/softwares/) (M. Ueyama, Япония)
-# 4. Файл output_all – все исходные переменные и все флаги применения фильтров.
-# 5. Файл output_summary – запись для основных переменных исходных данных, отфильтрованных данных, флаг применения каждого фильтра, средние суточные ходы в окне 30 и 10 дней.
-# 6. Файл config*.yaml - конфигурация последнего запуска.
-# 7. Лог - записи в ходе работы скрипта, введенные для фильтрации параметры в данном пробеге.
-# 8. Директория reddyproc содержит результаты заполнения переменных в таком же формате, что и оригинальный инструмент [REddyProcWeb](https://www.bgc-jena.mpg.de/5624929/Output-Format). Помимо этого, в директории output/reddyproc содержатся обобщающие файлы с индексами _hourly (суточные ходы оригинальных и заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки).
+# ## **Output files**
+# Output file formats (packed to the FluxFilter_output.zip archive and avaliable in the output directory in the Files section):
+# 1. One or multiple files formatted for European fluxes database cluster, level 2 (ias-file);
+# 2. Input file for the u* filtering, gap filling and partitioning tool REddyProcWeb (Max Planck Institute, Germany). This file is used as input for the "Processing with the REddyProc tool" section of this script. These are the data of level 3.
+# 3. Input file for the Flux Analysis Tool (M. Ueyama, Japan) for the gap filling, level 3.
+# 4. The output_all file contains all the raw variables (level 1) and all flags implemented for the data.
+# 5. The output_summary file contains the time series for the main variables of the raw data, filtered data, the flag for each filter applyed, average diurnal courses in a 30- and 10-day window.
+# 6. config*.yaml file - options of the last script run, which can be re-applied on the next run as input file.
+# 7. The log file records during the script's run, includes parameters that were accepted for the filtering at this run.
+# 8. The reddyproc directory contains the results of gapfilling (level 4) in the same format as the original [REddyProcWeb tool](https://www.bgc-jena.mpg.de/5624929/Output-Format). Additionally, the output/reddyproc directory contains summary files (level 4) with the indexes _hourly (diurnal courses of the original and filled variables), _daily (daily averages), _monthly (monthly averages), and _yearly (yearly values, or for the entire processing period if there is less data).
 #
-# ## **Загрузка входных файлов**
-# Возможны два основных варианта загрузки:  
+# ## **Loading the input files**
+# Two main file upload options are avaliable:  
 #
-# Через браузер:  
-# *   нажмите на кнопку директории (нижняя кнопка в левой панели под кнопкой "ключ")
-# *   перетащите один или несколько файлов (к примеру, из проводника Windows) в пустое пространство под директорией `sample_data`
-# *   закомментируйте (поставьте # в начале строки) две команды `!gdown` в разделе **Загружаем данные**  
+# Via web browser:  
+# *   click the directory button (button in bottom of the left panel, below the "key" button)
+# *   drag and drop one or more files (for example, from Windows Explorer) into the empty space under the `sample_data` directory
+# *   it is useful here to comment out (put a # at the start of the line) the two `!gdown` commands in the **Loading data** section  
 #
-# Через google-диск:  
-# *   загрузите на google-диск файлы full output, biomet, файл конфигурации и/или любые другие
-# *   откройте к ним доступ
-# *   скопируйте часть публичной ссылки в раздел **Загружаем данные** в команду !gdown
+# Via Google Drive:  
+# * upload full output, biomet, configuration and/or other files to the Google drive
+# * open access to them (sharing to everyone with the link)
+# * copy part of the public link into !gdown commands in the **Loading data** section
 #
-# Вариант google-диска оптимален, если в дальнейшем скрипт с отредактированными пользователем параметрами и ссылками на входные файлы будет отправлен другим пользователям (возможен закрытый доступ только отдельным аккаунтам Google).  
+# The Google Drive option is better if the goal is to share script preset (configuration and linked input files) with other users (it is possible to restrict linked data access to specific Google accounts).  
+# Alternative sharing option is to send just input data and configuration files (for example, biomet_2025.csv + full_output_2025.xls + my_config.yaml).
 #
-# После загрузки в разделе **Конфигурация загрузки данных** необходимо:
-# *   если используется неавтоматический режим работы, то заменить названия входных файлов на импортируемые
-# *   проверить формат входных даты и времени (несколько часто встречающихся форматов распознаются по умолчанию)
+# The script will try to detect and import input files automatically, but in case of errors or unexpected cell logs you can try to switch to manual Data loading config section:
+# * specify the input file names to exactly match file names you upload
+# * check the date and time format for each file type you upload (script recognises some common formats automatically)
 #
-# ## **Перед фильтрацией**
-# *   Можно загружать несколько файлов full output и biomet, они будут автоматически расположены по возрастанию дат-времени и слиты в одну таблицу
-# *   Можно загружать файл biomet с шагом по времени меньше получаса - например, 1 минута или 5 минут, но начинать файл нужно с числа минут :00 или :30. Метеорологические переменные будут осреднены до 30 минут
-# *   Выводится ошибка при наличии текста во входных файлах в строках ниже заголовка
-# *   Осуществляется проверка меток времени для каждого входного файла (регуляризация)
-# *   Рассчитываются VPD <-> RH, SWIN <-> RG <-> PAR в случае отсутствия
-# *   Можно работать с потоком CO2 либо проверить данные о накоплении, прибавить их к потоку CO2 и работать с NEE
+# ## **Before the filtering**
+# * You can upload multiple full output and biomet files, they will be automatically arranged in ascending date-time order and merged into the one table
+# * A biomet file with a time step less than 30 minutes is supported - for example, 1 or 5 minutes - but the file must start at a minute value of :00 or :30. The meteorological variables will be averaged to 30 minutes
+# * An error is displayed if there is text in the input files in rows below the header
+# * The timestamps of each input file are checked (regularization)
+# * VPD <-> RH, SWIN <-> RG <-> PAR are calculated in case of absence of any of them
+# * You can process CO2 flux or check the storage data, add it to the CO2 flux and work with NEE
 #
-# ## **Как происходит фильтрация**
-# Скрипт позволяет выявить и удалить некачественные и выбивающиеся значения с помощью  1) физической, 2) статистической  фильтрации, проходящей под визуальным контролем - с просмотром графиков до фильтраций и после.
-# 1. Физическая фильтрация включает удаление плохих значений потоков с флагом EddyPro больше порогового, при уровне сигнала газоанализатора (CO2SS) ниже порогового значения, в дождь и после дождей, при высокой влажности, по ночным и дневным допустимым диапазонам, по допустимому диапазону зимой.
-# 2. Статистическая фильтрация включает удаление выбивающихся значений (outliers/spikes/выбросы/пики/спайки) с помощью фильтров по минимальным и максимальным допустимым значениям, по квантилям, по отклонениям от среднего суточного хода в окне несколько дней, отклонениям от средних в скользящем окне на несколько точек MAD (Sachs, 2006) и HAMPEL (Pearson et al., 2016).
-# 3. Опцию визуальной фильтрации данных (ручное удаление точек при просмотре графика) Google Colab не позволяет реализовать, но в версии для запуска в среде программирования визуальная фильтрация планируется.
-# 4. Можно исключить данные по списку интервалов (исключить с ... - по ...), например, калибровки по журналу технических работ.
+# ## **How does the filtering happen**
+# The script allows you to identify and remove low-quality and outlier values using 1) physical, 2) statistical filtering, which occurs under your visual control - you can look at the graphs before and after filtering. Each filter can be switched off (just comment the corresponding line), the parameters should be adjusted to the data of a given site and eddy covariance system.
+# 1. Physical filtering includes removing of the following types of the suspicious values: based at the quality flag greater than the threshold, with the gas analyzer signal strength below the threshold, in case of rain events, at high humidity, by night and daytime plausible ranges, by the plausible range in winter.
+# 2. Statistical filtering includes the removal of outliers/spikes using filters for minimum and maximum plausible values, quantiles, deviations from the average diurnal course in a moving window, deviations from the average in a sliding window of several points MAD (Sachs, 2006) and HAMPEL (Pearson et al., 2016).
+# 3. It is possible to exclude data by a list of intervals (exclude from ... to ...), for example, calibrations according to the technical work log.
 #
-# ## **Скачивание выходных файлов**
-# Все выходные файлы можно скачать в последнем разделе "Выгрузка результатов", нажав кнопку "Download outputs".
+# ## **Downloading the output files**
+# All output files can be downloaded in the last section "Downloading results" by clicking the "Download outputs" button.
 #
-# (с)Евгений Курбатов, Вадим Мамкин, Ольга Куричева
-# (с)Инструмент REddyProc: Wutzler T, Lucas-Moffat A, Migliavacca M, Knauer J, Sickel K, Sigut, Menzer O & Reichstein M (2018) Basic and extensible post-processing of eddy covariance flux data with REddyProc. Biogeosciences, Copernicus, 15, doi: 10.5194/bg-15-5015-2018
-# (с)Адаптация REddyProc и постобработка: Олег Дещеревский
+# (c)Evgeny Kurbatov, Vadim Mamkin, Olga Kuricheva
+# (c)REddyProc tool: Wutzler T, Lucas-Moffat A, Migliavacca M, Knauer J, Sickel K, Sigut, Menzer O & Reichstein M (2018) Basic and extensible post-processing of eddy covariance flux data with REddyProc. Biogeosciences, Copernicus, 15, doi: 10.5194/bg-15-5015-2018
+# (c)REddyProc adaptation and post-processing: Oleg Deshcherevskii
 
 # %% [markdown] id="sj6Z0gnhVM-R"
-# # Технический блок
-# Импорт библиотек, загрузка скриптов для ячеек из репозитория, определение функций
+# # Technical block
+# Importing libraries, downlaoding cell scripts from the repository, defining functions
 
 # %% id="lZliIHxRJiqk"
 # from google.colab import userdata
@@ -187,96 +188,95 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # To tweak filters directly in Colab: 1) run all the cells above 2) run in a new cell the line below 3) #comment the line
 # ipython_edit_function(meteorological_night_filter)
 
-# Чистка при каждом запуске: удаление файлов с прошлых запусков (нельзя использовать вместе с mount)
+# Cleanup on each run: ensure no leftovers from the previous runs (make sure not to use with mounted folders)
 # # !rm *.*
 
 # %% [markdown] id="wVF1vDm4EauW"
-# # Загружаем данные
+# # Loading data
 
 # %% [markdown] id="LV9FvvtnVqdN"
-# **Необходимо поменять:**
+# **It is necessary to change:**
 #
-# Возможны два основных варианта загрузки файлов (см. введение: загрузка входных файлов):  
-# 1) перетаскиванием в браузер или загрузкой через меню Upload (правый клик под sample_data)  
-# 2) загрузкой с google-диска командой `!gdown ...` по ссылке  
+# There are two main file upload options:  (check Introduction: Loading the input files):  
+# 1) drag and drop files into the web browser or use Upload menu (right-click under `sample_data`)  
+# 2) script will download them from Google Drive link if `!gdown ...` command is correctly edited in this cell  
 # 
-# В варианте 1 необходимо вручную добавить файлы и отключить загрузку по умолчанию двух демонстрационных файлов: поменять  
-# `!gdown ...` на `# !gdown ...`.  
+# For the option 1, it is convenient to diable demo data downloads: change  
+# `!gdown ...` to `# !gdown ...`.  
 # 
-# При загрузке с google-диска (вариант 2) после !gdown вставьте символы после d/ и до следующего / из публичной ссылки на файл, лежащий на google-диске. К примеру, если ссылка
-# https://drive.google.com/file/d/1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB/view?usp=sharing,
-# то команда будет записана как  
+# For the option 2, if public file link to the Google Drive file is 
+# https://drive.google.com/file/d/1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB/view?usp=sharing, 
+# then copy only the characters between `d/` and the next `/` and edit `!gdown` commands as  
 # `!gdown 1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB`
 #
-# `#Загрузка файла full output или CSF или ИАС`
-# Здесь нужно прописать символы из ссылки на файл c потоками (full output либо CSF либо ИАС)
+# `# Load into Colab Full Output, CSF, or IAS file` 
+# Here, demo FO file is loaded by default. Edit the symbols after gdown to match link to your file containing the flux data (full output, CSF, or IAS).
 #
-# `#Загрузка файла biomet`
-# Здесь нужно прописать символы из ссылки на файл biomet
+# `# Load into Colab biomet file`
+# Here, demo Biomet files is loaded by default. Edit the symbols to match link to your biomet file (or any other file, or disable gdown command if unused)
 #
-# Текстовый файл конфигурации (формат .yaml) образуется после пробега скрипта среди выходных файлов, его также можно выложить на гугл-диск и прописать в третьей команде !gdown
+# A configuration text file (in `.yaml` format) is packed into output files after the script finishes. It can also be uploaded to Google Drive and specified in the third `!gdown` command.
 
 # %% id="KMu4IqY45HG6"
-# Загрузка файла full output или CSF или ИАС
+# Load into Colab full output, CSF, or IAS file
 # https://drive.google.com/file/d/1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB/view?usp=sharing
 # !gdown 1AD4U06Qre-PgKnsyRHX11RuruCNQzMvB
 
-# Загрузка файла biomet
+# Load into Colab biomet file
 # https://drive.google.com/file/d/1_ZoFgNyOZEYNdjf6rFq66HR4UXDSQ5z3/view?usp=sharing
 # !gdown 1_ZoFgNyOZEYNdjf6rFq66HR4UXDSQ5z3
 
-# Загрузка любых других файлов (конфигурации, данных, и т.д.)
+# Uploading any other files (configuration, data, etc.)
 # https://drive.google.com/file/d/*/view?usp=sharing
 # # !gdown *
 # %% [markdown] id="WfWRVITABzrz"
-# # Задаем параметры для загрузки и обработки данных
+# # Setting the parameters for loading and processing of the data
 
 # %% [markdown] id="ox0UplWMe7wn"
-# ## Конфигурация загрузки данных
-# Здесь прописываются параметры входных файлов: названия, формат дат-времени и другие.  
+# ## Data loading config
+# The parameters of the input files are specified here: names, date-time format, etc.  
 #
-# В зависимости от загруженных файлов cкрипт поддерживает следующие режимы чтения данных:  
-# - один или несколько файлов EddyPro - full output
-# - один или несколько файлов EddyPro - full output и один или несколько файлов biomet, описанных в руководстве EddyPro
-# - один или несколько файлов ИАС
-# - один или несколько файлов CSF и один или несколько файлов biomet, описанных в руководстве EddyPro
+# Next data import modes are supported which expect different types of uploaded files:  
+# - one or more EddyPro - full output files
+# - one or more EddyPro - full output files and one or more biomet files described in the EddyPro manual
+# - one or more IAS files
+# - one or more CSF files and one or more biomet files described in the EddyPro manual
 #
-# В простых случаях (и если не загружены лишние файлы) тип файлов и их настройки будут определены автоматически. В сложных случаях или при ошибках можно попробовать вручную задать все настройки в этой ячейке.  
+# By default there will be attempt to detect import mode and file settings automatically. When extra files are found or in complex imports you can try manually specify all settings in this cell.  
 #
-# **Файл конфигурации**  
-# Скрипт поддерживает два варианта задания опций:  
-# - без файла конфигурации, используются настройки из ячеек тетради  
-# - с файлом конфигурации, при этом настройки из ячеек не применяются  
+# **Configuration file**  
+# The script supports two configuration options sources:  
+# - when no configuration file is provided, the notebook cells themselves contain active options  
+# - uploaded configuration file have higher priority and settings from the notebook cells will be ignored  
 #
-# Файл конфигурации последнего запуска `config*.yaml` будет добавлен в выходной архив после завершения работы тетради.
-# Также после завершения работы несколько примеров файлов конфигурации будет в Colab директории scripts/misc.
-# Его можно отредактировать и в дальнейшем загружать в скрипт вместе с данными. Файл читается в этой ячейке автоматически, если загружен пользователем и назван по шаблону `config*.yaml`. Отключить загрузку или задать фиксированное название можно в параметре `load_path='auto'`.  
+# After the each run, configuration file `config*.yaml` is packed to the output archive.
+# Some examples of configuration files will also be available in the Colab directory `scripts/misc` after the notebook finishes.
+# You can manually edit these yaml configurations and upload them on the next runs together with the data. In this cell there will be automatic attempt to read a file matching `config*.yaml` pattern. Loading can be disabled or a fixed filename can be specified using the `load_path='auto'` argument.  
 #
-# **Необходимо проверить:**
+# **It is necessary to check:**
 #
-# В автоматическом режиме (по умолчанию `config.data_import.input_files = auto`) в логе работы ячейки **Импорт и проверка данных** будет контрольная информация по импорту и режиму работы (один из `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`). Также необходимо проверить в логе правильность определения форматов даты-времени и других настроек. При неправильном определении можно задать вручную:  
+# In the default automatic mode (`config.data_import.input_files = auto`), the log of the **Data import and validation** cell will contain diagnostic information about the validation and import mode (one of `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`). It is recommended to check the log to ensure that the date-time formats and other settings were detected correctly. If any settings are detected incorrectly, they can be specified manually:  
 #
-# В ручном режиме в `config.data_import.input_files` должен быть словарь путей и типов файлов `= {'1.csv': InputFileType.EDDYPRO_FO}`. Не забывайте одинарные кавычки и расширение .csv!  
-# При импорте через !gdown файла с google-диска, как и при прямой загрузке, на этом шаге используется только название файлов.  
+# In the manual mode `config.data_import.input_files` should be a dictionary mapping file paths to file types: `= {'1.csv': InputFileType.EDDYPRO_FO}`. Do not forget the single quotes and the `.csv` extension!  
+# The way files were uploaded (`!gdown` Google Drive link or manual) is alrady irrelevant at this step, only the file name is used.  
 #
-# Проверьте порядок записи даты (год, месяц, день) и разделители даты-времени во входных файлах, открыв их в текстовом редакторе. Возможные варианты:
-# 1.  Дата записана как 29.05.2024 и время как 12:00. Тогда они кодируются как
-# "%d.%m.%Y %H:%M" – этот формат записан ниже по умолчанию, менять ничего не надо;
-# 2.  Дата записана как 29/05/2024 и время как 12:00. Измените в строке ниже формат на "%d/%m/%Y %H:%M"
-# 3.  Дата записана как 2024-05-29 и время как 1200. Измените в строке ниже формат на "%Y-%m-%d %H%M"
-# 4.  В остальных случаях действуйте по аналогии. Если в графе time есть секунды, то формат кодируется как "%Y-%m-%d %H:%M:%S".  
-# К примеру, в биомет-файле по умолчанию дата записана как 2011-11-12 и время как 1200. Кодируется как "%Y-%m-%d %H%M".  
+# Check the date order (year, month, day) and date-time separators in the input files by opening them in a text editor (Notepad). Possible options:
+# 1.  The date is written as 05/29/2024 and the time as 12:00. Then they are encoded as "%d.%m.%Y %H:%M" - this format is written below by default, nothing needs to be changed;
+# 2.  The date is written as 05/29/2024 and the time as 12:00. Change the format in the line below to "%d/%m/%Y %H:%M"
+# 3.  The date is written as 2024-05-29 and the time as 1200. Change the format in the line below to "%Y-%m-%d %H%M"
+# 4.  In other cases, behave similarly. If there are seconds in the time column, the format is encoded as "%Y-%m-%d %H:%M:%S".  
+# For example, default biomet date is 2011-11-12 and time is 1200, which is encoded as "%Y-%m-%d %H%M".  
 #
-# **Дополнительные опции (без уровня PRO лучше не менять)**:  
-# `config.*.missing_data_codes = ['-9999']` список значений во входных файлах, которые будут заменены на np.nan для адекватной работы алгоритмов;  
-# `config.*.repair_time` если `True`, то проверит колонку с датой-временем на пропуски и монотонность, проведет регенерацию по первой-последней точке с учетом предполагаемой длины шага (вычисляется по первым значениям ряда).  
-# `config.data_import.ias.skip_validation` если `True`, то будут отключены пред-проверки корректности ИАС  
-# `config.data_import.csf.empty_co2_strg` если `True` и в csf отсутствует колонка co2_strg, то будет добавлена колонка с пропусками  
+# **Additional options (better not to change without PRO level):**  
+# `config.*.missing_data_codes = ['-9999']` a list of missing data indication values to replace with np.nan for the proper work of the algorithm;  
+# `config.*.repair_time` when `True` will check the date-time column for gaps and monotony, and will perform regeneration by the first-last point taking into account the expected step length (calculated by the first values in the series).
+# `config.data_import.ias.skip_validation` when `True`, allows to skip IAS standard pre-validations  
+# `config.data_import.csf.empty_co2_strg` when `True` and co2_strg is missing in the csf, generates empty co2_strg as a workaround  
 
 
 # %% id="tVJ_DRBrlpYd"
 
-# init_debug=True: быстрый режим скрипта с обработкой только нескольких месяцев
+# init_debug=True: enables debug options and processes a small part of a data instead of a full length
 # load_path=None disables lookup, load_path='myconfig.yaml' sets fixed expected name without pattern lookup
 config = FFConfig.load_or_init(load_path='auto', default_fpath=gl.repo_dir / 'misc/config_v1.0.8_default_ru.yaml',
                                init_debug=False, init_version='v1.0.8')
@@ -325,10 +325,10 @@ if not config.from_file:
 colab_xor_demo_data(gl.input_dir, config.data_import.mixed_demo_policy)
 
 # %% [markdown] id="DtxFTNnEfENz"
-# ## Выбор колонок для графиков и фильтраций
+# ## Selecting columns for graphs and filters
 
 # %% id="nLnivFTtg9cu"
-# Соберем обзорную информацию о нужных величинах:
+# Gather the summary information about the parameters of interest:
 cols_to_investigate = [
     'co2_flux',
     'ch4_flux',
@@ -348,64 +348,64 @@ cols_to_investigate = [
 cols_to_investigate = [k.lower() for k in cols_to_investigate]
 
 # %% [markdown] id="wVpYvr9_fKBU"
-# ## Настройка параметров анализа данных
+# ## Setting up parameters for the data analysis
 #
-# Все настройки для co2_flux будут применены для nee в случае его расчета
+# All settings for co2_flux will be applied to nee if it is chosen to calculate
 
 # %% [markdown] id="FH2uRGi4p5Zj"
-# ### Фильтрация физическая
+# ### Physical filtering
 
 # %% id="pPemVdWVbq2E"
 if not config.from_file:
     config.calc.calc_nee = True
     
-    # Индекс станции для названий выходных файлов, рисунков
+    # Location ID which will be added to the names of all output files and graphs
     config.metadata.site_name = 'auto'
     config.data_export.ias.out_fname_ver_suffix = 'auto'
 
 # %% [markdown] id="5MK90gyzQryZ"
-# Параметры фильтрации по флагам качества. Данные с флагами в интервале (-inf, val] будут помечены как валидные, а данные со значением флага больше порога будут исключены.
+# Filtering by quality flags. Data with flags in the range (-inf, val] will be marked as valid, and data with a flag value greater than the threshold will be excluded.
 
 # %% id="ukl734CBblay"
 qc = {}
-qc['h'] = 1  # Если система флагов была 1-9, поправить
-qc['le'] = 1  # Если система флагов была 1-9, поправить
-qc['co2_flux'] = 1  # Если система флагов была 1-9, поправить
-qc['ch4_flux'] = 1  # Если система флагов была 1-9, поправить
+qc['h'] = 1  # Change when using 1-9 flag system
+qc['le'] = 1  # Change when using 1-9 flag system
+qc['co2_flux'] = 1  # Change when using 1-9 flag system
+qc['ch4_flux'] = 1  # Change when using 1-9 flag system
 if not config.from_file:
     config.filters.qc = qc
 
 # %% [markdown] id="QPIFpLN_-8Uf"
-# Параметры фильтрации по метеорологическим переменным, возможные опции:
+# Filtering fluxes in certain meteorological conditions (by values of meteorological variables), possible options:
 #
-# *   `CO2SS_min` - уберет CO2_FLUX при co2_signal_strength ниже указанного значения
-# *   `p_rain_limit` - уберет H, LE и CO2_FLUX, для P_rain_1_1_1 выше указанного лимита
-# *   `rain_forward_flag` - уберет  значения на указанное число записей вперед от каждого отфильтрованного на прошлом шаге значения
-# *   `RH_max` - уберет значения LE и CO2_FLUX для которых RH_1_1_1 больше указанного порога
-# * `use_day_filter` - в случае True дневные (Swin>`day_swin_limit`) NEE больше выставленного порога (NEE>`day_nee_max`) будут исключены
-# * `use_night_filter` - в случае True ночные (Swin<`day_swin_limit`) NEE меньше выставленного порога (NEE<`night_nee_min`) будут исключены
-# * `day_nee_max` - порог для NEE в дневное время (исключение интенсивной эмиссии днем)
-# * `night_nee_min` - порог для NEE в ночное время (исключение интенсивного нетто-поглощения ночью)
-# * `day_swin_limit` - порог приходящей коротковолновой радиации, задающий дневные данные (может быть изменен для станций за полярным кругом)
-# * `night_h_limits`, `night_le_limits` - допустимые ночные диапазоны H и LE
-# * `winter_nee_limits` - допустимый диапазон NEE в зимнее время (зимний период устанавливается отдельно в разделе "фильтрация зимних периодов, уточните даты!")
-# * `winter_ch4_flux_limits` - допустимый диапазон потока метана в зимнее время
-# * `CH4SS_min` - уберет CH4_FLUX при ch4_signal_strength ниже указанного значения
+# * `CO2SS_min` - will remove CO2_FLUX when co2_signal_strength is below the set threshold
+# * `p_rain_limit` - will remove H, LE and CO2_FLUX, for P_rain_1_1_1 above the set threshold
+# * `rain_forward_flag` - will remove values for the set number of records forward from each value filtered in the previous step
+# * `RH_max` - will remove LE and CO2_FLUX values for which RH_1_1_1 is greater than the specified threshold
+# * `use_day_filter` - if True, daily (Swin>`day_swin_limit`) NEEs greater than the set threshold (NEE>`day_nee_max`) will be excluded
+# * `use_night_filter` - if True, night (Swin<`day_swin_limit`) NEEs less than the set threshold (NEE<`night_nee_min`) will be excluded
+# * `day_nee_max` - threshold for NEE during daytime (excluding intense emission during daytime)
+# * `night_nee_min` - threshold for NEE at night (excluding intense net absorption at night)
+# * `day_swin_limit` - threshold of incoming shortwave radiation, defining daytime data (can be changed for stations beyond the Arctic Circle)
+# * `night_h_limits`, `night_le_limits` - plausible night ranges for H and LE
+# * `winter_nee_limits` - plausible range of NEE in winter (winter period is set separately in the section "winter period filtering, determine the dates!")
+# * `winter_ch4_flux_limits` - plausible range of methane flux in winter
+# * `CH4SS_min` - will remove CH4_FLUX when ch4_signal_strength is below the specified value
 #
-# При отсутствии в настройках какого-либо из параметров фильтрация не применяется.
+# If any of the parameters are missing or commented in this cell, filtering is not applied.
 
 # %% id="vxpiAbWk2yYr"
 filters_meteo = {}
 filters_meteo['CO2SS_min'] = 80.
 
-# Фильтры могут не понадобиться для систем закрытого типа
+# These filters may not be needed for the closed-path eddy covariance systems
 filters_meteo['p_rain_limit'] = .1
 filters_meteo['rain_forward_flag'] = 2
-# Фильтр влажности ниже: применять только тогда, когда нет CO2SS (образование конденсата) и диагностики анемометра
-# и данные не были отфильтрованы по этим показателям на этапе расчета в EddyPro
+# Relative humidity filter (intended to find the cases of formation of condensation): apply only if CO2SS and anemometer
+# diagnostics are absent and the data were not filtered by these indicators during the calculation of 30-min data
 # meteo_filter_config['RH_max'] = 98
 
-# Какие значения допускаются днем/ночью
+# Plausible values at day/night-time
 filters_meteo['use_day_filter'] = True
 filters_meteo['use_night_filter'] = True
 filters_meteo['day_nee_max'] = 5
@@ -414,7 +414,7 @@ filters_meteo['day_swin_limit'] = 10
 filters_meteo['night_h_limits'] = [-50, 20]
 filters_meteo['night_le_limits'] = [-50, 20]
 
-# Какие значения допускаются зимой. Для травянистых экосистем правый порог обычно ниже
+# Plausible values at winter. For the grass ecosystems the upper limit is usually lower
 filters_meteo['winter_nee_limits'] = [-1, 5]
 filters_meteo['winter_ch4_flux_limits'] = [-1, 1]
 filters_meteo['CH4SS_min'] = 20.
@@ -423,11 +423,11 @@ if not config.from_file:
     config.filters.meteo = filters_meteo
 
 # %% [markdown] id="utUX7SA4qA_I"
-# ### Фильтрация статистическая
+# ### Statistical filtering
 
 # %% [markdown] id="wWISuF-xQCwq"
-# Параметры фильтрации по абсолютным значениям.
-# Для `rh_1_1_1` значения выше границы не отбрасываются, а заменяются на пограничные. Для `ppfd_1_1_1`, `swin_1_1_1` аналогично обрабатываются минимальные значения.
+# Filtering parameters by absolute values. 
+# For `rh_1_1_1` values above the boundary are replaced with the boundary values instead of discarding. For `ppfd_1_1_1`, `swin_1_1_1` the minimum values are processed similarly.
 
 # %% id="HQfIYFOd9uzi"
 filters_min_max = {}
@@ -449,18 +449,18 @@ if not config.from_file:
     config.filters.min_max = filters_min_max
 
 # %% [markdown] id="vmyTKbV1RdjD"
-# Параметры фильтрации по отклонению от среднего суточного хода.
-# * `sigmas` - допустимый интервал отклонения от среднего хода; вне интервала значения помечаются как отфильтрованные
-# * `window` - размер окна в днях для подсчета среднего хода
-# * `min_periods` - минимальное число точек в окне. Если меньше - оценка скользящего будет отсутствовать, фильтр не применится.
+# Filtering parameters based on the deviation from the average diurnal course in a moving window.
+# * `sigmas` - plausible range of deviation from the average course; values outside the range are eliminated
+# * `window` - window size in days for calculating the diurnal course
+# * `min_periods` - minimum number of points for each 30-min interval in the window. If the window has less points then the course is not calculated, the filter is not applied.
 
 # %% id="xfRVNYbFYzG3"
 filters_window = {}
-# Для систем закрытого типа фильтр может быть мягче (например, 3 sigma)
+# Closed-path eddy covariance systems and less noisy data may need milder criteria (for example, 3 sigma)
 filters_window['co2_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
 filters_window['ch4_flux'] = {'sigmas': 2, 'window': 10, 'min_periods': 4}
 
-# Если удаляются надежные значения - нужно увеличить 'sigmas'
+# If reliable data are deleted, it is recommended to increase the value of 'sigmas'
 filters_window['ta_1_1_1'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
 filters_window['u_star'] = {'sigmas': 4, 'window': 10, 'min_periods': 4}
 for col in ['h', 'le', 'rh_1_1_1', 'vpd_1_1_1']:
@@ -472,10 +472,10 @@ if not config.from_file:
     config.filters.window = filters_window
 
 # %% [markdown] id="KF_MGD7pSGre"
-# Параметры фильтрации выше-ниже порога по квантилям (выпадающие строки отфильтровываются):
-# * `filters_quantile` - по всему столбцу, значения в квадратных скобках задают квантили 
-# * `filters_quantile_iqr` - IQR фильтр в скользящем окне, параметр задает IQR множитель межквартильного размаха (стандартно 1.5, при увеличении будет отфильтровываться меньше данных)  
-# * 'window_size_days' временной размер скользящего IQR окна в днях
+# Filtering parameters above and below threshold by quantiles (values not in range are removed):
+# * `filters_quantile` - quantiles are calculated from the distribution across the entire data column; the values in square brackets specify the quantiles
+# * `filters_quantile_iqr` - IQR filter in a sliding window (only the local data distribution is taken into account); the parameter specifies the IQR multiplier (1.5 by default; increasing it will filter out less data)  
+# * 'window_size_days' time span of the sliding IQR window in days  
 
 # %% id="asO_t2tZmiD0"
 filters_quantile = QuantileFilterConfig()
@@ -496,12 +496,12 @@ if not config.from_file:
     config.filters.quantile_iqr = filters_quantile_iqr
 
 # %% [markdown] id="cPiTN288UaP3"
-# Параметры для фильтрации по отклонению от соседних точек, фильтры MAD и Hampel.
+# Parameters for filtering by deviation from the neighboring points: MAD and Hampel filters.
 
 # %% id="2b3eBVFUq3AU"
 filters_madhampel = {}
 # filters_madhampel = {i:{'z': 5.5, 'hampel_window': 10} for i in cols_to_investigate if 'p_1_1_1' not in i}
-# Более жесткая фильтрация: 'z'=4. Более мягкая: 'z'=7
+# Hard filtering: 'z'=4. Mild filtering: 'z'=7
 filters_madhampel['co2_flux'] = {'z': 5.5, 'hampel_window': 10}
 filters_madhampel['ch4_flux'] = {'z': 5.5, 'hampel_window': 10}
 filters_madhampel['le'] = {'z': 5.5, 'hampel_window': 10}
@@ -517,7 +517,7 @@ if not config.from_file:
     config.filters.madhampel = filters_madhampel
 
 # %% [markdown] id="wVF1vDm4EauW"
-# # Импорт и проверка данных
+# # Data import and validation
 
 # %% id="Xw5TapK10EhR"
 res = try_auto_detect_input_files(config, gl)
@@ -536,7 +536,7 @@ if not config.calc.has_meteo:
     data["vpd_1_1_1"] = data['vpd']
 
 # %% [markdown] id="ipknrLaeByCT"
-# Проверка на корректность типа данных (пример: наличие текста там, где должны быть числа):
+# Checking for correct data type (example: presence of text instead of numbers):
 
 # %% id="8LawdKUbB1_m"
 cols_2_check = ['ppfd_in_1_1_1', 'u_star', 'swin_1_1_1', 'co2_signal_strength',
@@ -560,10 +560,10 @@ if data_type_error_flag:
     raise KeyboardInterrupt
 
 # %% [markdown] id="QDHkyl_PruXE"
-# # Предобработка
+# # Preprocessing
 
 # %% [markdown] id="Nh5MosYXS6aj"
-# Переименовываем колонки для единого формата, рассчитываем VPD <-> RH, SWIN <-> RG и PAR <-> SWIN в случае отсутствия.
+# Renaming the columns to a single format, calculating VPD <-> RH, SWIN <-> RG and PAR <-> SWIN if absent.
 #
 
 # %% id="mAdYXJFdSRbJ"
@@ -691,16 +691,16 @@ df_ias_export = data.copy()
 try_compare_stats(data, repo_dir / 'misc/expected_stats.xlsx')
 
 # %% [markdown] id="soyyX-MCbaXt"
-# ## Получение NEE из потока CO2 и накопления
+# ## Calculating NEE from CO2_flux and storage
 
 # %% [markdown] id="lqWwGSMObro4"
-# Проверка накопления. Рассчитанное по одному уровню в EddyPro (full output - колонка co2_strg) не всегда корректно. Корректность проверяется суточным ходом: должен быть рост запаса в течение ночи, резкое уменьшение утром.
+# Checking the storage. The storage calculated by one vertical level in EddyPro (full output - co2_strg column) is not always reliable. Correctness is checked by the proper diurnal course: there should be an accumulation during the night, and a sharp decrease in the morning.
 
 # %% [markdown] id="2yqwO7Uhcjmz"
-# Фильтрация co2_strg с удалением значений выше и ниже пороговых квантилей. Заполнение пропусков co2_strg  длиной 3 точки и менее – линейной интерполяцией. Полученные отфильтрованные и заполненные значения co2_strg показываются на графике. Принятие решения, суммировать ли co2_flux и co2_strg для получения NEE или работать дальше с co2_flux.
+# Filtering co2_strg to remove values above and below threshold quantiles. Filling co2_strg gaps of 3 points or less with linear interpolation. The resulting filtered and filled co2_strg values are plotted. You make a decision whether to sum co2_flux and co2_strg to obtain NEE or to continue working with co2_flux.
 
 # %% id="cjt05XXtbr69"
-# Пробелы длиной 3 30-мин интервала и меньше заполняются линейно
+# Gaps shorter than 3 30-mins ranges are linearly interpolated
 if config.calc.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
@@ -731,11 +731,12 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
         print(tmp_q_config, tmp_filter_db, tmp_data['co2_strg_tmp_quantilefilter'].value_counts())
 
 # %% id="2IQ7W6pslYF-"
-# Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
+# Decide whether to sum co2_flux and co2_strg_filtered_filled to obtain NEE
 if not config.from_file:
-    config.calc.calc_with_strg = False  # В случае, если дальше работаем с NEE, оставить True.
+	# Keep False to work with co2_flux without co2_strg
+    # Change to True to obtain NEE and use to it in the next cells
+    config.calc.calc_with_strg = False
 ff_logger.info(f"config.calc.calc_with_strg is set to {config.calc.calc_with_strg}")
-# Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, поставить False
 
 # %% id="ueuvsNxYdtgs"
 if config.calc.calc_nee and 'co2_strg' in data.columns:
@@ -757,7 +758,7 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
 
 
 # %% [markdown] id="mUgwuaFYribB"
-# # Обзор статистики по интересующим колонкам
+# # Overview of statistics for the columns of interest
 
 # %% id="dhcplCMbXtkK"
 cols_to_investigate = [p for p in cols_to_investigate if p in data.columns]
@@ -780,7 +781,7 @@ fig.show()
 data[cols_to_investigate].describe()
 
 # %% [markdown] id="0oJLXYGbr93S"
-# # Фильтрация данных физическая
+# # Physical data filtering
 
 # %% id="apGNk8eBxgBv"
 plot_data = data.copy()
@@ -788,7 +789,7 @@ filters_db = {col: [] for col in plot_data.columns.to_list()}
 print(plot_data.columns.to_list())
 
 # %% [markdown] id="soyyX-MCbиXt"
-# ## по футпринту
+# ## by footprint
 
 # %% id="mAdYXJ4dSRbJ"
 
@@ -803,13 +804,13 @@ data = basic_filter(data, src_col='FETCH_FILTER', src_bad_value=0, tgt_cols=conf
 
 
 # %% [markdown] id="BL_6XxGGsCBK"
-# ## по флагам качества
+# ## using quality flags
 
 # %% id="GGwe7_uU1C8U"
 plot_data, filters_db = qc_filter(plot_data, filters_db, config.filters.qc)
 
 # %% [markdown] id="M_gKSTNYyzjS"
-# ## по порогу CO2SS и CH4SS
+# ## accounting for CO2SS and CH4SS
 
 # %% id="viq7BZue9Ett"
 plot_data, filters_db = meteorological_co2ss_filter(plot_data, filters_db, config.filters.meteo)
@@ -818,20 +819,20 @@ plot_data, filters_db = meteorological_co2ss_filter(plot_data, filters_db, confi
 plot_data, filters_db = meteorological_ch4ss_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="qwqVDeH6y73_"
-# ## по допустимым значениям RH
+# ## plausible RH values
 
 # %% id="11isfvNZ9FGu"
 plot_data, filters_db = meteorological_rh_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="oSX2h9QzzFkT"
-# ## по наличию дождя
+# ## rain events
 
 # %% id="jz696mc09FlB"
 if config.calc.has_meteo:
     plot_data, filters_db = meteorological_rain_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="Xy2y00P1zJtZ"
-# ## по ночным и дневным допустимым диапазонам
+# ## day-time and night-time plausible ranges
 
 # %% id="ED_Qh6TS0Qkc"
 if config.calc.has_meteo:
@@ -842,7 +843,7 @@ if config.calc.has_meteo:
     plot_data, filters_db = meteorological_day_filter(plot_data, filters_db, config.filters.meteo)
 
 # %% [markdown] id="fzfTJdNe68Eu"
-# ## фильтрация зимних периодов, уточните даты!
+# ## winter period filtering, determine the dates!
 
 # %% id="wJ87D57S7A91"
 if ('winter_nee_limits' in config.filters.meteo.keys()) or ('winter_ch4_flux_limits' in config.filters.meteo.keys()):
@@ -862,17 +863,17 @@ if config.calc.has_meteo:
                                           config.filters.winter_date_ranges)
 
 # %% [markdown] id="UAdRtCPGq6_y"
-# # Фильтрация данных статистическая
+# # Statistical data filtering
 
 # %% [markdown] id="LcwZplknsHJv"
-# ## по минимальным и максимальным допустимым значениям
+# ## by minimum and maximum acceptable values
 
 # %% id="FyJaM1zC1DDg"
 # if config.calc.has_meteo:
 plot_data, filters_db = min_max_filter(plot_data, filters_db, config.filters.min_max)
 
 # %% [markdown] id="j62U1dw8sTEm"
-# ## по квантилям
+# ## by quantiles
 
 # %% id="aNQ4XDK01DME"
 # if config.calc.has_meteo:
@@ -880,26 +881,25 @@ plot_data, filters_db = quantile_filter(plot_data, filters_db, config.filters.qu
 plot_data, filters_db = quantile_iqr_filter(plot_data, filters_db, config.debug, config.filters.quantile_iqr)
 
 # %% [markdown] id="7Sg76Bwasnb4"
-# ## по отклонению от среднего хода
+# ## by deviation from the average diurnal course
 
 # %% id="uoDvHhoQ2MMe"
 plot_data, filters_db = std_window_filter(plot_data, filters_db, config.filters.window)
 
 # %% [markdown] id="iXl5RdINss9D"
-# ## Фильтрация выбросов MAD & Hampel
-
+# ## MAD & Hampel outliers filtering
 # %% id="gl9cImVr2MO3"
 unroll_filters_db = filters_db.copy()
 plot_data, tmp_filter = mad_hampel_filter(plot_data, filters_db, config.filters.madhampel)
 
 # %% [markdown] id="iu8MLKyh1AFk"
-# ## Ручная фильтрация
+# ## Manual filtering
 #
-# Если нужно убрать какой-то срок/сроки вручную
+# If you need to remove some intervals manually
 #
 
 # %% id="ADy534At0_fN"
-#  фильтр уберет значения от первого до второго включительно
+#  the filter excludes values from the first to the last one inclusively
 if not config.from_file:
     config.filters.man_ranges = [
         # ['1.5.2023 00:00', '1.6.2023 00:00'],
@@ -910,7 +910,7 @@ for man_range in config.filters.man_ranges:
                                           manual_config=man_range)
 
 # %% [markdown] id="quGbtDaJ_gID"
-# ## Сводная таблица результатов фильтрации
+# ## Summary table of filter results
 
 # %% id="Pg78qGJ9_miW"
 all_filters = {}
@@ -927,29 +927,29 @@ for key, filters in filters_db.items():
             # print(filter_name, filtered_amount, len(pl_data.index) - old_val)
 fdf_df = pd.DataFrame(all_filters)
 
-ff_logger.info("Какая часть данных от общего количества (в %) была отфильтрована:")
+ff_logger.info("What percentage of data from all data (in %) was eliminated:")
 df_stats = fdf_df.iloc[1] / len(plot_data) * 100
 ff_logger.info('\n' + df_stats.to_string())
 
 # %% [markdown] id="gA_IPavss0bq"
-# # Отрисовка рядов
+# # Drawing graphs
 
 # %% [markdown] id="ijPM6mnJtMv8"
-# ## Отрисовка результатов фильтрации данных
+# ## Plotting the results of data filtering
 
 # %% id="50Xhczc-BRc2"
 plot_terator = iter(cols_to_investigate)
 
 # %% [markdown] id="uat4oESzU4__"
-# Для экономии памяти и адекватной работы Google Colab графики будут выводиться поочередно при повторном запуске ячейки.
+# To free up memory and ensure the proper work of the Google Colab, the graphs will be displayed one by one when the cell is rerun.
 
 # %% id="NhNoFAd7DqNN"
 col2plot = next(plot_terator, False)
 
-# Подставить нужное: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1, co2_signal_strength, ch4_flux
+# Insert the parameter of interest: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1, co2_signal_strength, ch4_flux
 col2plot = 'nee'
 
-# Или закомментировать одну строку выше и запускать повторно для переключения к следующему параметру
+# Or comment the previous line and rerun the cell for the switching to the next parameter
 if col2plot:
     make_filtered_plot(plot_data, col2plot, col2plot, config.metadata.site_name, filters_db)
 else:
@@ -957,31 +957,31 @@ else:
     plot_terator = iter(cols_to_investigate)
 
 # %% id="ZG_wF2qW-Qwb"
-# #линейное заполнение пропусков, limit - сколько может быть пропущенных подряд
+# #linear gapfilling, limit is the permitted maximal number of the consecutive missed values
 # for col in cols_to_investigate:
 #   plot_data[col] = plot_data[col].interpolate(limit=5)
 
 # %% id="VtJ8wyx2-XCX"
-# #Заполнение ходом
+# #Gapfilling with the diurnal course
 # for col in cols_to_investigate:
 #   plot_data[col].fillna(bg.calc_rolling(plot_data[col], rolling_window=10, step=gl.points_per_day, min_periods=7))
 
 # %% [markdown] id="MwuXRVTMtBz2"
-# ## Отрисовка среднего хода для отфильтрованных рядов
+# ## Plotting the average diurnal course for the filtered data
 
 # %% id="pWDTiucTgRlI"
 plot_terator = iter(cols_to_investigate)
 
 # %% id="COKiwe7020D4"
-# Пример вычисления среднего хода
+# The example of the calculation of the diurnal course
 
 col2plot = next(plot_terator, False)
-# Можно задать вручную
+# Can be chosen manually
 # col2plot = 'h'#"co2_flux"
 
-# Подставить нужное: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1
+# Insert the parameter of interest: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1
 col2plot = ['nee', 'le']
-# Или просто запускать повторно для переключения к следующему параметру
+# Or rerun the cell to switch to the next parameter
 if col2plot:
     basic_plot(plot_data, col2plot, config.metadata.site_name, filters_db, steps_per_day=gl.points_per_day)
 else:
@@ -989,22 +989,22 @@ else:
     plot_terator = iter(cols_to_investigate)
 
 # %% [markdown] id="RKEg6YBstXMp"
-# ## Тепловые карты потоков для отфильтрованных данных
+# ## Heat maps of fluxes for the filtered data
 
 # %% id="mCUJYURKEL-f"
-# Подставить нужное: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1
+# Insert the parameter of interest: co2_flux, le, h, co2_strg, ta_1_1_1, rh_1_1_1, vpd_1_1_1, p_1_1_1, swin_1_1_1, ppfd_1_1_1
 for col in ['nee', 'le', 'h']:
-    # Или просто запускать повторно для переключения к следующему параметру
+    # Or rerun the cell to switch to the next parameter
     plot_nice_year_hist_plotly(plot_data, col, time_col, filters_db)
 
 # %% [markdown] id="EFscf-JZt3_R"
-# # Формирование выходных файлов
+# # Writing the output files
 
 # %% [markdown] id="dokSxicNtdva"
-# ## Файл для REddyProc
+# ## A file for REddyProc
 
 # %% [markdown] id="tDqsi61kSeak"
-# Создадим шаблон шапки для файла REddyProc и сохраним требуемые переменные, не забыв учесть фильтрацию. Выходной файл - уровня 3.
+# Creating a header for the REddyProc file and save the required variables, the filtering is taken into account. The output file has the 3rd level.
 
 # %% id="YVu2UrCzLqb4"
 output_template = {
@@ -1021,10 +1021,10 @@ gl.rep_level3_fpath = gl.out_dir / f"REddyProc_{config.metadata.site_name}_{int(
 export_rep_level3(gl.rep_level3_fpath, rep_df, time_col, output_template, config, gl.points_per_day)
 
 # %% [markdown] id="e50f7947"
-# ## Файл для ИАС
-# Файл уровня 2, записывается из первоначально введенных данных **без учета** фильтраций  
+# ## A file for Information and Analytical System used in the RuFlux network (IAS)
+# Level 2 file, written from the input data **without taking into account** filtering  
 #
-# Опция `config.data_export.ias.split_intervals` позволяет выбрать количество экспортируемых файлов: по месяцам `IasExportIntervals.MONTH`, по годам `IasExportIntervals.YEAR`, все данные в одном файле `IasExportIntervals.ALL`.
+# Option `config.data_export.ias.split_intervals` also specifies the number of exported files: one per month `IasExportIntervals.MONTH`, one per year `IasExportIntervals.YEAR`, or all data in a single file `IasExportIntervals.ALL`.
 
 # %% id="yaLoIQmtzaYd"
 if not config.from_file:
@@ -1037,8 +1037,8 @@ if config.calc.has_meteo:
                df_ias_export, time_col=time_col, swin_vals=swin_vals)
 
 # %% [markdown] id="Pm8hiMrb_wRW"
-# ## Файл для FAT
-# Файл уровня 3 (отфильтрованные данные), который годится для ввода в инструмент заполнения пропусков Flux Analysis Tool
+# ## File for FAT
+# Level 3 file (filtered data) ready for input into the Flux Analysis Tool
 
 # %% [markdown] id="0ll51nOal6Lz"
 # ![image.png](data:image/png;base64,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)
@@ -1060,8 +1060,8 @@ if config.calc.has_meteo:
     del fat_df
 
 # %% [markdown] id="GQ1bpermu8eq"
-# ## Полный файл результатов фильтрации
-# Файл содержит исходные переменные (потоки, метеорологические переменные). Колонка "tmp_datetime" - результат формирования единой даты-времени из двух колонок файла full output - date, time. Колонка datetime - результат работы коррекции даты-времени для столбца tmp_datetime. datetime_meteo - результат работы коррекции даты-времени для столбца timestamp_1. Далее файл содержит записи о применении каждого фильтра к каждой переменной (потоки, метеорология) в бинарном формате: 1 – фильтр не применен, 0 – применен.
+# ## File with all filtered data
+# The file contains the original variables (fluxes, meteorological variables). The "tmp_datetime" column is the result of forming a single date-time from the two columns of the full output file - date, time. The "datetime" column is the result of the date-time correction for the tmp_datetime column. "datetime_meteo" is the result of the date-time correction for the "timestamp_1" column. The file contains flags for each filter to each variable (fluxes, meteorology) in binary format: 1 means that filter was not applied, 0 - applied.
 
 # %% id="pk1lGANovC5U"
 full_column_list = [c for c in plot_data.columns]
@@ -1076,8 +1076,8 @@ plot_data.fillna(-9999).to_csv(all_fpath, index=None, columns=full_column_list)
 ff_logger.info(f"Basic file saved to {all_fpath}")
 
 # %% [markdown] id="-MSrgUD0-19l"
-# ## Файл-резюме результатов фильтрации
-# Краткий выходной файл после фильтраций. Содержит исходные основные переменные (метео и потоки), отфильтрованные основные переменные (индекс _filtered), интегральный флаг для каждой переменной, средние суточные ходы в окне 30 и 10 дней для отфильтрованных переменных.
+# ## Summary file of filtered results
+# Short output file after filtering. Contains important input variables (meteorological parameters and fluxes), filtered important variables (index _filtered), integral flag for each variable, average diurnal cycles in 30- and 10-day windows for filtered variables.
 
 # %% id="22dPWc2u-6IG"
 columns_to_save = ['Date', 'Time', 'DoY', 'ta', 'rh', 'vpd', 'swin', 'ppfd', 'p', 'h', 'le', 'co2_flux', 'co2_strg',
@@ -1093,7 +1093,7 @@ basic_df['DoY'] = np.round(
 
 if not config.calc.has_meteo:
     basic_df['ta_1_1_1'] = basic_df['air_temperature'] - 273.15
-# метео
+# meteo
 for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
     # print(f"{col}(_[1-9]){{1,4}})")
     col_pos = [bool(re.fullmatch(f"{col}(_[1-9]){{1,4}}", col_in)) for col_in in basic_df.columns]
@@ -1103,7 +1103,7 @@ for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
         real_col = basic_df.columns[np.argmax(col_pos)]
         basic_df[col] = basic_df[real_col]
 
-# Фильтрованные потоки
+# Filtered fluxes
 for col in ['nee', 'h', 'le', 'co2_strg', 'ch4_flux']:
     if col not in basic_df.columns:
         continue
@@ -1112,7 +1112,7 @@ for col in ['nee', 'h', 'le', 'co2_strg', 'ch4_flux']:
     basic_df.loc[~filter.astype(bool), f"{col}_filtered"] = np.nan
     columns_to_save.append(f"{col}_filtered")
 
-# Фильтрованные метео
+# Filtered meteo
 for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
     if col not in basic_df.columns:
         continue
@@ -1121,7 +1121,7 @@ for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p']:
     basic_df.loc[~filter.astype(bool), f"{col}_filtered"] = np.nan
     columns_to_save.append(f"{col}_filtered")
 
-# флаги
+# Flags
 for col in ['ta', 'rh', 'vpd', 'swin', 'ppfd', 'p', 'h', 'le', 'co2_flux', 'co2_strg', 'nee',
             'ch4_flux']:  # ['nee', 'ch4', 'le', 'h']:
     if col not in basic_df.columns:
@@ -1154,63 +1154,63 @@ summary_fpath = gl.out_dir / 'output_summary.csv'
 basic_df.to_csv(summary_fpath, index=None)
 ff_logger.info(f"New basic file saved to {summary_fpath}")
 # %% [markdown] id="775a473e"
-# # Обработка инструментом REddyProc
-# В этом блоке выполняется 1) фильтрация по порогу динамической скорости ветра (u* threshold), 2) заполнение пропусков в метеорологических переменных и 30-минутных потоках, 3) разделение NEE на валовую первичную продукцию (GPP) и экосистемное дыхание (Reco), 4) вычисление суточных, месячных, годовых средних и среднего суточного хода по месяцам.
+# # Processing with the REddyProc tool
+# This block performs 1) filtering by the friction velocity threshold (u* threshold), 2) filling gaps in meteorological variables and 30-minute fluxes, 3) separating NEE into gross primary production (GPP) and ecosystem respiration (Reco), 4) calculating daily, monthly, annual averages and the average diurnal cycle by months.
 
 # %% [markdown] id="034b04a5"
-# ## Фильтрация и заполнение пропусков
+# ## Filtering and gapfilling
 #
-# Далее `config_reddyproc` - настройки, которые соответствуют опциям [онлайн-инструмента](https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php).
+# `config_reddyproc` are the settings that correspond to the options of [the online tool](https://www.bgc-jena.mpg.de/REddyProc/ui/REddyProc.php).
 #
-# **Необходимо проверить:**  
+# **It is necessary to check:**  
 #
-# Включение детектирования условий недостаточной турбулентности  
+# Enabling detection of the conditions of weak turbulence  
 # `is_to_apply_u_star_filtering=True`  
-# Метод Eddy Covariance применим только при развитой турбулентности. При динамической скорости ветра, или скорости трения (столбец *uStar*), ниже определенного порога поток CO2 может быть занижен. Данные о потоках в этих условиях заменяются на пропуски.
+# The Eddy Covariance method is applicable only in the conditions of the developed turbulence. When the friction velocity (*uStar* column) is below a certain threshold, the CO2 flux may be underestimated. Flux data in these conditions are replaced by gaps.
 #
-# Выбор метода разметки сезонов, для каждого из которых отдельно определяется уровень насыщения. `Continuous` - начало сезонов в Марте, Июне, Сентябре, и Декабре, Декабрь при этом включается в *следующий* год. `WithinYear` - каждый год отдельно. `User` - по столбцу *season*.  
+# Switch between season marking methods, with the saturation level determined separately for each season. `Continuous` - seasons start in March, June, September, and December, December is included in the *next* year. `WithinYear` treats each year separately. `User` divides the year by the user-defined *season* column.  
 # `u_star_seasoning="Continuous"`  
-# Итеративная оценка точности вычисленного порога u* (bootstrap)  
+# Uncertainty estimation of the u threshold* (bootstrap)  
 # `is_bootstrap_u_star=False`  
 #
-# По сравнению с исходным инструментом REddyProc в этой тетради добавлена **экспериментальная** возможность подстановки пользовательского значения порога в случае, когда порог невозможно рассчитать (например, если недостаточно данных или отсутствует солнечная коротковолновая радиация *Rg*). Для травянистых экосистем можно использовать `0.01`, для лесных - `0.1`, для отключения подстановки - `None`.  
+# Compared to the original REddyProc tool, this notebook adds the ability to substitute a custom threshold value in cases where the threshold cannot be calculated (e.g., if data are lacking or solar income radiation *Rg* is missing). For grassland ecosystems, you can use a minimal threshold of `0.01`, for forest ecosystems - `0.1`, to disable substitution - `None`.  
 # `ustar_threshold_fallback=0.01`  
-# REddyProc по умолчанию применяет порог uStar только в ночное время, для определения которого требуется столбец *Rg*. Следующая **экспериментальная** опция позволяет использовать теоретическое значение `"Rg_th_Py"` или `"Rg_th_REP"`, либо игнорировать отсутствие *Rg* и применить порог ко всем данным без учета времени суток - `""`:  
+# REddyProc by default applies the uStar threshold only at night, which requires the *Rg* column to determine day/night-time. The following experimental option allows to use theoretical value `"Rg_th_Py"` or `"Rg_th_REP"`, or to ignore the absence of *Rg* and apply the threshold to all data, regardless of the time of day - `""`:  
 # `ustar_rg_source="Rg"`  
 #
-# В случае ошибок фильтрации будет предупреждение в логе ячейки и повторная попытка запуска с переходом к заполнению пропусков.
-# Заполнение пропусков в 30-минутных потоках соответствует онлайн-инструменту и включено по умолчанию.
+# If an error occurs during filtering, a warning appears in the cell log and the cell reruns with a transition to the gap filling. 
+# Gap filling in the 30-minute fluxes corresponds to the online tool and is enabled by default.
 #
-# Включение и выбор одного или обоих методов разделения потока C02 на валовую первичную продукцию (GPP) и дыхание экосистемы (Reco). Метод `Reichstein05` проводит разделение по ночным данным, метод `Lasslop10` - по дневным данным.
+# Enable and select one or both methods of partitioning the CO2 flux into the gross primary production (GPP) and the ecosystem respiration (Reco). The method `Reichstein05` performs the separation based on the night-time data, the method `Lasslop10` uses the day-time data.  
 # `is_to_apply_partitioning=True`  
 # `partitioning_methods=["Reichstein05", "Lasslop10"]`  
-# При отсутствии данных об Rg разделение выполняться не будет! Для корректного завершения работы блока в этом случае поставьте  
+# If there is no data on Rg, the partitioning will not be performed! To correctly run the cell in this case, set  
 # `is_to_apply_partitioning=False`  
 #
-# Широта, долгота, временная зона  
+# Latitude, longitude, time zone  
 # `latitude = 56.5`  
 # `longitude = 32.6`  
 # `timezone = +3`  
 #
-# По температуре воздуха или почвы будет происходить заполнение  
+# To use air or soil temperature for gapfilling  
 # `temperature_data_variable="Tair"`
-# либо
+# or 
 # `temperature_data_variable="Tsoil"`
 #
-# **Опции, изменение которых не предполагается в этой тетради:**
+# **Options that are not intended to be changed in this notebook:**
 #
-# В EddyProc доступен только метод подвижной точки `RTw` для определения порога uStar  
+# EddyProc only has the moving point method `RTw` for determining the uStar threshold  
 # `u_star_method="RTw"`  
-# Заполнение пробелов в 30-минутных потоках  
+# Filling gaps in 30-minute fluxes  
 # `is_to_apply_gap_filling=True`  
 #
-# **Дополнительные опции (согласованы с предыдущими секциями):**  
+# **Additional options (consistent with previous sections):**  
 #
-# Название станции, которое будет продублировано в названиях выходных файлов:    
+# The name of the station, added to the names of the output files:  
 # `site_id=config.meta.site_name`  
-# Файл, из которого загружаются временные ряды:  
+# The file from which the time series are loaded:  
 # `input_file=str(gl.rep_level3_fpath)`  
-# Директория, в которую инструмент пишет контрольные изображения, базовую статистику по пропускам, заполненные ряды:  
+# The directory to which the tool writes test graphs, basic statistics on gaps, filled series:  
 # `output_dir=str(gl.out_dir / 'reddyproc')`
 # %% id="278caec5"
 
@@ -1259,14 +1259,14 @@ ensure_empty_dir(config.reddyproc.output_dir)
 gl.rep_out_info, config.reddyproc = reddyproc_and_postprocess(config.reddyproc, gl.repo_dir)
 
 # %% [markdown] id="0bed439c"
-# ## Контрольные графики
-# Отображение отдельных графиков из онлайн-инструмента в удобной для проверки форме.  
-# Заполненные данные, графики и проверочную статистику можно скачать одним архивом по кнопке **Download reddyproc outputs**.
+# ## Selected graphs
+# Displays individual graphs from the online tool in a convenient form for checking.  
+# The filled data, graphs and statistics can be downloaded in one archive by clicking the **Download reddyproc outputs** button.
 #
-# **Дополнительные опции:**  
+# **Additional options:**  
 #   
-# Порядок и набор графиков формируется автоматически в переменной `output_sequence`, которую также можно поменять или переобъявить с помощью тэгов.  
-# Тэги именно для этого варианта тетради будут видны после запуска ячейки по вызову `display_tag_info`.
+# The order and set of graphs are formed automatically in the variable `output_sequence`, which can be changed or re-declared using tags.  
+# Tags for this particular version of the notebook will be visible after the cell is run by calling `display_tag_info`.
 
 # %% id="e66a94ab"
 rep_out_dir = Path(config.reddyproc.output_dir)
@@ -1275,15 +1275,15 @@ tag_handler = RepImgTagHandler(main_path=rep_out_dir, rep_cfg=config.reddyproc, 
 rog = RepOutputGen(tag_handler)
 
 output_sequence: tuple[str | list[str], ...] = (
-    "## Тепловые карты",
+    "## Heat maps",
     rog.hmap_compare_row('NEE_*'),
     rog.hmap_compare_row('LE_f'),
     rog.hmap_compare_row('H_f'),
-    "## Суточный ход",
+    "## Diurnal course",
     rog.diurnal_cycle_row('NEE_*'),
     rog.diurnal_cycle_row('LE_f'),
     rog.diurnal_cycle_row('H_f'),
-    "## 30-минутные потоки и суточные средние",
+    "## 30-minute fluxes and daily averages",
     rog.flux_compare_row('NEE_*'),
     rog.flux_compare_row('LE_f'),
     rog.flux_compare_row('H_f')
@@ -1304,11 +1304,11 @@ roh.display_images_safe()
 tag_handler.display_tag_info(roh.extended_tags())
 
 # %% [markdown] id="HEead6faY22W"
-# # Выгрузка результатов
+# # Downloading results
 #
-# Результаты работы всех сегментов тетради можно скачать одним архивом по кнопке **Download outputs**.  
+# The results of all the segments of the notebook can be downloaded in one archive using the **Download outputs** button.  
 #
-# Если кнопка ниже не появилась, нужно запустить ячейку еще раз или скачать выходные файлы в разделе Файлы, директория output. В обобщающих файлах с индексами в названии _hourly (суточные ходы отфильтрованных, а также заполненных переменных), _daily (средние суточные значения), _monthly (средние месячные значения) и _yearly (значения за год, если данных меньше - за весь период обработки) индекс _sqc означает долю оставшихся после фильтраций значений (но без учета фильтра REddyProc на u*), а колонки с индексами _f означают итоговые заполненные данные после всех ячеек тетради.
+# If the button below does not appear, you need to run the cell again or download the output files in the Files section, output directory. In the summary files with indexes in the name _hourly (daily variations of filtered and filled variables), _daily (average daily values), _monthly (average monthly values) and _yearly (values for the year, if there is less data - for the entire processing period) the index _sqc means the percentage of values remaining after filtering (but without taking into account the REddyProc filter on u*), and the columns with indexes _f mean the final filled data after all the cells of the notebook.
 
 # %% id="E4rv4ucOX8Yz"
 FFConfig.save(config, gl.out_dir / f'config_{config.metadata.site_name}.yaml', add_comments=True)
