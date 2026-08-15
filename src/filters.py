@@ -232,21 +232,24 @@ def meteorological_night_filter(
         
         data[f"{col}_nightFilter"] = filter
     
+    min_nee = cfg_meteo['night_nee_min']
     if "nee" in data.columns:
-        data_night_index = data.query(f"swin_1_1_1<10&nee<{cfg_meteo['night_nee_min']}").index
+        data_night_index = data.query(f"swin_1_1_1<10&nee<{min_nee}").index
         data.loc[data_night_index, f"nee_nightFilter"] = 0
     
     if "co2_flux" in data.columns:
         data_night_index = data.query("swin_1_1_1<10&co2_flux<0").index
         data.loc[data_night_index, f"co2_flux_nightFilter"] = 0
     
-    data_night_index = data.query(
-        f"(h<{cfg_meteo['night_h_limits'][0]}|h>{cfg_meteo['night_h_limits'][1]})&swin_1_1_1<10"
+    min_h, max_h = cfg_meteo['night_h_limits']
+    data_night_index = data.query( 
+        f"(h<{min_h}|h>{max_h})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"h_nightFilter"] = 0
     
+    min_le, max_le = cfg_meteo['night_le_limits']
     data_night_index = data.query(
-        f"(h<{cfg_meteo['night_le_limits'][0]}|h>{cfg_meteo['night_le_limits'][1]})&swin_1_1_1<10"
+        f"(h<{min_le}|h>{max_le})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"le_nightFilter"] = 0
     
