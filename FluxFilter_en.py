@@ -487,9 +487,13 @@ filters_quantile.tgt_cols['ch4_flux'] = [0.01, 0.99]
 filters_quantile.tgt_cols['co2_strg'] = [0.01, 0.99]
 
 filters_quantile_iqr.enabled = False
-# filters_quantile_iqr.tgt_cols['co2_flux'] = 1.5
+filters_quantile_iqr.window_size_days = 7
+filters_quantile_iqr.tgt_cols['co2_flux'] = 1.5
+filters_quantile_iqr.tgt_cols['ch4_flux'] = 1.5
 
 if not config.from_file:
+    # indirect default validation on assigment is not triggered above due to nested dictionary, 
+    # and nested is used for one-line syntax; so config validation better be triggered manually:
     QuantileFilterConfig.model_validate(filters_quantile)
     QuantileIQRFilterConfig.model_validate(filters_quantile_iqr)
     config.filters.quantile = filters_quantile
@@ -794,7 +798,8 @@ print(plot_data.columns.to_list())
 # %% id="mAdYXJ4dSRbJ"
 
 # renames from IAS: 'x_peak': 'FETCH_MAX_1_1_1', 'x_70%': 'FETCH_70_1_1_1', 'x_90%': 'FETCH_90_1_1_1',
-config_footprint = ['h', 'le', 'sh_1_1_1', 'ch4_flux']
+# config_footprint = ['h', 'le', 'sh_1_1_1', 'ch4_flux']
+config_footprint = []
 
 if not config.from_file:
     config.filters.footprint = config_footprint

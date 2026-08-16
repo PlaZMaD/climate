@@ -17,6 +17,8 @@ from src.helpers.py_helpers import gen_enum_info
 # TODO 2 config file link in the introduction - how to deal with updates?
 # TODO 2 https://github.com/pydantic/pydantic/issues/7436 try to migrate to pydantic dataclasses?
 
+# reminder: put default values in the config_*_default_ru.yaml, not to the definitions here
+
 
 class InputFileConfig(FFBaseModel):
     """ generate new timestamps in case of errors """
@@ -78,7 +80,7 @@ class RepConfig(FFBaseModel):
 
 
 class QuantileFilterConfig(FFBaseModel):
-    enabled: bool = True
+    enabled: bool = None
     tgt_cols: dict[str, Annotated[list[float], Field(min_length=2, max_length=2)]] = {}
 
     @field_validator('tgt_cols', mode='before')
@@ -88,8 +90,8 @@ class QuantileFilterConfig(FFBaseModel):
     
 
 class QuantileIQRFilterConfig(FFBaseModel):
-    enabled: bool = True
-    window_size_days: int | None = 7
+    enabled: bool = None
+    window_size_days: int = None
     tgt_cols: dict[str, float] = {}
     
     @field_validator('tgt_cols', mode='before')

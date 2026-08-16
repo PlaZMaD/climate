@@ -76,7 +76,8 @@ def update_config_version(config: dict, tgt_ver) -> dict:
         
         config['filters']['quantile_iqr'] = {
             'enabled': False,
-            'tgt_cols': config['filters']['quantile']
+            'window_size_days': 7,
+            'tgt_cols': {'co2_flux': 1.5, 'nee': 1.5}
         }
         config['filters']['quantile'] = {
             'enabled': True,
