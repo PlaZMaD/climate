@@ -1,14 +1,21 @@
 # do not change
-version: '1.0.4'
+version: 'v1.0.8'
 # fast mode loading just a few months of data
 debug: false
+#
+# configuration of input files
 data_import:
-    # files to read data tables:
-    # 'auto' or ['BiometFy4.csv', ...] or {'eddy_pro tv_fy4 2023.csv': InputFileType.EDDYPRO_FO, ...}
+    # input files to read data tables: auto detect, or list of file names, or dict {fname: format}
+    # supported formats: 'EDDYPRO_FO', 'EDDYPRO_BIOMET', 'CSF', 'IAS'
+    # 'auto' or ['BiometFy4.csv', ...] or {'eddy_pro tv_fy4 2023.csv': 'EDDYPRO_FO', ...}
     input_files: 'auto'
-    # eddypro_fo, eddypro_biomet, ias, csf:
-    # repair_time: check the date-time column for gaps and monotony, and try regeneration on errors
+    # action if demo data is mixed with user files
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'  # 'STOP_RUN', 'AUTO_DELETE_DEMO'
+    #
+    # import options for eddypro_fo, eddypro_biomet, ias, csf:
+    # repair_time: check the date-time column for gaps and monotony, and try to re-generate on errors
     # missing_data_codes: will replace -9999 and/or other values to np.nan
+    #
     eddypro_fo:
         repair_time: true
         missing_data_codes: [-9999]
@@ -27,11 +34,19 @@ data_import:
         datetime_col: 'TIMESTAMP_1'
         # guesses for the datetime format (leave only one entry like ['%H:%M:%S'] to set manually)
         try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    eddypro_biomet_2:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     ias:
         repair_time: true
         missing_data_codes: [-9999]
         datetime_col: 'TIMESTAMP_START'
         try_datetime_formats: '%Y%m%d%H%M'
+        # disable extra IAS standard validation
         skip_validation: false
     csf:
         repair_time: true
@@ -40,49 +55,62 @@ data_import:
         datetime_col: 'TIMESTAMP'
         # guesses for the datetime format (leave only one entry like ['%H:%M:%S'] to set manually)
         try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
-        empty_co2_strg: true	
+        # workaround to gernerate extra empty co2_strg if missing
+        empty_co2_strg: true
     # one of supported import modes
-    import_mode: 'AUTO'  # 'AUTO', 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET'
+    import_mode: 'AUTO'  # 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET', 'AUTO'
     # column name for datetime with will be used after import
     time_col: 'datetime'
+#
+# output files configuration (в директории output)
 data_export:
     ias:
-        # version suffix used only in the ias output filename, 'auto' will try to detect suffix from ias input file name
+        # version suffix used only in the IAS output filename, 'auto' will try to detect suffix from ias input file name
         out_fname_ver_suffix: 'auto'
         # export IAS to multiple files
         split_intervals: 'YEAR'  # ALL, YEAR, MONTH
 metadata:
-    # station name, keep 'auto' to try to detect name from file name
+    # station name, keep 'auto' to try to detect name from preset file name patterns
     site_name: 'auto'
+# 
+# configuration of filters; to disable, #comment or enabled:False
 filters:
+    # filter next columns by footprint, for example,
+    # footprint: ['h', 'le', 'sh_1_1_1', 'ch4_flux']
+    footprint: []
     # applied to listed columns: by quality flag threshold
     qc: {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
+    #
     # data filtering based on meteo conditions
     meteo:
-        # applied to  ["co2_flux", 'nee'] 
+        # will remove CO2_FLUX if co2_signal_strength below the threshold
         CO2SS_min: 80.0
-        # applied to ["ch4_flux"] 
-        # CH4SS_min: None
-        # rain limit and flag are applied to ["co2_flux", 'h', 'le', 'nee', "ch4_flux"]
+        # will remove H, LE and CO2_FLUX, if P_rain_1_1_1 below the threshold
         p_rain_limit: 0.1
+        # will remove this amount of the following records for p_rain_limit filter
         rain_forward_flag: 2
-        # applied to ['nee']
+        # enable or disable multiple daytime (Swin > day_swin_limit) filters below and daytime co2_flux < 0
         use_day_filter: true
-        # applied to ["h", 'le', 'nee', 'co2_flux']
+        # enable or disable multiple nighttime (Swin < day_swin_limit) filters below
         use_night_filter: true
-        # applied to itself
+        # NEE daytime filter (remove strong daytime emissions)
         day_nee_max: 5
+        # NEE nighttime filter (remove string nighttime net uptake)
         night_nee_min: -5
+         # incoming shortwave radiation threshold to distinguish night vs day (may be adjusted for stations above the Arctic Circle)
         day_swin_limit: 10
+        # allowed H and LE nighttime ranges
         night_h_limits: [-50, 20]
         night_le_limits: [-50, 20]
-        # applied to ['nee', 'co2_flux']
-        winter_nee_limits: [0, 5]
-        # applied to ['ch4_flux']
+        # allowed range for 'nee', 'co2_flux' during winter time (winter range is specified in the section filters.winter_date_ranges)
+        winter_nee_limits: [-1, 5]
+        # allowed range of 'ch4_flux' during winter
         winter_ch4_flux_limits: [-1, 1]
+        # will remove ch4_flux if ch4_signal_strength below the threshold
         CH4SS_min: 20.0
-        # applied to ["co2_flux", 'le', 'nee']
-        # RH_max: 
+        # will remove 'co2_flux', 'le', 'nee' where RH_1_1_1 above this threshold
+        # RH_max: 20
+    #
     # filter by minimum and maximum acceptable values
     min_max:
         co2_flux: [-40, 40]
@@ -99,7 +127,8 @@ filters:
         rg_1_1_1: [0, 2400]
         ch4_flux: [-10, 10]
         nee: [-40, 40]
-    # filter meteo variables by quality flag
+    #
+    # filter meteo variables by deviation from the mean seasonal cycle
     window:
         co2_flux: {sigmas: 2, window: 10, min_periods: 4}
         ch4_flux: {sigmas: 2, window: 10, min_periods: 4}
@@ -112,12 +141,23 @@ filters:
         swin_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
         ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
         nee: {sigmas: 2, window: 10, min_periods: 4}
+    #
     # filter by quantiles
     quantile:
-        co2_flux: [0.01, 0.99]
-        ch4_flux: [0.01, 0.99]
-        co2_strg: [0.01, 0.99]
-        nee: [0.01, 0.99]
+        enabled: true
+        tgt_cols:
+            co2_flux: [0.01, 0.99]
+            ch4_flux: [0.01, 0.99]
+            co2_strg: [0.01, 0.99]
+            nee: [0.01, 0.99]
+    # filter by interquartile range in a sliding window
+    quantile_iqr:
+        enabled: false
+        # window size or None to IQR filter all range
+        window_size_days: 7
+        # which data to filter and IQR multiplier m: iqr = q75 - q25, filter range [q25 - m * iqr, q75 + m * iqr]
+        tgt_cols: {co2_flux: 1.5, ch4_flux: 1.5, nee: 1.5}
+    #
     # MAD & Hampel outliers filtering
     madhampel:
         co2_flux: {z: 5.5, hampel_window: 10}
@@ -131,30 +171,37 @@ filters:
         swin_1_1_1: {z: 8.0, hampel_window: 10}
         ppfd_1_1_1: {z: 8.0, hampel_window: 10}
         nee: {z: 5.5, hampel_window: 10}
+    #
     # winter period filtering
     winter_date_ranges:
-        - [01.01.2023 00:00, 26.03.2023 00:00]
-        - [13.11.2023 00:00, 31.12.2023 00:00]
+        - [01.01.2023 00:00, 26.03.2023 23:30]
+        - [13.11.2023 00:00, 31.12.2023 23:30]
     man_ranges: []
+#
+# common settings (only for advanced users)
 calc:
     # enables processing steps which requires meteo columns
     has_meteo: true
-    # Decide whether to sum co2_flux and co2_strg_filtered_filled for obtaining NEE
+    # enables nee calculations
     calc_nee: true
+    # decide whether to sum co2_flux and co2_strg_filtered_filled to obtain and work with NEE
     calc_with_strg: false
 reddyproc:
-    # Enabling detection of the conditions of weak turbulence
+    # enable detection of the conditions of weak turbulence
     is_to_apply_u_star_filtering: true
     # substitute a custom threshold value in cases where the threshold cannot be calculated
     ustar_threshold_fallback: 0.01
-    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ""
+    # generate theoretical Rg with respect to locaton (useful when data have no Rg)
+    ustar_rg_source: 'Rg'  # 'Rg_th_Py', 'Rg_th_REP', 'Rg', ''
+    # uncertainty estimation of the u threshold* (bootstrap)
     is_bootstrap_u_star: false
-    # Selection of the method of marking seasons
+    # switch between season marking methods
     u_star_seasoning: 'Continuous'  # WithinYear, Continuous, User
-    # Filling gaps in 30-minute fluxes
+    # filling gaps in 30-minute fluxes
     is_to_apply_partitioning: true
     # one or both methods of partitioning the CO2 flux into the gross primary production (GPP) and the ecosystem respiration (Reco)
     partitioning_methods: [Reichstein05, Lasslop10]  # Reichstein05, Lasslop10
+    # data station location info
     latitude: 56.5
     longitude: 32.6
     timezone: 3.0

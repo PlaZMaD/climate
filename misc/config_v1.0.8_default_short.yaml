@@ -2,7 +2,7 @@ version: 'v1.0.8'
 debug: false
 data_import:
     input_files: 'auto'
-    mixed_demo_policy: 'AUTO_DELETE_DEMO'
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'  # 'STOP_RUN', 'AUTO_DELETE_DEMO'
     eddypro_fo:
         repair_time: true
         missing_data_codes: [-9999]
@@ -96,9 +96,7 @@ filters:
     quantile_iqr:
         enabled: false
         window_size_days: 7
-        tgt_cols:
-            co2_flux: 1.5
-            nee: 1.5
+        tgt_cols: {co2_flux: 1.5, ch4_flux: 1.5, nee: 1.5}
     madhampel:
         co2_flux: {z: 5.5, hampel_window: 10}
         ch4_flux: {z: 5.5, hampel_window: 10}
@@ -122,7 +120,7 @@ calc:
 reddyproc:
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01
-    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ''
+    ustar_rg_source: 'Rg'  # 'Rg_th_Py', 'Rg_th_REP', 'Rg', ''
     is_bootstrap_u_star: false
     u_star_seasoning: 'Continuous'  # WithinYear, Continuous, User
     is_to_apply_partitioning: true

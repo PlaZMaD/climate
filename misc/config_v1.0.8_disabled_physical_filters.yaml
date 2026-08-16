@@ -1,5 +1,5 @@
 # технические настройки (только для опытных пользователей)
-version: 'v1.0.5'
+version: 'v1.0.8'
 # отладочный режим (загружается только несколько месяцев данных)
 debug: false
 #
@@ -10,7 +10,7 @@ data_import:
     # 'auto' или ['BiometFy4.csv', ...] или {'eddy_pro tv_fy4 2023.csv': 'EDDYPRO_FO', ...}
     input_files: 'auto'
     # действие в случае, если демо данные смешаны с пользовательскими
-    mixed_demo_policy: 'AUTO_DELETE_DEMO'
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'  # 'STOP_RUN', 'AUTO_DELETE_DEMO'
     #
     # опции импорта для eddypro_fo, eddypro_biomet, ias, csf:
     # repair_time: проверка пропусков и монотонности в колонках даты-времени, попытка исправления при ошибках
@@ -34,6 +34,13 @@ data_import:
         datetime_col: 'TIMESTAMP_1'
         # предполагаемые составные форматы даты и времени
         try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    eddypro_biomet_2:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     ias:
         repair_time: true
         missing_data_codes: [-9999]
@@ -49,7 +56,7 @@ data_import:
         # генерация пустой колонки co2_strg, в случае ее отсутствия в CSF
         empty_co2_strg: true
     # автоматический или фиксированный режим импорта
-    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    import_mode: 'AUTO'  # 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET', 'AUTO'
     # имя столбца даты-времени, используемое после импорта
     time_col: 'datetime'
 #
@@ -59,7 +66,7 @@ data_export:
         # версия в названиях выходных ИАС, 'auto' для попытки его чтения из имени входного файла ИАС
         out_fname_ver_suffix: 'auto'
         # экспорт ИАС в единый файл, либо по файлу на каждый год, либо по файлу на каждый месяц
-        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
+        split_intervals: 'YEAR'  # 'ALL', 'YEAR', 'MONTH'
 metadata:
     # название станции, которое используется в названиях выходных файлов
     # при 'auto' поддерживается определение из названий входных файлов (к примеру, шаблон для ИАС 'sitename_YYYY_vNN.ext')
@@ -67,6 +74,9 @@ metadata:
 # 
 # в секции filters для отключения фильтров их можно #закомментировать
 filters:
+    # фильтр по футпринту, к примеру,
+    # footprint: ['h', 'le', 'sh_1_1_1', 'ch4_flux']
+    footprint: []
     # фильтр по порогу флага качества {фильтруемый столбец: макс. значение флага, ...}
     qc: # {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
     #
@@ -133,10 +143,19 @@ filters:
     #
     # фильтрация по квантилям
     quantile:
-        co2_flux: [0.01, 0.99]
-        ch4_flux: [0.01, 0.99]
-        co2_strg: [0.01, 0.99]
-        nee: [0.01, 0.99]
+        enabled: true
+        tgt_cols:
+            co2_flux: [0.01, 0.99]
+            ch4_flux: [0.01, 0.99]
+            co2_strg: [0.01, 0.99]
+            nee: [0.01, 0.99]
+    # фильтрация по межквартильному размаху в скользящем окне
+    quantile_iqr:
+        enabled: false
+        # размер окна в днях или None для фильтра по всему диапазону
+        window_size_days: 7
+        # какие данные фильтровать и множитель размаха m: iqr = q75 - q25, фильтрация вне [q25 - m * iqr, q75 + m * iqr]
+        tgt_cols: {co2_flux: 1.5, ch4_flux: 1.5, nee: 1.5}
     #
     # фильтрация выбросов MAD и Hampel
     madhampel:
@@ -154,8 +173,8 @@ filters:
     #
     # фильтрация зимних периодов
     winter_date_ranges:
-        # - [01.01.2023 00:00, 26.03.2023 00:00]
-        # - [13.11.2023 00:00, 31.12.2023 00:00]
+        # - [01.01.2023 00:00, 26.03.2023 23:30]
+        # - [13.11.2023 00:00, 31.12.2023 23:30]
     man_ranges: []
 #
 # общие настройки обработки (только для опытных пользователей)
@@ -171,7 +190,7 @@ reddyproc:
     # значение пользовательского порога в случаях, если порог не может быть рассчитан
     ustar_threshold_fallback: 0.01
     # опция позволяет использовать теоретическое значение Rg (полезна в случаях, когда данные не содержат Rg)
-    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ''
+    ustar_rg_source: 'Rg'  # 'Rg_th_Py', 'Rg_th_REP', 'Rg', ''
     # итеративная оценка точности вычисленного порога u* (bootstrap)
     is_bootstrap_u_star: false
     # выбор метода разметки сезонов, для каждого из которых отдельно определяется уровень насыщения

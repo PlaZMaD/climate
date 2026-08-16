@@ -10,7 +10,7 @@ data_import:
     # 'auto' или ['BiometFy4.csv', ...] или {'eddy_pro tv_fy4 2023.csv': 'EDDYPRO_FO', ...}
     input_files: 'auto'
     # действие в случае, если демо данные смешаны с пользовательскими
-    mixed_demo_policy: 'AUTO_DELETE_DEMO'
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'  # 'STOP_RUN', 'AUTO_DELETE_DEMO'
     #
     # опции импорта для eddypro_fo, eddypro_biomet, ias, csf:
     # repair_time: проверка пропусков и монотонности в колонках даты-времени, попытка исправления при ошибках
@@ -88,20 +88,20 @@ filters:
         p_rain_limit: 0.1
         # уберет значения на указанное число записей вперед от фильтра p_rain_limit
         rain_forward_flag: 2
-        # фильтр дневных (Swin > day_swin_limit) NEE больше выставленного порога (NEE > day_nee_max)
+        # включение или отключение дневных (Swin > day_swin_limit) фильтров ниже и дневного фильтрра co2_flux < 0
         use_day_filter: true
-        # фильтр ночных (Swin < day_swin_limit) NEE меньше выставленного порога (NEE < night_nee_min)
+        # включение или отключение ночных (Swin < day_swin_limit) фильтров ниже
         use_night_filter: true
         # порог для NEE в дневное время (исключение интенсивной эмиссии днем)
         day_nee_max: 5
         # порог для NEE в ночное время (исключение интенсивного нетто-поглощения ночью)
         night_nee_min: -5
-        # порог приходящей коротковолновой радиации, задающий дневные данные (может быть изменен для станций за полярным кругом)
+        # порог приходящей коротковолновой радиации для разделения дня и ночи (может быть изменен для станций за полярным кругом)
         day_swin_limit: 10
         # допустимые ночные диапазоны H и LE
         night_h_limits: [-50, 20]
         night_le_limits: [-50, 20]
-        # допустимый диапазон NEE в зимнее время (зимний период устанавливается отдельно в разделе "фильтрация зимних периодов, уточните даты!")
+        # допустимый диапазон NEE в зимнее время (зимний период устанавливается отдельно в filters.winter_date_ranges)
         winter_nee_limits: [-1, 5]
         # допустимый диапазон потока метана в зимнее время
         winter_ch4_flux_limits: [-1, 1]
@@ -155,10 +155,7 @@ filters:
         # размер окна в днях или None для фильтра по всему диапазону
         window_size_days: 7
         # какие данные фильтровать и множитель размаха m: iqr = q75 - q25, фильтрация вне [q25 - m * iqr, q75 + m * iqr]
-        tgt_cols:
-            co2_flux: 1.5
-            ch4_flux: 1.5
-            nee: 1.5
+        tgt_cols: {co2_flux: 1.5, ch4_flux: 1.5, nee: 1.5}
     #
     # фильтрация выбросов MAD и Hampel
     madhampel:
@@ -184,8 +181,9 @@ filters:
 calc:
     # включает шаги обработки, требующие метеопеременные
     has_meteo: true
+    # включает расчет nee
     calc_nee: true
-    # нужно ли суммировать co2_flux и co2_strg_filtered_filled для расчета NEE
+    # нужно ли суммировать co2_flux и co2_strg_filtered_filled для расчета и работы с NEE
     calc_with_strg: false
 reddyproc:
     # включает определение условий слабой турбулентности
