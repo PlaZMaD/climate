@@ -42,7 +42,7 @@
 # * Файл-пример full output можно скачать [здесь](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
 # * Файл-пример biomet можно скачать [здесь](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing)
 # * Файл-пример CSF можно скачать *[здесь]*
-# * Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default_ru.yaml) (открыть ссылку, нажать правой кнопкой - Сохранить как)
+# * Файл конфигурации можно скачать [здесь](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.8/misc/config_v1.0.8_default_ru.yaml) (открыть ссылку, нажать правой кнопкой - Сохранить как)
 # * В файле full output должны быть 3 строки заголовка и названия переменных должны быть записаны во 2-й строке
 # * В файле biomet должны быть 2 строки заголовка и названия переменных должны быть записаны в 1-й строке. По умолчанию без проблем читаются файлы, у которых дата и время записаны в колонке TIMESTAMP_1 в формате yyyy-mm-dd HHMM
 #

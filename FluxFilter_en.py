@@ -42,7 +42,7 @@
 # * Full Output file example can be downloaded [here](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
 # * Biomet example can be downloaded [here](https://drive.google.com/file/d/1FjiBcSspDBlYlcg9Vzy71Sm49gOFZGBF/view?usp=sharing)
 # * CSF can be downloaded *[here]*
-# * Configuration (En) [here](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.4/misc/config_v1.0.4_default.yaml) (open link, right click - Save As), or check the `misc` repository folder
+# * Configuration (En) [here](https://raw.githubusercontent.com/PlaZMaD/climate/refs/tags/v1.0.8/misc/config_v1.0.8_default.yaml) (open link, right click - Save As), or check the `misc` repository folder
 # * The full output file should contain 3 header rows with the variable names in the second row.
 # * The biomet file must have 2 header rows with the variable names in the 1st row. Default and supported approach is to place date and time in the TIMESTAMP_1 column in the yyyy-mm-dd HHMM format, but also other import modes are avaliable (check the import cell).
 #
