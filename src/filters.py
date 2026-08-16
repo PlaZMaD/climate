@@ -249,7 +249,7 @@ def meteorological_night_filter(
     
     min_le, max_le = cfg_meteo['night_le_limits']
     data_night_index = data.query(
-        f"(h<{min_le}|h>{max_le})&swin_1_1_1<10"
+        f"(le<{min_le}|le>{max_le})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"le_nightFilter"] = 0
     
@@ -427,7 +427,7 @@ def meteorological_rain_filter(
 
 
 def quantile_filter(data_in, filters_db_in, cfg_quantile: QuantileFilterConfig):
-    # TODO 2 why [0, 1] quantile produces 0 and 1 row? nan?
+    # [0, 1] quantile produces 0 and 1 row because it's cumulative, i.e. previous + quantile
     # #@unroll_filters_db
     
     if not cfg_quantile.enabled or len(cfg_quantile.tgt_cols) == 0:
@@ -465,7 +465,7 @@ def quantile_filter(data_in, filters_db_in, cfg_quantile: QuantileFilterConfig):
 
 
 def quantile_iqr_filter(df_in: pd.DataFrame, filters_db_in: dict, debug: bool, cfg_quantile: QuantileIQRFilterConfig):
-    # TODO 2 why [0, 1] quantile produces 0 and 1 row? nan? or just combined with previous values?
+    # [0, 1] quantile produces 0 and 1 row because it's cumulative, i.e. previous + quantile
     # #@unroll_filters_db
     
     if not cfg_quantile.enabled or len(cfg_quantile.tgt_cols) == 0:

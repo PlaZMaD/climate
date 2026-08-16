@@ -26,6 +26,8 @@ def get_column_filter(data, filters_db_in, column_name, auto_create=False) -> np
     if column_name not in filters_db_in.keys():
         filter_mask = np.array([1] * len(data.index))
     elif len(filters_db_in[column_name]) > 0:
+        # TODO 1 QE leads to, for example, le_nightFilter contain previous filters too, not only night le
+        # very misleading to debug or verify filter work, what's the benefit?
         filter_mask = colapse_filters(data, filters_db_in)[column_name]
     else:
         filter_mask = np.array([1] * len(data.index))
