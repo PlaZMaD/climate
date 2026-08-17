@@ -737,7 +737,7 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
 # %% id="2IQ7W6pslYF-"
 # Decide whether to sum co2_flux and co2_strg_filtered_filled to obtain NEE
 if not config.from_file:
-	# Keep False to work with co2_flux without co2_strg
+    # Keep False to work with co2_flux without co2_strg
     # Change to True to obtain NEE and use to it in the next cells
     config.calc.calc_with_strg = False
 ff_logger.info(f"config.calc.calc_with_strg is set to {config.calc.calc_with_strg}")

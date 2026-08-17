@@ -81,13 +81,17 @@ def import_data(config: FFConfig):
         df = import_csf_and_biomet(config.data_import)
     else:
         raise Exception(f"Please double check value of config['mode'], {config['mode']} is probably typo")
-
+    
     # print('Переменные после загрузки: \n', df.columns.to_list()) # duplicate
-
+    
+    # time_col duplicates df index, but probably there was a reason for this
+    # anyway this col must be withut missing entries here
+    # time gaps (or slides) in csf will cause missing entries here
     # TODO 1 this ckeck is supposed to never be used, move to subroutine
-    if df[config.data_import.time_col].isna().sum() > 0:
-        raise Exception("Cannot merge time columns during import. Check if years mismatch in different files")
-
+    missing_time_rows = df[config.data_import.time_col].isna().sum()
+    if missing_time_rows > 0:
+        raise Exception(f"Missing time in {missing_time_rows} rows during import. This is expected if years mismatch in different files or when some time entries are broken.")
+    
     # TODO 3 remove whole biomet_cols_index from the script E, OA: ok
     # TODO 1 test: if psn csf + biomet recognised correctly
     biomet_columns = [col for col in df.columns.str.lower() if col in BIOMET_USED_COLS_LOWER]
@@ -95,5 +99,5 @@ def import_data(config: FFConfig):
     
     paths = format_dict(config.data_import.input_files, separator=': ')
     ff_logger.info(f'Data imported from files: {paths}' '\n')
-       
+    
     return df, biomet_columns, has_meteo

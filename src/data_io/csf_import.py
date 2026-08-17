@@ -34,7 +34,7 @@ def check_csf_col_names(df: pd.DataFrame):
         # TODO 3 lang: localize properly, remove prints (ff_log.* goes to stdout too)
         # log - english only? OA: ok
         # TODO QOA 3 lang: print may be too only english for simplicity?
-        print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
+        print('Переменные, которые не используются в FluxFilter (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
         # ff_log.warning('Unused vars (only save-loaded): \n' + str(unused_cols.to_list()))
 

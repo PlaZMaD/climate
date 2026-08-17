@@ -66,8 +66,11 @@ def repair_check_todel(df: pd.DataFrame, time_col: str, time_freq: Timedelta, fi
     df_check = df_check.set_index(time_col, drop=False)
     tmp_index = df_check.index.copy()
     df_check = df_check[~df_check.index.duplicated(keep='first')]
-    
+      
     # TODO 1 this was triggered on NaN and missing lines, test that no info is lost in new 1.0.5
+    # is it  currently only place which detects wrong timestamps (00:00:05)?
+    # or duplicate ts's?; make sure this check exists somewhere else
+    
     # TODO 1 make sure proper message is logged when biomet / other file? starts not from :30
     if not tmp_index.equals(df_check.index):
         ff_logger.warning(f'Duplicated time indexes! check lines: {tmp_index[tmp_index.duplicated()]}')
@@ -124,6 +127,9 @@ def resample_time_series_df(df: pd.DataFrame, time_col: str, tgt_freq: pd.Timede
     # TODO 2 test/fix: irregular frequency timestamps (05:00 05:07, 05:30, 05:37, 06:00, ...)
     # TODO 2 test/fix: resample 1m -> 30m, 2h -> 30m ? 
     # TODO 1 currently 1m -> 30m is done by deleting 29 vals, but should be done by mean 0m..30m -> 30m or? 0m, 30m..59m -> 30m or? 0m
+    
+    # time index can have missing rows, wrong order, not half-hour values; 
+    # but duplicates and type check is supposed to be already correct    
     
     df = df.set_index(time_col, drop=False)
     assert not df.index.duplicated(keep='first').any()
