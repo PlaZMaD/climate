@@ -97,7 +97,7 @@ def import_ias_process_cols(df: pd.DataFrame, time_col):
     if len(unused_cols) > 0:
         # TODO 3 lang localize properly, check prints (ff_log.* goes to stdout too, but must be ru / en)
         # ff_log.warning('Unused vars (only save loaded): \n' + str(unused_cols.to_list()))
-        print('Переменные, которые не используются в скрипте (присутствуют только в загрузке - сохранении): \n',
+        print('Переменные, которые не используются в FluxFilter (присутствуют только в загрузке - сохранении): \n',
               unused_cols.to_list())
     
     df = import_ias_cols_conversions(df)    

@@ -653,7 +653,7 @@ if not (have_vpd_flag or have_rh_flag):
     print("NO RH AND VPD")
 else:
     if 'ta_1_1_1' in data.columns:
-        temp_k = (data['ta_1_1_1'] + 273.15)
+        temp_k = data['ta_1_1_1'] + 273.15
     else:
         temp_k = data['air_temperature']
     logE = 23.5518 - (2937.4 / temp_k) - 4.9283 * np.log10(temp_k)
@@ -737,8 +737,8 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
 # %% id="2IQ7W6pslYF-"
 # Решаем, суммировать ли исходный co2_flux и co2_strg_filtered_filled для получения NEE
 if not config.from_file:
-	# Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, отсавить False
-	# Если дальше работаем с NEE, поставить True
+    # Для того, чтобы работать дальше с co2_flux, игнорируя co2_strg, отсавить False
+    # Если дальше работаем с NEE, поставить True
     config.calc.calc_with_strg = False
 ff_logger.info(f"config.calc.calc_with_strg is set to {config.calc.calc_with_strg}")
 
