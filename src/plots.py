@@ -122,8 +122,10 @@ def basic_plot(data,
     fig_name = f"_{int(np.median(pl_data.index.year))}"
     if "ias_output_prefix " in locals() or "ias_output_prefix" in globals():
         fig_name = fig_name + "_" + ias_output_prefix
-        
-    fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
+
+    fig.update_layout(dragmode='pan')
+    fig_config = {'scrollZoom': True, 'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
+    
     fig.show(config=fig_config)
 
 
@@ -137,13 +139,15 @@ def plot_nice_year_hist_plotly(df, to_plot, time_col, filters_db):
         pl_data.loc[~filters.astype(bool), to_plot] = np.nan
     # print(pl_data.loc[pd.to_datetime('26 June 2016 1:30'), ['nee', 'nee_nightFilter', 'swin_1_1_1', 'filter']].to_string())
     fig = go.Figure()
-    fig.update_layout(title=f'{to_plot}')
     fig.add_trace(go.Heatmap(
         x=pl_data[time_col].dt.date,
         y=pl_data[time_col].dt.hour + 0.5 * (pl_data[time_col].dt.minute // 30),
         z=pl_data[to_plot]
     ))
-    fig_config = {'toImageButtonOptions': {'filename': f'{to_plot}_{int(np.median(pl_data.index.year))}', }}
+
+    fig.update_layout(dragmode='pan', title=f'{to_plot}')
+    fig_config = {'scrollZoom': True,
+                  'toImageButtonOptions': {'filename': f'{to_plot}_{int(np.median(pl_data.index.year))}', }}
     
     fig.show(config=fig_config)
 
@@ -187,7 +191,11 @@ def make_filtered_plot(data_pl, col, col2plot, ias_output_prefix, filters_db):
     if "ias_output_prefix " in locals() or "ias_output_prefix" in globals():
         fileName = ias_output_prefix
     fileName += f'_{int(np.median(data.index.year))}_{col}'
-    fig_config = {'toImageButtonOptions': {'filename': fileName, }}
+    
+    fig.update_layout(dragmode='pan')
+    fig_config = {'scrollZoom': True,
+                  'toImageButtonOptions': {'filename': fileName, }}
+    
     fig.show(config=fig_config)
 
 
@@ -230,8 +238,10 @@ def plot_albedo(plot_data, filters_db):
     pl_ind = pl_data[pl_data['albedo'] < pl_data['albedo'].quantile(0.95)].index
     fig = go.Figure(layout=layout)
     fig.add_trace(go.Scattergl(x=pl_data.loc[pl_ind].index, y=pl_data.loc[pl_ind, 'albedo'], name="Albedo"))
-    fig.update_layout(title='Albedo')
-    fig_config = {'toImageButtonOptions': {'filename': 'albedo', }}
+    
+    fig.update_layout(title='Albedo', dragmode='pan')
+    fig_config = {'scrollZoom': True, 'toImageButtonOptions': {'filename': 'albedo', }}
+    
     fig.show(config=fig_config)
     
 
@@ -263,12 +273,13 @@ def plot_cols(df: pd.DataFrame, cols: list[str], title=None):
         ))
 
     fig.update_layout(
+        dragmode='pan',
         title=title if title else ', '.join(cols),
         xaxis_tickformat='%H:%M %d %B <br>%Y'
     )
-
     fig_name = f"{title}_{int(np.median(df.index.year))}"
     fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
+    
     fig.show(config=fig_config)
 
 
