@@ -10,6 +10,7 @@ if ENV.IPYNB:
 from inspect import getsource
 from pathlib import Path
 from warnings import warn
+import re
 
 from IPython import get_ipython
 from IPython.core.magic import register_cell_magic
@@ -139,6 +140,7 @@ def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
         local_out_dir.mkdir(parents=True, exist_ok=True)
         
         fname = args['config']['toImageButtonOptions']['filename']
+        fname = re.sub(r'[<>:"/\\|?*]', '_', fname)
         
         # seems does not support vector
         # print('Reminder: local screen resolution for plotly render can be adjusted.')
@@ -146,7 +148,7 @@ def _plotly_show_override(self: go.Figure, local_out_dir: Path, **args):
         # self.write_image(file=fpath)
         
         fpath = dpath / (fname + '.html')
-        self.write_html(fpath, auto_open=False)        
+        self.write_html(fpath, auto_open=False)
 
 
 def setup_plotly(out_dir):
