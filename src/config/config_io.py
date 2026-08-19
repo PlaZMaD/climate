@@ -6,6 +6,7 @@ from ruamel.yaml import CommentedSeq, CommentedMap, YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 from src.config.config_versions import update_config_version
+from src.ff_logger import ff_logger
 from src.helpers.env_helpers import ENV
 from src.helpers.io_helpers import find_unique_file
 
@@ -187,6 +188,7 @@ class BaseConfig(FFBaseModel):
             cfg_model = cls.model_validate(cfg_dict)            
             
             cfg_model.from_file = True
+            ff_logger.info(f'Using configuration file {load_path}. Options in the ipynb cells will be overridden.')
         else:
             '''
             if ENV.LOCAL:
@@ -196,6 +198,7 @@ class BaseConfig(FFBaseModel):
             
             cfg_model = cls.model_construct(debug=init_debug, version=init_version)
             cfg_model.from_file = False
+            ff_logger.info(f'Configuration file not in the input folder. Options in the ipynb cells are active.')
         
         assert default_fpath.exists()
         cfg_model.default_fpath = default_fpath
