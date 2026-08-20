@@ -12,6 +12,9 @@ from src.helpers.py_collections import ensure_list, format_dict
 # DONE checks now work in all files, for example, dupe timestamps in biomet are logged
 
 DETECT_DATETIME_CHUNKS = 12
+# if time series start with 1min from 00:01, first 29 entries wil lbe skipped
+MAX_RESAMPLE_LOST_IF_DIFFERENT_FREQS = 60
+MAX_RESAMPLE_LOST_IF_SAME_FREQS = 1
 
 
 # TODO 2 ensure this check does not find errors in all examples and cleanup
@@ -172,28 +175,44 @@ def resample_time_series_df(df: pd.DataFrame, time_col: str, tgt_freq: pd.Timede
     half_hour_index_start = idx_fix.min()
     half_hour_index_end = idx_fix.max()
     idx_rebuild = pd.date_range(start=half_hour_index_start, end=half_hour_index_end, freq=tgt_freq)
-    if not fill_gaps:
-        idx_rebuild = idx_rebuild.intersection(idx_fix)        
     
-    # just an additional check of timestamp integrity before resampling    
-    idx_check = pd.date_range(start=half_hour_index_start, end=half_hour_index_end, freq=src_data_freq)
-    abnormal_values = idx_fix.index.difference(idx_src)
-    abnormal_count = len(abnormal_values)
-    if abnormal_count > 1:
-        raise Exception(f'Time index contains irregular values not fitting to frequency: {abnormal_values}.')
-    elif abnormal_count == 1:
-        ff_logger.warning(
-            f'Time index contains irregular value not matching to the original frequency: {abnormal_values}. Value excluded.')
+    # just an additional check of timestamp integrity before resampling
+    if src_data_freq == tgt_freq:
+        idx_check = idx_rebuild
+    else:
+        idx_check = pd.date_range(start=half_hour_index_start, end=half_hour_index_end, freq=src_data_freq)
+    removed_values = idx_src[~idx_src.isin(idx_check)]
+    removed_count = len(removed_values)
+    msg = (f'Will omit {removed_count} time entries not fitting to 30 min or not matching to the original frequency: \n'
+           f'{removed_values}')
+    max_allowed = MAX_RESAMPLE_LOST_IF_SAME_FREQS if src_data_freq == tgt_freq else MAX_RESAMPLE_LOST_IF_DIFFERENT_FREQS
+    if max_allowed >= removed_count > 0:
+        ff_logger.warning(msg)
+    elif removed_count > max_allowed:
+        raise Exception(msg)
+
+    added_values = idx_check.difference(idx_src)
+    added_count = len(added_values)
+    if not fill_gaps and added_count > 1:
+        ff_logger.info(f'Time index before resampling to {tgt_freq} contains {added_count} gaps: \n'
+                       f'{added_values.values}')
+
+    # if idx_src had gaps, remove them from new index
+    # just sorting without rebuild may be an option to skip all this, but it's not as well tested as rebuild + clean  
+    if not fill_gaps:
+        idx_rebuild = idx_rebuild.intersection(idx_fix)
     
     df_fixed = pd.DataFrame(index=idx_rebuild).join(df, how='left')
     assert isinstance(df_fixed.index, pd.DatetimeIndex)
-    # na in time_col is valid only in case of expanded series, i.e. if original file had deleted time points
+    # na in time_col is valid only in case of expanded series, i.e. if original file had missing time points
     idx_fix = (df_fixed.index == df_fixed[time_col]) | df_fixed[time_col].isna()
     assert idx_fix.all()
-
-    # TODO 1 is this required?
-    # can be useful not to fill to indicate where data was missing in the source files
-    # df_fixed[time_col] = df_fixed.index    
+    
+    # TODO 2 currently FluxFilter uses time_col in many algs as legacy, so it must be always correct (and dupe of index)
+    # can be useful to switch all algs from time_col to index and 
+    # not to fill time_col to indicate where data was missing in the source files
+    mask = df_fixed[time_col].isna() 
+    df_fixed.loc[mask, time_col] = df_fixed.index[mask]
     return df_fixed
 
 
