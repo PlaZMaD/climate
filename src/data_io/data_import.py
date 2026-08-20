@@ -61,18 +61,37 @@ def import_data(config: FFConfig):
         config.data_import.debug_nrows = DEBUG_NROWS
     else:
         config.data_import.debug_nrows = None
-            
+    
     config.data_import.time_freq = pd.Timedelta(minutes=30)
     
-    if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:        
-        df = import_eddypro_and_biomet(config.data_import) 
-         
-         # TODO 1 test: fix EDDYPRO_BIOMET_2 and still test
+    if config.data_import.import_mode in [ImportMode.EDDYPRO_FO, ImportMode.EDDYPRO_FO_AND_BIOMET]:
+        df = import_eddypro_and_biomet(config.data_import)
+        
+        # TODO 1 test: fix EDDYPRO_BIOMET_2 and still test
+        # datetime_biomet is different from E because it's resampled after load
+        # previously 1) filter 30min 2) merge 3) rebuild 30 min
+        # now possibly worse than 1) filter 30min, rebuild 30 min 2) merge, rebuild
         if config.data_import.debug and InputFileType.EDDYPRO_BIOMET_2 not in config.data_import.input_files.values():
             ff_logger.disabled = True
+            print('\n\nDebug legacy check:')
+            
             df_check = load_eddypro_via_bgl_todel(config.data_import)[0]
-            # df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)            
+            # df_check.rename(columns={'date': 'date_STR', 'time': 'time_STR'}, inplace=True)
+            
+            # biomet resample on load before merges makes sense especially if biomet is 1 min step
+            tc = config.data_import.time_col
+            mask_time_fixed = df_check[tc].isna() & ~df[tc].isna()
+            df_check.loc[mask_time_fixed, tc] = df[tc]
+            
+            # TODO 1 why _meteo is different here?
+            tc = config.data_import.time_col + '_meteo'
+            if tc in df.columns: 
+                mask_time_fixed = df_check[tc].isna() & ~df[tc].isna()
+                df_check.loc[mask_time_fixed, tc] = df[tc]
+
             ensure_dfs_same(df, df_check)
+            
+            print('\n\n')
             ff_logger.disabled = False
     
     elif config.data_import.import_mode == ImportMode.IAS:
