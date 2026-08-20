@@ -55,6 +55,12 @@ def import_biomets(cfg_import: ImportConfig):
             df_check, _ = load_biomets_todel(bm_paths, cfg_import.time_col, cfg_import.time_freq, cfg_import.eddypro_biomet)
         
             df.rename(columns={'TIMESTAMP_1_STR': 'TIMESTAMP_1'}, inplace=True)
+            
+            # time_col can be repaired now before merge because only FO or only CSF import is supported 
+            tc = cfg_import.time_col
+            mask_time_fixed = df_check[tc].isna() & ~df[tc].isna()
+            df_check.loc[mask_time_fixed, tc] = df[tc]
+            
             ensure_dfs_same(df, df_check)
             ff_logger.disabled = False
 
