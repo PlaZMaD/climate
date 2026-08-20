@@ -130,6 +130,8 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
+# by default, Colab in 2026 ignores edits in scripts folder,
+# uncomment next lines to experiment with sources in the scripts folder
 # #!pip install ipython==8.1.0
 # #%load_ext autoreload
 # #%autoreload 2
@@ -150,7 +152,7 @@ from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manag
     colab_xor_demo_data
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals, QuantileIQRFilterConfig, QuantileFilterConfig
 from src.config.config_types import IasExportIntervals, InputFileType, ColabDemoMixPolicy  # noqa: F401
-from src.data_quality import try_compare_stats
+from src.data_quality import try_compare_stats, StatsMode
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.data_io.fat_export import export_fat
@@ -692,7 +694,6 @@ if not config.calc.has_meteo or 'ta_1_1_1' not in data.columns:
     ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
 df_ias_export = data.copy()
-try_compare_stats(data, repo_dir / 'misc/expected_stats.xlsx')
 
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Получение NEE из потока CO2 и накопления
@@ -763,6 +764,14 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
 
 # %% [markdown] id="mUgwuaFYribB"
 # # Обзор статистики по интересующим колонкам
+
+# %% [markdown] id="ipknrLaeaxCT"
+# Сравнение переменных с демо станцей, по умолчанию будут построены графики только для сильно различающихся переменных  
+# для полного набора графиков (использовать с осторожностью, может привести к закрытию браузера) `show_hists=StatsMode.ALL`    
+
+# %% id="soyyX-MCaиXt" 
+try_compare_stats(data, show_hists=StatsMode.OUTSIDE_2S, plot_size=(None, None), 
+                  demo_stats_file=repo_dir / 'misc/expected_stats.xlsx', demo_hists_file = repo_dir / 'misc/demo_hists.npz')
 
 # %% id="dhcplCMbXtkK"
 cols_to_investigate = [p for p in cols_to_investigate if p in data.columns]
