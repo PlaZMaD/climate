@@ -7,7 +7,10 @@ from plotly import graph_objects as go, express as px
 from plotly.subplots import make_subplots
 
 from bglabutils import basic as bg
+from contextlib import contextmanager
+
 from src.ff_logger import ff_logger
+from src.helpers.pd_helpers import eq_series
 
 
 def colapse_filters(data, filters_db_in):
@@ -23,6 +26,8 @@ def get_column_filter(data, filters_db_in, column_name, auto_create=False) -> np
     if column_name not in filters_db_in.keys():
         filter_mask = np.array([1] * len(data.index))
     elif len(filters_db_in[column_name]) > 0:
+        # TODO 1 QE leads to, for example, le_nightFilter contain previous filters too, not only night le
+        # very misleading to debug or verify filter work, what's the benefit?
         filter_mask = colapse_filters(data, filters_db_in)[column_name]
     else:
         filter_mask = np.array([1] * len(data.index))
@@ -44,7 +49,8 @@ def basic_plot(data,
                use_resample=False):
     multiplot = isinstance(col2plot, list)
     
-    window_days = window_days  # дней в окне
+    # days in a moving window
+    window_days = window_days
     min_days = window_days // 2 - 1
     pl_data = data.copy()
     
@@ -227,7 +233,7 @@ def plot_albedo(plot_data, filters_db):
     fig.update_layout(title='Albedo')
     fig_config = {'toImageButtonOptions': {'filename': 'albedo', }}
     fig.show(config=fig_config)
-
+    
 
 def plot_cols(df: pd.DataFrame, cols: list[str], title=None):
     # TODO 3 add full screen button
@@ -264,3 +270,29 @@ def plot_cols(df: pd.DataFrame, cols: list[str], title=None):
     fig_name = f"{title}_{int(np.median(df.index.year))}"
     fig_config = {'toImageButtonOptions': {'filename': '_'.join(cols) + fig_name, }}
     fig.show(config=fig_config)
+
+
+@contextmanager
+def debug_plot_changes(debug: bool, df: pd.DataFrame, cols, extra_cols: list[str], title: str):
+    if not debug:
+        yield
+        return 
+    
+    have_cols = df.columns.intersection(cols)
+    missing_cols = set(cols).difference(df.columns)
+    if len(missing_cols) > 0:
+        print('debug_plot_changes: missing cols: ', missing_cols)    
+    df_before = df[have_cols].copy()
+
+    yield
+
+    df_after = df[have_cols]
+    unaffected_cols = [cl for cl in have_cols if eq_series(df_before[cl], df_after[cl]).all()]
+    
+    affected_cols = have_cols.difference(unaffected_cols)
+    if len(unaffected_cols) > 0:
+        print(f'{title}: unaffected cols: ', unaffected_cols)
+    
+    df_changes = df_before[affected_cols].join(df_after[affected_cols], lsuffix='_before', rsuffix='_after')
+    plot_cols(df_changes, df_changes.columns, title=title)
+

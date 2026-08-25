@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 
 from bglabutils import basic as bg, filters as bf
-from src.config.ff_config import QuantileFilterConfig
+from src.config.ff_config import QuantileIQRFilterConfig, QuantileFilterConfig
 from src.ff_logger import ff_logger
-from src.plots import get_column_filter
+from src.plots import get_column_filter, plot_cols
 
 
 def min_max_filter(data_in, filters_db_in, config):
@@ -232,21 +232,24 @@ def meteorological_night_filter(
         
         data[f"{col}_nightFilter"] = filter
     
+    min_nee = cfg_meteo['night_nee_min']
     if "nee" in data.columns:
-        data_night_index = data.query(f"swin_1_1_1<10&nee<{cfg_meteo['night_nee_min']}").index
+        data_night_index = data.query(f"swin_1_1_1<10&nee<{min_nee}").index
         data.loc[data_night_index, f"nee_nightFilter"] = 0
     
     if "co2_flux" in data.columns:
         data_night_index = data.query("swin_1_1_1<10&co2_flux<0").index
         data.loc[data_night_index, f"co2_flux_nightFilter"] = 0
     
-    data_night_index = data.query(
-        f"(h<{cfg_meteo['night_h_limits'][0]}|h>{cfg_meteo['night_h_limits'][1]})&swin_1_1_1<10"
+    min_h, max_h = cfg_meteo['night_h_limits']
+    data_night_index = data.query( 
+        f"(h<{min_h}|h>{max_h})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"h_nightFilter"] = 0
     
+    min_le, max_le = cfg_meteo['night_le_limits']
     data_night_index = data.query(
-        f"(h<{cfg_meteo['night_le_limits'][0]}|h>{cfg_meteo['night_le_limits'][1]})&swin_1_1_1<10"
+        f"(le<{min_le}|le>{max_le})&swin_1_1_1<10"
     ).index
     data.loc[data_night_index, f"le_nightFilter"] = 0
     
@@ -424,7 +427,7 @@ def meteorological_rain_filter(
 
 
 def quantile_filter(data_in, filters_db_in, cfg_quantile: QuantileFilterConfig):
-    # TODO 2 why [0, 1] quantile produces 0 and 1 row? nan?
+    # [0, 1] quantile produces 0 and 1 row because it's cumulative, i.e. previous + quantile
     # #@unroll_filters_db
     
     if not cfg_quantile.enabled or len(cfg_quantile.tgt_cols) == 0:
@@ -459,6 +462,66 @@ def quantile_filter(data_in, filters_db_in, cfg_quantile: QuantileFilterConfig):
         # print(filter.sum(), data[f'{col}_quantilefilter'].sum(), filter.sum() - data[f'{col}_quantilefilter'].sum())
     ff_logger.info(f"quantile_filter applied with the next config: \n {cfg_quantile}  \n")
     return data, filters_db
+
+
+def quantile_iqr_filter(df_in: pd.DataFrame, filters_db_in: dict, debug: bool, cfg_quantile: QuantileIQRFilterConfig):
+    # [0, 1] quantile produces 0 and 1 row because it's cumulative, i.e. previous + quantile
+    # #@unroll_filters_db
+    
+    if not cfg_quantile.enabled or len(cfg_quantile.tgt_cols) == 0:
+        return df_in, filters_db_in
+    
+    df: pd.DataFrame = df_in.copy()
+    filters_db = filters_db_in.copy()
+    
+    for col, multiplier in cfg_quantile.tgt_cols.items():
+        quantile_down, quantile_up = 0.25, 0.75
+        if col not in df.columns:
+            print(f"No column with name {col}, skipping...")
+            continue
+        
+        prev_filter = get_column_filter(df, filters_db, col, auto_create=True)        
+        cn = f'{col}_quantile_iqr_filter'
+        
+        if cn not in filters_db[col]:
+            filters_db[col].append(cn)
+        else:
+            print('filter already exist but will be overwritten')
+        
+        df[cn] = prev_filter
+        
+        if cfg_quantile.window_size_days:
+            t_delta = pd.Timedelta(cfg_quantile.window_size_days, 'days')
+            up_limit = df[col].rolling(window=t_delta, center=True).quantile(quantile_up)
+            down_limit = df[col].rolling(window=t_delta, center=True).quantile(quantile_down)
+            iqr = up_limit - down_limit
+            up_limit += iqr * multiplier 
+            down_limit -= iqr * multiplier
+            
+            if debug:
+                cn_up = f'{col}_quantile_iqr_filter_up_limit'
+                cn_down = f'{col}_quantile_iqr_filter_down_limit'
+                df[cn_up] = up_limit
+                df[cn_down] = down_limit
+                plot_cols(df, [col, cn_up, cn_down])
+            
+        else:
+            up_limit = df.loc[df[cn] == 1, col].quantile(quantile_up)
+            down_limit = df.loc[df[cn] == 1, col].quantile(quantile_down)
+            iqr = up_limit - down_limit
+            up_limit += iqr * multiplier 
+            down_limit -= iqr * multiplier
+            print(f"Quantile IQR filter cut values: {down_limit:0.2f} {up_limit:0.2f}")
+        
+        # f_inds = df.query(f"{col}_quantilefilter==1").index
+        # df.loc[f_inds, cn] = ((df.loc[f_inds, col] <= up_limit) & (df.loc[f_inds, col] >= down_limit)).astype(int)
+        df.loc[df[col] > up_limit, cn] = 0
+        df.loc[df[col] < down_limit, cn] = 0
+        
+        # print(col, (df.loc[f_inds, col] < down_limit).sum(), (df.loc[f_inds, col] > up_limit).sum(), len(df.loc[f_inds, col].index), ((df.loc[f_inds, col] < up_limit) & (df.loc[f_inds, col] > down_limit)).astype(int).sum())
+        # print(prev_filter.sum(), df[cn].sum(), prev_filter.sum() - df[cn].sum())
+    ff_logger.info(f"quantile_iqr_filter applied with the next config: \n {cfg_quantile}  \n")
+    return df, filters_db
 
 
 def mad_hampel_filter(data_in, filters_db_in, config):
@@ -642,3 +705,15 @@ def winter_filter(data_in, filters_db_in, cfg_meteo, date_ranges):
     
     ff_logger.info(f"winter_filter applied with the next config: \n {cfg_meteo}  \n Date range: {date_ranges} \n")
     return data, filters_db
+
+
+def basic_filter(df: pd.DataFrame, src_col: str, src_bad_value, tgt_cols: list):
+    if src_col not in df.columns:
+        ff_logger.info(f'Fetch filter not applied, column {src_col} missing')
+        return df
+
+    tgt_cols_valid = df.columns.intersection(tgt_cols)
+    tgt_cols_missing = df.columns.difference(tgt_cols)
+    df.loc[df[src_col] == src_bad_value, tgt_cols_valid] = np.nan    
+    ff_logger.info(f'Fetch filter applied to the next columns: {tgt_cols_valid}, columns not in the data: {tgt_cols_missing}')
+    return df

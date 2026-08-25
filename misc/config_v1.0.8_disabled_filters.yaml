@@ -1,7 +1,8 @@
-version: '1.0.4'
+version: 'v1.0.8'
 debug: false
 data_import:
     input_files: 'auto'
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'  # 'STOP_RUN', 'AUTO_DELETE_DEMO'
     eddypro_fo:
         repair_time: true
         missing_data_codes: [-9999]
@@ -14,6 +15,13 @@ data_import:
         missing_data_codes: [-9999]
         datetime_col: 'TIMESTAMP_1'
         try_datetime_formats: ['%Y-%m-%d %H%M', '%d.%m.%Y %H:%M']
+    eddypro_biomet_2:
+        repair_time: true
+        missing_data_codes: [-9999]
+        time_col: 'time'
+        try_time_formats: ['%H:%M', '%H:%M:%S']
+        date_col: 'date'
+        try_date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     ias:
         repair_time: true
         missing_data_codes: [-9999]
@@ -26,15 +34,16 @@ data_import:
         datetime_col: 'TIMESTAMP'
         try_datetime_formats: ['%Y-%m-%d %H:%M:%S', '%d.%m.%Y %H:%M']
         empty_co2_strg: true
-    import_mode: 'AUTO'  # EDDYPRO_FO, EDDYPRO_FO_AND_BIOMET, IAS, CSF, CSF_AND_BIOMET, AUTO
+    import_mode: 'AUTO'  # 'EDDYPRO_FO', 'EDDYPRO_FO_AND_BIOMET', 'IAS', 'CSF', 'CSF_AND_BIOMET', 'AUTO'
     time_col: 'datetime'
 data_export:
     ias:
         out_fname_ver_suffix: 'auto'
-        split_intervals: 'YEAR'  # ALL, YEAR, MONTH
+        split_intervals: 'YEAR'  # 'ALL', 'YEAR', 'MONTH'
 metadata:
     site_name: 'auto'
 filters:
+    # footprint: []
     qc: #{h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
     meteo:
         # CO2SS_min: 80.0
@@ -78,10 +87,16 @@ filters:
         # ppfd_1_1_1: {sigmas: 8, window: 10, min_periods: 4}
         # nee: {sigmas: 2, window: 10, min_periods: 4}
     quantile:
-        # co2_flux: [0.01, 0.99]
-        # ch4_flux: [0.01, 0.99]
-        # co2_strg: [0.01, 0.99]
-        # nee: [0.01, 0.99]
+        enabled: false # one simple switch instead of #
+        tgt_cols:
+            co2_flux: [0.01, 0.99]
+            ch4_flux: [0.01, 0.99]
+            co2_strg: [0.01, 0.99]
+            nee: [0.01, 0.99]
+    quantile_iqr:
+        enabled: false # one simple switch instead of #
+        window_size_days: 7
+        tgt_cols: {co2_flux: 1.5, ch4_flux: 1.5, nee: 1.5}
     madhampel:
         # co2_flux: {z: 5.5, hampel_window: 10}
         # ch4_flux: {z: 5.5, hampel_window: 10}
@@ -95,8 +110,8 @@ filters:
         # ppfd_1_1_1: {z: 8.0, hampel_window: 10}
         # nee: {z: 5.5, hampel_window: 10}
     winter_date_ranges:
-        # - [01.01.2023 00:00, 26.03.2023 00:00]
-        # - [13.11.2023 00:00, 31.12.2023 00:00]
+        # - [01.01.2023 00:00, 26.03.2023 23:30]
+        # - [13.11.2023 00:00, 31.12.2023 23:30]
     man_ranges: # []
 calc:
     has_meteo: true
@@ -105,7 +120,7 @@ calc:
 reddyproc:
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01
-    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ""
+    ustar_rg_source: 'Rg'  # 'Rg_th_Py', 'Rg_th_REP', 'Rg', ''
     is_bootstrap_u_star: false
     u_star_seasoning: 'Continuous'  # WithinYear, Continuous, User
     is_to_apply_partitioning: true

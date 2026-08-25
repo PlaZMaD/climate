@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.config.config_types import ImportMode, InputFileType, ColabDemoMixPolicy
-from src.config.ff_config import FFConfig, QuantileFilterConfig
+from src.config.ff_config import FFConfig, QuantileIQRFilterConfig, QuantileFilterConfig
 from src.ff_logger import init_logging
 
 
@@ -21,7 +21,7 @@ def os_view_path(fpath):
 def test_config_io(tmp_path):
     init_logging(level=logging.INFO, fpath=tmp_path / 'log.log', to_stdout=True)
     
-    last_ver = 'v1.0.5'
+    last_ver = 'v1.0.8'
     default_fpath = Path(f'misc/config_{last_ver}_default_ru.yaml')
     disabled_physical_filters_path = Path(f'misc/config_{last_ver}_disabled_physical_filters.yaml')
     
@@ -35,7 +35,7 @@ def test_config_io(tmp_path):
         config.version = 9
     
     # if auto-creation of missing filters works
-    load_path = 'misc/config_v1.0.4_disabled_filters.yaml'
+    load_path = 'misc/config_v1.0.8_disabled_filters.yaml'
     yaml_dict = FFConfig.get_yaml_io().load(Path(load_path).read_text())
     assert yaml_dict['filters']['meteo'] is None
     config = FFConfig.load_or_init(load_path=load_path, default_fpath=default_fpath,
@@ -47,6 +47,7 @@ def test_config_io(tmp_path):
                                    init_debug=False, init_version=last_ver)
     config.data_import.eddypro_fo.try_date_formats = ['%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d']
     config.filters.quantile = QuantileFilterConfig(enabled=False, tgt_cols={'ok': [0.1, 0.9]})
+    config.filters.quantile_iqr = QuantileIQRFilterConfig(enabled=True, window_size_days=7, tgt_cols={'ok': 1.6})
     config.filters.man_ranges = [('test1', 'test2')]
     config.reddyproc.partitioning_methods = ['Lasslop10']
     config.data_import.input_files = ['ya_ckd_FO_2015_test.csv', 'ya_ckd_biomet_2015.csv']
@@ -75,7 +76,7 @@ def test_config_io(tmp_path):
 def test_config_backwards_compatibility(tmp_path):
     init_logging(level=logging.INFO, fpath=tmp_path / 'log.log', to_stdout=True)
     
-    last_ver = 'v1.0.5'
+    last_ver = 'v1.0.8'
     default_fpath = Path(f'misc/config_{last_ver}_default_ru.yaml')
     
     test_ver = 'v1.0.0'

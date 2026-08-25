@@ -2,7 +2,7 @@ version: 'v1.0.8'
 debug: false
 data_import:
     input_files: 'auto'
-    mixed_demo_policy: 'AUTO_DELETE_DEMO'
+    mixed_demo_policy: 'AUTO_DELETE_DEMO'  # 'STOP_RUN', 'AUTO_DELETE_DEMO'
     eddypro_fo:
         repair_time: true
         missing_data_codes: [-9999]
@@ -43,6 +43,7 @@ data_export:
 metadata:
     site_name: 'auto'
 filters:
+    footprint: []
     qc: {h: 1, le: 1, co2_flux: 1, ch4_flux: 1, nee: 1}
     meteo:
         CO2SS_min: 80.0
@@ -92,6 +93,10 @@ filters:
             ch4_flux: [0.01, 0.99]
             co2_strg: [0.01, 0.99]
             nee: [0.01, 0.99]
+    quantile_iqr:
+        enabled: false
+        window_size_days: 7
+        tgt_cols: {co2_flux: 1.5, ch4_flux: 1.5, nee: 1.5}
     madhampel:
         co2_flux: {z: 5.5, hampel_window: 10}
         ch4_flux: {z: 5.5, hampel_window: 10}
@@ -115,7 +120,7 @@ calc:
 reddyproc:
     is_to_apply_u_star_filtering: true
     ustar_threshold_fallback: 0.01
-    ustar_rg_source: 'Rg'  # Rg_th_Py, Rg_th_REP, Rg, ''
+    ustar_rg_source: 'Rg'  # 'Rg_th_Py', 'Rg_th_REP', 'Rg', ''
     is_bootstrap_u_star: false
     u_star_seasoning: 'Continuous'  # WithinYear, Continuous, User
     is_to_apply_partitioning: true

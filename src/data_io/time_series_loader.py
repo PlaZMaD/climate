@@ -166,7 +166,7 @@ def ff_load_time_series(fpath, ftype, cfg_import, file_checker, col_converter):
     }
     ftype_name = ftype_name_cases[ftype]
     
-    # Диапазон времени и колонки до resample
+    # Print info before resample
     first_and_last = df[cfg_import.time_col].iloc[[0, -1]].dt.strftime('%Y-%m-%d %H:%M')
     ff_logger.info(f'Time range in {ftype_name}: ' + ' - '.join(first_and_last))
     ff_logger.info(f'Колонки в {ftype_name}: \n'
