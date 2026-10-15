@@ -22,7 +22,7 @@
 # * Level 3 refers to level 2 data, also unfilled, but carefully filtered based on physical and statistical criteria.
 # * Level 4 refers to the gapfilled data.
 #
-# *To run the demo-version of the script, just click in the Google Colab "Runtime - Run All"*  
+# *To do a demo run of the script (using the embedded example file from the Fyodorovskoe bog site for 2023), just click in the Google Colab "Runtime - Run All"*  
 # *The newest version of the script is in the repository https://github.com/PlaZMaD/climate/releases*  
 #
 # ## **Input files**
@@ -30,13 +30,13 @@
 # This script supports the following input file formats:
 # 1) EddyPro **full output** file (see [EddyPro manual](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) - for fluxes.
 # 2) **CSF** output file from EasyFlux DL, Campbell Scientific Ink. software - for fluxes. EddyPro full output and CSF are mutually interchangeable.
-# 3) EddyPro **biomet** file ([again](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) - for meteorology. When using full output or CSF for fluxes, biomet is also recommended for reliable flux filtering and gap-filling. However, if meteorological variables are unavailable, the script still will try to run using only Full Output or CSF files.
+# 3) EddyPro **biomet** file ([EddyPro manual](https://licor.app.boxenterprise.net/s/1ium2zmwm6hl36yz9bu4)) - for meteorology. When using full output or CSF for fluxes, biomet is also recommended for reliable flux filtering and gap-filling. However, if meteorological variables are unavailable, the script still will try to run using only Full Output or CSF files.
 # 4) Or only file for Information and Analytical System used in the RuFlux network (**IAS**) - contains both fluxes and meteorology.
 # 5) Optionally, a **configuration** file which allows to reapply this script parameters from the previous runs without editing cells.  
 # 
 # When using full output+biomet or CSF+biomet input modes, full output/CSF is the source of turbulent fluxes and u*, while all meteorological variables (air temperature and relative humidity, etc.) are sourced from the Biomet file. The main requirements for the input files are:
 # * Files must be in .csv (comma separated value) format.
-# * Column headers in full output and biomet must strictly follow the EddyPro manual and this script identifies variables by their column names (co2_flux for CO2 flux in Full Output, Ta_1_1_1 for air temperature in Biomet, etc.).
+# * Column headers in full output and biomet must strictly follow the EddyPro manual. This script identifies variables by their column names (co2_flux for CO2 flux in Full Output, Ta_1_1_1 for air temperature in Biomet, etc.).
 # * The missing value indicator in the input files must be -9999
 # * Units for biomet file variables should be the same as the base units for biomet file as per EddyPro manual. Exception: Air/Soil Temperature should be in degrees Celsius.
 # * Full Output file example can be downloaded [here](https://drive.google.com/file/d/1TyuHYZ0uh5teRiRFAga0XIqfU4vYW4-N/view?usp=sharing)
@@ -49,28 +49,28 @@
 # ## **Output files**
 # Output file formats (packed to the FluxFilter_output.zip archive and avaliable in the output directory in the Files section):
 # 1. One or multiple files formatted for European fluxes database cluster, level 2 (ias-file);
-# 2. Input file for the u* filtering, gap filling and partitioning tool REddyProcWeb (Max Planck Institute, Germany). This file is used as input for the "Processing with the REddyProc tool" section of this script. These are the data of level 3.
+# 2. Input file for the u*-filtering, gap filling and partitioning tool REddyProcWeb (Max Planck Institute, Germany). This file is used as input for the "Processing with the REddyProc tool" section of this script. These are the data of level 3.
 # 3. Input file for the Flux Analysis Tool (M. Ueyama, Japan) for the gap filling, level 3.
 # 4. The output_all file contains all the raw variables (level 1) and all flags implemented for the data.
 # 5. The output_summary file contains the time series for the main variables of the raw data, filtered data, the flag for each filter applyed, average diurnal courses in a 30- and 10-day window.
 # 6. config*.yaml file - options of the last script run, which can be re-applied on the next run as input file.
 # 7. The log file records during the script's run, includes parameters that were accepted for the filtering at this run.
-# 8. The reddyproc directory contains the results of gapfilling (level 4) in the same format as the original [REddyProcWeb tool](https://www.bgc-jena.mpg.de/5624929/Output-Format). Additionally, the output/reddyproc directory contains summary files (level 4) with the indexes _hourly (diurnal courses of the original and filled variables), _daily (daily averages), _monthly (monthly averages), and _yearly (yearly values, or for the entire processing period if there is less data).
+# 8. The reddyproc directory contains **the results of gapfilling (level 4)** in the same format as the original [REddyProcWeb tool](https://www.bgc-jena.mpg.de/5624929/Output-Format). Additionally, the output/reddyproc directory contains summary files (level 4) with the indexes _hourly (diurnal courses of the original and filled variables), _daily (daily averages), _monthly (monthly averages), and _yearly (yearly values, or for the entire processing period if there is less data).
 #
 # ## **Loading the input files**
 # Two main file upload options are avaliable:  
 #
 # Via web browser:  
-# *   click the directory button (button in bottom of the left panel, below the "key" button)
-# *   drag and drop one or more files (for example, from Windows Explorer) into the empty space under the `sample_data` directory
-# *   it is useful here to comment out (put a # at the start of the line) the two `!gdown` commands in the **Loading data** section  
+# *   click the Files ("folder") button (in the bottom of the left panel, below the "key" button)
+# *   drag and drop one or more files (from a folder on your computer) into the empty space under the `sample_data` directory
+# *   it is useful here to comment out the two `!gdown` commands in the **Loading data** section (put a # at the start of each line)   
 #
 # Via Google Drive:  
 # * upload full output, biomet, configuration and/or other files to the Google drive
 # * open access to them (sharing to everyone with the link)
 # * copy part of the public link into !gdown commands in the **Loading data** section
 #
-# The Google Drive option is better if the goal is to share script preset (configuration and linked input files) with other users (it is possible to restrict linked data access to specific Google accounts).  
+# The Google Drive option works better when you want to share a script preset - its configuration and linked input files - with other users. Access to the working version of the script - with site-specific parameters and its own set of input files - can be restricted to specific Google accounts.
 # Alternative sharing option is to send just input data and configuration files (for example, biomet_2025.csv + full_output_2025.xls + my_config.yaml).
 #
 # The script will try to detect and import input files automatically, but in case of errors or unexpected cell logs you can try to switch to manual Data loading config section:
@@ -78,21 +78,21 @@
 # * check the date and time format for each file type you upload (script recognises some common formats automatically)
 #
 # ## **Before the filtering**
-# * You can upload multiple full output and biomet files, they will be automatically arranged in ascending date-time order and merged into the one table
+# * You can upload multiple full output and biomet files, they will be automatically arranged in ascending date-time order and merged into a single table
 # * A biomet file with a time step less than 30 minutes is supported - for example, 1 or 5 minutes - but the file must start at a minute value of :00 or :30. The meteorological variables will be averaged to 30 minutes
 # * An error is displayed if there is text in the input files in rows below the header
 # * The timestamps of each input file are checked (regularization)
 # * VPD <-> RH, SWIN <-> RG <-> PAR are calculated in case of absence of any of them
-# * You can process CO2 flux or check the storage data, add it to the CO2 flux and work with NEE
+# * You can process simply CO2 flux or check the storage data, add it to the CO2 flux and work with NEE
 #
 # ## **How does the filtering happen**
-# The script allows you to identify and remove low-quality and outlier values using 1) physical, 2) statistical filtering, which occurs under your visual control - you can look at the graphs before and after filtering. Each filter can be switched off (just comment the corresponding line), the parameters should be adjusted to the data of a given site and eddy covariance system.
+# The script allows you to identify and remove low-quality and outlier values using 1) physical, 2) statistical filtering, which occurs under your visual control - you can look at the graphs before and after filtering. Each filter can be switched off (just comment out the corresponding line), the parameters should be adjusted to the data of a given site and eddy covariance system.
 # 1. Physical filtering includes removing of the following types of the suspicious values: based at the quality flag greater than the threshold, with the gas analyzer signal strength below the threshold, in case of rain events, at high humidity, by night and daytime plausible ranges, by the plausible range in winter.
-# 2. Statistical filtering includes the removal of outliers/spikes using filters for minimum and maximum plausible values, quantiles, deviations from the average diurnal course in a moving window, deviations from the average in a sliding window of several points MAD (Sachs, 2006) and HAMPEL (Pearson et al., 2016).
+# 2. Statistical filtering includes the removal of outliers/spikes using filters for minimum and maximum plausible values, quantiles, interquartile range, deviations from the average diurnal course in a moving window, deviations from the median values in a sliding window of several points MAD (Sachs, 2006) and HAMPEL (Pearson et al., 2016).
 # 3. It is possible to exclude data by a list of intervals (exclude from ... to ...), for example, calibrations according to the technical work log.
 #
 # ## **Downloading the output files**
-# All output files can be downloaded in the last section "Downloading results" by clicking the "Download outputs" button.
+# All output files can be downloaded in the last section "Downloading results" by clicking the "Download outputs" button. It appears when the script run is complete.
 #
 # (c)Evgeny Kurbatov, Vadim Mamkin, Olga Kuricheva
 # (c)REddyProc tool: Wutzler T, Lucas-Moffat A, Migliavacca M, Knauer J, Sickel K, Sigut, Menzer O & Reichstein M (2018) Basic and extensible post-processing of eddy covariance flux data with REddyProc. Biogeosciences, Copernicus, 15, doi: 10.5194/bg-15-5015-2018
@@ -100,7 +100,7 @@
 
 # %% [markdown] id="sj6Z0gnhVM-R"
 # # Technical block
-# Importing libraries, downlaoding cell scripts from the repository, defining functions
+# Importing libraries, downloading cell scripts from the repository, defining functions
 
 # %% id="lZliIHxRJiqk"
 # from google.colab import userdata
@@ -199,11 +199,11 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # %% [markdown] id="LV9FvvtnVqdN"
 # **It is necessary to change:**
 #
-# There are two main file upload options:  (check Introduction: Loading the input files):  
+# There are two main input file upload options  (check Introduction - Loading the input files):  
 # 1) drag and drop files into the web browser or use Upload menu (right-click under `sample_data`)  
-# 2) script will download them from Google Drive link if `!gdown ...` command is correctly edited in this cell  
+# 2) script will download them from Google Drive link if `!gdown ...` command is correctly edited in the cell below
 # 
-# For the option 1, it is convenient to diable demo data downloads: change  
+# For the option 1, it is safer to turn off example (demo) data downloads: change  
 # `!gdown ...` to `# !gdown ...`.  
 # 
 # For the option 2, if public file link to the Google Drive file is 
@@ -211,11 +211,9 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # then copy only the characters between `d/` and the next `/` and edit `!gdown` commands as  
 # `!gdown 1fGhmvra0evNzM0xkM2nu5T-N_rSPoXUB`
 #
-# `# Load into Colab Full Output, CSF, or IAS file` 
-# Here, demo FO file is loaded by default. Edit the symbols after gdown to match link to your file containing the flux data (full output, CSF, or IAS).
+# First `!gdown ...` command uploads Full Output, CSF, or IAS file. It must contain the data on turbulent fluxes. Edit the symbols after '!gdown ' to match link to file from your site. If you make no changes, the example (demo) FO file from the bog station in Tver' region for 2023 will be loaded by default.
 #
-# `# Load into Colab biomet file`
-# Here, demo Biomet files is loaded by default. Edit the symbols to match link to your biomet file (or any other file, or disable gdown command if unused)
+# Second `!gdown ...` command uploads Biomet file. Edit the symbols to match link to your biomet file (or any other file, or disable gdown command if unused). Default biomet file is also from the bog station in Tver' region for 2023.
 #
 # A configuration text file (in `.yaml` format) is packed into output files after the script finishes. It can also be uploaded to Google Drive and specified in the third `!gdown` command.
 
@@ -238,7 +236,7 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 # ## Data loading config
 # The parameters of the input files are specified here: names, date-time format, etc.  
 #
-# Next data import modes are supported which expect different types of uploaded files:  
+# The following data import modes are supported, which expect different types of uploaded files:  
 # - one or more EddyPro - full output files
 # - one or more EddyPro - full output files and one or more biomet files described in the EddyPro manual
 # - one or more IAS files
@@ -257,16 +255,16 @@ init_logging(level=logging.INFO, fpath=gl.out_dir / 'log.log', to_stdout=True)
 #
 # **It is necessary to check:**
 #
-# In the default automatic mode (`config.data_import.input_files = auto`), the log of the **Data import and validation** cell will contain diagnostic information about the validation and import mode (one of `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`). It is recommended to check the log to ensure that the date-time formats and other settings were detected correctly. If any settings are detected incorrectly, they can be specified manually:  
+# In the default automatic mode (`config.data_import.input_files = auto`), the log of the **Data import and validation** cell will contain diagnostic information about the validation and import mode (one of `EDDYPRO_FO`, `EDDYPRO_FO_AND_BIOMET`, `IAS`, `CSF`, `CSF_AND_BIOMET`). It is recommended to check the log to ensure that the date-time formats and other settings were detected correctly. If any settings are detected incorrectly, they can be specified manually.  
 #
 # In the manual mode `config.data_import.input_files` should be a dictionary mapping file paths to file types: `= {'1.csv': InputFileType.EDDYPRO_FO}`. Do not forget the single quotes and the `.csv` extension!  
 # The way files were uploaded (`!gdown` Google Drive link or manual) is alrady irrelevant at this step, only the file name is used.  
 #
 # Check the date order (year, month, day) and date-time separators in the input files by opening them in a text editor (Notepad). Possible options:
-# 1.  The date is written as 05/29/2024 and the time as 12:00. Then they are encoded as "%d.%m.%Y %H:%M" - this format is written below by default, nothing needs to be changed;
-# 2.  The date is written as 05/29/2024 and the time as 12:00. Change the format in the line below to "%d/%m/%Y %H:%M"
+# 1.  The date is written as 29.05.2024 and the time as 12:00. Then they are encoded as "%d.%m.%Y %H:%M" - this format is written below by default, nothing needs to be changed;
+# 2.  The date is written as 29/05/2024 and the time as 12:00. Change the format in the line below to "%d/%m/%Y %H:%M"
 # 3.  The date is written as 2024-05-29 and the time as 1200. Change the format in the line below to "%Y-%m-%d %H%M"
-# 4.  In other cases, behave similarly. If there are seconds in the time column, the format is encoded as "%Y-%m-%d %H:%M:%S".  
+# 4.  For other cases, follow the same pattern. If there are seconds in the time column, the format is encoded as "%Y-%m-%d %H:%M:%S".  
 # For example, default biomet date is 2011-11-12 and time is 1200, which is encoded as "%Y-%m-%d %H%M".  
 #
 # **Additional options (better not to change without PRO level):**  
@@ -352,7 +350,7 @@ cols_to_investigate = [k.lower() for k in cols_to_investigate]
 # %% [markdown] id="wVpYvr9_fKBU"
 # ## Setting up parameters for the data analysis
 #
-# All settings for co2_flux will be applied to nee if it is chosen to calculate
+# All co2_flux settings will be applied to nee if you choose to calculate it.
 
 # %% [markdown] id="FH2uRGi4p5Zj"
 # ### Physical filtering
@@ -361,9 +359,9 @@ cols_to_investigate = [k.lower() for k in cols_to_investigate]
 if not config.from_file:
     config.calc.calc_nee = True
     
-    # Location ID which will be added to the names of all output files and graphs
-    config.metadata.site_name = 'auto'
-    config.data_export.ias.out_fname_ver_suffix = 'auto'
+    # Index of station (output ID) which will be added to the names of all output files and graphs
+    config.metadata.site_name = 'auto' #for example, 'Fy4'
+    config.data_export.ias.out_fname_ver_suffix = 'auto' #for example, 'v01'
 
 # %% [markdown] id="5MK90gyzQryZ"
 # Filtering by quality flags. Data with flags in the range (-inf, val] will be marked as valid, and data with a flag value greater than the threshold will be excluded.
@@ -380,19 +378,19 @@ if not config.from_file:
 # %% [markdown] id="QPIFpLN_-8Uf"
 # Filtering fluxes in certain meteorological conditions (by values of meteorological variables), possible options:
 #
-# * `CO2SS_min` - will remove CO2_FLUX when co2_signal_strength is below the set threshold
-# * `p_rain_limit` - will remove H, LE and CO2_FLUX, for P_rain_1_1_1 above the set threshold
+# * `CO2SS_min` - will remove NEE when co2_signal_strength is below the set threshold
+# * `p_rain_limit` - will remove H, LE and NEE, for P_rain_1_1_1 above the set threshold
 # * `rain_forward_flag` - will remove values for the set number of records forward from each value filtered in the previous step
-# * `RH_max` - will remove LE and CO2_FLUX values for which RH_1_1_1 is greater than the specified threshold
+# * `RH_max` - will remove LE and NEE values for which RH_1_1_1 is greater than the specified threshold
 # * `use_day_filter` - if True, daily (Swin>`day_swin_limit`) NEEs greater than the set threshold (NEE>`day_nee_max`) will be excluded
-# * `use_night_filter` - if True, night (Swin<`day_swin_limit`) NEEs less than the set threshold (NEE<`night_nee_min`) will be excluded
+# * `use_night_filter` - if True, night (Swin<`day_swin_limit`) NEE less than the set threshold (co2_flux<`night_nee_min`) will be excluded
 # * `day_nee_max` - threshold for NEE during daytime (excluding intense emission during daytime)
 # * `night_nee_min` - threshold for NEE at night (excluding intense net absorption at night)
 # * `day_swin_limit` - threshold of incoming shortwave radiation, defining daytime data (can be changed for stations beyond the Arctic Circle)
 # * `night_h_limits`, `night_le_limits` - plausible night ranges for H and LE
 # * `winter_nee_limits` - plausible range of NEE in winter (winter period is set separately in the section "winter period filtering, determine the dates!")
 # * `winter_ch4_flux_limits` - plausible range of methane flux in winter
-# * `CH4SS_min` - will remove CH4_FLUX when ch4_signal_strength is below the specified value
+# * `CH4SS_min` - will remove CH4_flux when ch4_signal_strength is below the specified value
 #
 # If any of the parameters are missing or commented in this cell, filtering is not applied.
 
@@ -476,8 +474,8 @@ if not config.from_file:
 # %% [markdown] id="KF_MGD7pSGre"
 # Filtering parameters above and below threshold by quantiles (values not in range are removed):
 # * `filters_quantile` - quantiles are calculated from the distribution across the entire data column; the values in square brackets specify the quantiles
-# * `filters_quantile_iqr` - IQR filter in a sliding window (only the local data distribution is taken into account); the parameter specifies the IQR multiplier (1.5 by default; increasing it will filter out less data)  
-# * 'window_size_days' time span of the sliding IQR window in days  
+# * `filters_quantile_iqr` - interquartile range, or IQR, filter in a sliding window (only the local data distribution is taken into account); the parameter specifies the IQR multiplier (1.5 by default; increasing it will filter out less data)  
+# * 'window_size_days' - time span of the sliding IQR window in days  
 
 # %% id="asO_t2tZmiD0"
 filters_quantile = QuantileFilterConfig()
@@ -538,7 +536,6 @@ gl.points_per_day = int(pd.Timedelta('24h') / data_freq)
 data.columns = data.columns.str.lower()
 if not config.calc.has_meteo:
     data["rh_1_1_1"] = data['rh']
-    # TODO QOA 1 different units? Elg biomet kPa, but mean 8.6 ?
     data["vpd_1_1_1"] = data['vpd']
 
 # %% [markdown] id="ipknrLaeByCT"
@@ -702,10 +699,10 @@ df_ias_export = data.copy()
 # Checking the storage. The storage calculated by one vertical level in EddyPro (full output - co2_strg column) is not always reliable. Correctness is checked by the proper diurnal course: there should be an accumulation during the night, and a sharp decrease in the morning.
 
 # %% [markdown] id="2yqwO7Uhcjmz"
-# Filtering co2_strg to remove values above and below threshold quantiles. Filling co2_strg gaps of 3 points or less with linear interpolation. The resulting filtered and filled co2_strg values are plotted. You make a decision whether to sum co2_flux and co2_strg to obtain NEE or to continue working with co2_flux.
+# In the cell below, the following steps are performed: (1) filtering co2_strg to remove values above and below the threshold quantiles; (2) filling gaps of 3 points or fewer in co2_strg by linear interpolation. The resulting filtered and gap-filled co2_strg values are plotted. You then decide whether to sum co2_flux and co2_strg to obtain NEE, or to continue working with co2_flux. For this option, set a True/False flag in the second cell.
 
 # %% id="cjt05XXtbr69"
-# Gaps shorter than 3 30-mins ranges are linearly interpolated
+# Gaps shorter than 3 30-min records are linearly interpolated
 if config.calc.calc_nee and 'co2_strg' in data.columns:
     tmp_data = data.copy()
     tmp_data['co2_strg_tmp'] = tmp_data['co2_strg'].copy()
@@ -739,7 +736,7 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
 # Decide whether to sum co2_flux and co2_strg_filtered_filled to obtain NEE
 if not config.from_file:
     # Keep False to work with co2_flux without co2_strg
-    # Change to True to obtain NEE and use to it in the next cells
+    # Change to True to obtain NEE and use it in the next cells
     config.calc.calc_with_strg = False
 ff_logger.info(f"config.calc.calc_with_strg is set to {config.calc.calc_with_strg}")
 
@@ -1321,7 +1318,7 @@ tag_handler.display_tag_info(roh.extended_tags())
 #
 # The results of all the segments of the notebook can be downloaded in one archive using the **Download outputs** button.  
 #
-# If the button below does not appear, you need to run the cell again or download the output files in the Files section, output directory. In the summary files with indexes in the name _hourly (daily variations of filtered and filled variables), _daily (average daily values), _monthly (average monthly values) and _yearly (values for the year, if there is less data - for the entire processing period) the index _sqc means the percentage of values remaining after filtering (but without taking into account the REddyProc filter on u*), and the columns with indexes _f mean the final filled data after all the cells of the notebook.
+# If the button below does not appear, you need to run the cell again or download the output files in the Files section, output directory. In the REddyProc folder, there are files named with the suffixes _hourly (daily variations of filtered and gap-filled variables), _daily (average daily values), _monthly (average monthly values), and _yearly (values for the year or, if data are insufficient, for the entire processing period). The _sqc suffix indicates the percentage of values remaining after filtering (excluding the REddyProc u* filter), while columns with the _f suffix contain the final gap-filled data after all notebook cells have been run.
 
 # %% id="E4rv4ucOX8Yz"
 FFConfig.save(config, gl.out_dir / f'config_{config.metadata.site_name}.yaml', add_comments=True)
