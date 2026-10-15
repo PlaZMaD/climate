@@ -130,6 +130,8 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
+# by default, Colab in 2026 ignores edits in scripts folder,
+# uncomment next lines to experiment with sources in the scripts folder
 # #!pip install ipython==8.1.0
 # #%load_ext autoreload
 # #%autoreload 2
@@ -150,7 +152,7 @@ from src.colab_routines import colab_no_scroll, colab_enable_custom_widget_manag
     colab_xor_demo_data
 from src.config.ff_config import FFConfig, RepConfig, FFGlobals, QuantileIQRFilterConfig, QuantileFilterConfig
 from src.config.config_types import IasExportIntervals, InputFileType, ColabDemoMixPolicy  # noqa: F401
-from src.data_quality import try_compare_stats
+from src.data_quality import try_compare_stats, StatsMode
 from src.ff_logger import init_logging, ff_logger
 from src.helpers.io_helpers import ensure_empty_dir, create_archive
 from src.data_io.fat_export import export_fat
@@ -653,7 +655,7 @@ if not (have_vpd_flag or have_rh_flag):
     print("NO RH AND VPD")
 else:
     if 'ta_1_1_1' in data.columns:
-        temp_k = (data['ta_1_1_1'] + 273.15)
+        temp_k = data['ta_1_1_1'] + 273.15
     else:
         temp_k = data['air_temperature']
     logE = 23.5518 - (2937.4 / temp_k) - 4.9283 * np.log10(temp_k)
@@ -692,7 +694,6 @@ if not config.calc.has_meteo or 'ta_1_1_1' not in data.columns:
     ff_logger.info("No Ta_1_1_1 column found, replaced by 'air_temperature'")
 
 df_ias_export = data.copy()
-try_compare_stats(data, repo_dir / 'misc/expected_stats.xlsx')
 
 # %% [markdown] id="soyyX-MCbaXt"
 # ## Calculating NEE from CO2_flux and storage
@@ -763,6 +764,13 @@ if config.calc.calc_nee and 'co2_strg' in data.columns:
 
 # %% [markdown] id="mUgwuaFYribB"
 # # Overview of statistics for the columns of interest
+# %% [markdown] id="ipknrLaeaxCT"
+# Comparison of variables with the demo station. By default, plots are generated only for variables with significant differences.  
+# To plot histograms for all variables, set `show_hists=StatsMode.ALL` (use with caution, may make the browser unresponsive).  
+
+# %% id="soyyX-MCaиXt" 
+try_compare_stats(data, show_hists=StatsMode.OUTSIDE_2S, plot_size=(None, None), 
+                  demo_stats_file=repo_dir / 'misc/expected_stats.xlsx', demo_hists_file = repo_dir / 'misc/demo_hists.npz')
 
 # %% id="dhcplCMbXtkK"
 cols_to_investigate = [p for p in cols_to_investigate if p in data.columns]
